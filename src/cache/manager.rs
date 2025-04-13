@@ -20,6 +20,12 @@ fn check_change(root: &str, since: u128) -> bool {
                     return true; // Found a modified file
                 }
             }
+            if let Ok(created) = metadata.created() {
+                if created.duration_since(UNIX_EPOCH).unwrap().as_millis() > since {
+                    println!("New file: {:?}", entry.path());
+                    return true;
+                }
+            }
         }
     }
     false
