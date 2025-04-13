@@ -59,8 +59,11 @@ fn check_change(root: &str, since: u128, tests: &HashMap<String, HashSet<String>
             if let Ok(modified) = metadata.modified() {
                 if modified.duration_since(UNIX_EPOCH).unwrap().as_millis() > since {
                     println!("Modified: {:?}", entry.path());
+                    // TODO: tests should
                     let full_path = entry.path().as_os_str().to_str().unwrap();
-                    let relative_path = format!("tests{}", full_path.strip_prefix(root).unwrap());
+                    let start_dir = Path::new(root).file_name().unwrap().to_str().unwrap();
+                    let relative_path =
+                        format!("{}{}", start_dir, full_path.strip_prefix(root).unwrap());
                     if check_file_for_new_tests(entry.path(), &tests[&relative_path]) {
                         println!("New tests found");
                         return true;
