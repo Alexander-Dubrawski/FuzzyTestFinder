@@ -6,6 +6,11 @@ edition = "2024"
 [dependencies]
 rustpython-parser = "0.4.0"
 itertools = "0.14.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+walkdir = "2.4.0"
+sha2 = "0.10.8"
+home = "0.5"
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"
