@@ -8,6 +8,7 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 use itertools::Itertools;
+use regex::Regex;
 use rustpython_parser::Mode;
 use rustpython_parser::lexer::lex;
 use rustpython_parser::parse_tokens;
@@ -22,13 +23,11 @@ use super::types::PyTests;
 pub struct PyTestParser {
     // absolute path
     root_dir: String,
-    // absolute path
-    test_dir: String,
 }
 
 impl PyTestParser {
-    pub fn new(root_dir: String, test_dir: String) -> Self {
-        Self { root_dir, test_dir }
+    pub fn new(root_dir: String) -> Self {
+        Self { root_dir }
     }
 
     fn get_pytest(_root: &str) -> PyTests {
@@ -73,17 +72,12 @@ impl PyTestParser {
         PyTests::new(py_tests)
     }
 
-    fn get_cache_entry(python_tests: PyTests, root: &str, test_folder: &str) -> CacheEntry {
+    fn get_cache_entry(python_tests: PyTests, root: &str) -> CacheEntry {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_millis();
-        CacheEntry::new(
-            root.to_string(),
-            test_folder.to_string(),
-            timestamp,
-            python_tests.tests,
-        )
+        CacheEntry::new(root.to_string(), timestamp, python_tests.tests)
     }
 
     fn collect_tests_from_file(path: &Path) -> HashSet<String> {
@@ -116,7 +110,7 @@ impl PyTestParser {
     }
 
     fn needs_update(cache_entry: &mut crate::cache::types::CacheEntry) -> bool {
-        for entry in WalkDir::new(cache_entry.test_folder.as_str()) {
+        for entry in WalkDir::new(cache_entry.root_folder.as_str()) {
             let entry = entry.unwrap();
             if entry.file_type().is_file() {
                 let metadata = std::fs::metadata(entry.path()).unwrap();
@@ -128,38 +122,31 @@ impl PyTestParser {
                     continue;
                 }
 
-                // TODO: Check if modified, that if modified, that there are new/removed functions
-                // If so Cache entry can be replaced in place
+                let pattern = Regex::new(r"^(test_.*\.py|.*_test\.py)$").unwrap();
+                if !pattern.is_match(entry.path().file_name().unwrap().to_str().unwrap()) {
+                    continue;
+                }
+
                 if let Ok(modified) = metadata.modified() {
                     if modified.duration_since(UNIX_EPOCH).unwrap().as_millis()
                         > cache_entry.timestamp
                     {
                         println!("Modified: {:?}", entry.path());
                         let full_path = entry.path().as_os_str().to_str().unwrap();
-                        let start_dir = Path::new(cache_entry.test_folder.as_str())
-                            .file_name()
-                            .unwrap()
-                            .to_str()
+                        let relative_path = full_path
+                            .strip_prefix(cache_entry.root_folder.as_str())
                             .unwrap();
-                        let relative_path = format!(
-                            "{}{}",
-                            start_dir,
-                            full_path
-                                .strip_prefix(cache_entry.test_folder.as_str())
-                                .unwrap()
-                        );
 
                         println!("{}", relative_path);
                         if Self::check_file_for_new_tests(
                             entry.path(),
-                            &cache_entry.tests[&relative_path],
+                            &cache_entry.tests[relative_path],
                         ) {
                             println!("New tests found");
                             return true;
                         }
                     }
                 }
-                // TODO: Check if created, that the file includes test function
                 if let Ok(created) = metadata.created() {
                     if created.duration_since(UNIX_EPOCH).unwrap().as_millis()
                         > cache_entry.timestamp
@@ -179,11 +166,7 @@ impl PyTestParser {
 
 impl Parser for PyTestParser {
     fn parse_test(&self) -> CacheEntry {
-        Self::get_cache_entry(
-            Self::get_pytest(&self.root_dir),
-            &self.root_dir,
-            &self.test_dir,
-        )
+        Self::get_cache_entry(Self::get_pytest(&self.root_dir), &self.root_dir)
     }
 
     fn update_tests(&self, cache_entry: &mut CacheEntry) -> bool {

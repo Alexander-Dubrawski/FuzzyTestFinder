@@ -28,10 +28,7 @@ pub fn run() {
     let result = hasher.finalize();
 
     let project_id = format!("{:x}", result);
-    let parser = PyTestParser::new(
-        path_str.to_string(),
-        format!("{}/tests", path_str.to_string()),
-    );
+    let parser = PyTestParser::new(path_str.to_string());
     let cache_entry = get_entry(project_id.as_str(), parser);
     let tests = PyTests::new(cache_entry.tests);
     let tests_to_run = get_tests_to_run(tests.into());
