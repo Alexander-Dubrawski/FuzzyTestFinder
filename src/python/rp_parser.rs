@@ -88,7 +88,7 @@ impl RpParser {
                     continue;
                 }
                 let full_path = entry.path().as_os_str().to_str().unwrap();
-                let relative_path = full_path.strip_prefix(&self.root_dir).unwrap();
+                let relative_path = full_path.strip_prefix(&self.root_dir).unwrap().strip_prefix("/").unwrap();
                 let collected_tests = Self::collect_tests_from_file(entry.path());
                 tests.insert(relative_path.to_string(), collected_tests);
             }
@@ -117,10 +117,11 @@ impl RpParser {
                 if !pattern.is_match(entry.path().file_name().unwrap().to_str().unwrap()) {
                     continue;
                 }
+
                 let full_path = entry.path().as_os_str().to_str().unwrap();
                 let relative_path = full_path
                     .strip_prefix(cache_entry.root_folder.as_str())
-                    .unwrap();
+                    .unwrap().strip_prefix("/").unwrap();
                 if let Ok(modified) = metadata.modified() {
                     if modified.duration_since(UNIX_EPOCH).unwrap().as_millis()
                         > cache_entry.timestamp
@@ -131,7 +132,7 @@ impl RpParser {
                         if new_tests != cache_entry.tests[relative_path] {
                             updated = true;
                             println!(
-                                "New tests found: {}",
+                                "Tests updated: {}",
                                 entry.path().as_os_str().to_str().unwrap()
                             );
                             let entry = cache_entry.tests.get_mut(relative_path).unwrap();
@@ -158,14 +159,30 @@ impl RpParser {
         }
         updated
     }
+
+    fn filter_out_deleted_files(cache_entry: &mut CacheEntry) -> bool {
+        let mut tests_to_remove = vec![];
+        for path in cache_entry.tests.keys() {
+            if !Path::new(path).exists() {
+                tests_to_remove.push(path.clone());
+            }
+        }
+        let updated = tests_to_remove.len() > 0;
+        tests_to_remove.into_iter().for_each(|test_path| {
+            println!("Removed test file");
+            cache_entry.tests.remove(&test_path);
+        });
+        updated
+    }
 }
 
 impl Parser for RpParser {
-    fn parse_test(&self) -> crate::cache::types::CacheEntry {
+    fn parse_test(&self) -> CacheEntry {
         self.get_cache_entry(self.collect_test())
     }
 
-    fn update_tests(&self, cache_entry: &mut crate::cache::types::CacheEntry) -> bool {
-        Self::update_in_place(cache_entry)
+    fn update_tests(&self, cache_entry: &mut CacheEntry) -> bool {
+        let removed_files = Self::filter_out_deleted_files(cache_entry);
+        removed_files || Self::update_in_place(cache_entry)
     }
 }

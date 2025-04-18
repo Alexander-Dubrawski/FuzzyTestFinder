@@ -12,12 +12,22 @@ use regex::Regex;
 use rustpython_parser::Mode;
 use rustpython_parser::lexer::lex;
 use rustpython_parser::parse_tokens;
+use walkdir::DirEntry;
 use walkdir::WalkDir;
 
 use crate::cache::types::CacheEntry;
 use crate::parser::Parser;
 
 use super::types::PyTests;
+
+fn is_hidden(entry: &DirEntry) -> bool {
+    let hidden = entry
+        .file_name()
+        .to_str()
+        .map(|s| s.starts_with("."))
+        .unwrap_or(false);
+    hidden
+}
 
 #[derive(Default)]
 pub struct PyTestParser {
@@ -110,7 +120,10 @@ impl PyTestParser {
     }
 
     fn needs_update(cache_entry: &mut crate::cache::types::CacheEntry) -> bool {
-        for entry in WalkDir::new(cache_entry.root_folder.as_str()) {
+        for entry in WalkDir::new(cache_entry.root_folder.as_str())
+            .into_iter()
+            .filter_entry(|e| !is_hidden(e))
+        {
             let entry = entry.unwrap();
             if entry.file_type().is_file() {
                 let metadata = std::fs::metadata(entry.path()).unwrap();
@@ -126,7 +139,6 @@ impl PyTestParser {
                 if !pattern.is_match(entry.path().file_name().unwrap().to_str().unwrap()) {
                     continue;
                 }
-                // TODO: collect deleted files
                 if let Ok(modified) = metadata.modified() {
                     if modified.duration_since(UNIX_EPOCH).unwrap().as_millis()
                         > cache_entry.timestamp
@@ -135,7 +147,7 @@ impl PyTestParser {
                         let full_path = entry.path().as_os_str().to_str().unwrap();
                         let relative_path = full_path
                             .strip_prefix(cache_entry.root_folder.as_str())
-                            .unwrap();
+                            .unwrap().strip_prefix("/").unwrap();
 
                         if Self::check_file_for_new_tests(
                             entry.path(),
