@@ -72,12 +72,12 @@ impl PyTestParser {
         PyTests::new(py_tests)
     }
 
-    fn get_cache_entry(python_tests: PyTests, root: &str) -> CacheEntry {
+    fn get_cache_entry(&self, python_tests: PyTests) -> CacheEntry {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_millis();
-        CacheEntry::new(root.to_string(), timestamp, python_tests.tests)
+        CacheEntry::new(self.root_dir.clone(), timestamp, python_tests.tests)
     }
 
     fn collect_tests_from_file(path: &Path) -> HashSet<String> {
@@ -126,7 +126,7 @@ impl PyTestParser {
                 if !pattern.is_match(entry.path().file_name().unwrap().to_str().unwrap()) {
                     continue;
                 }
-
+                // TODO: collect deleted files
                 if let Ok(modified) = metadata.modified() {
                     if modified.duration_since(UNIX_EPOCH).unwrap().as_millis()
                         > cache_entry.timestamp
@@ -137,7 +137,6 @@ impl PyTestParser {
                             .strip_prefix(cache_entry.root_folder.as_str())
                             .unwrap();
 
-                        println!("{}", relative_path);
                         if Self::check_file_for_new_tests(
                             entry.path(),
                             &cache_entry.tests[relative_path],
@@ -166,7 +165,7 @@ impl PyTestParser {
 
 impl Parser for PyTestParser {
     fn parse_test(&self) -> CacheEntry {
-        Self::get_cache_entry(Self::get_pytest(&self.root_dir), &self.root_dir)
+        self.get_cache_entry(Self::get_pytest(&self.root_dir))
     }
 
     fn update_tests(&self, cache_entry: &mut CacheEntry) -> bool {
