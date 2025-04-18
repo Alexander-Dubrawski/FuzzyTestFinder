@@ -9,6 +9,7 @@ use std::str;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
+use super::cache::PytestUpdate;
 use super::pytest_parser::parse_python_tests;
 use super::types::PyTests;
 
@@ -45,7 +46,7 @@ pub fn run() {
 
     let project_id = format!("{:x}", result);
 
-    match get_entry(project_id.as_str()) {
+    match get_entry(project_id.as_str(), PytestUpdate::default()) {
         Some(entry) => {
             let tests = PyTests::new(entry.tests);
             let tests_to_run = get_tests_to_run(tests.into());

@@ -22,3 +22,9 @@ impl CacheEntry {
         }
     }
 }
+
+pub trait CacheUpdate {
+    // Updates Cache.
+    // Returns true is update happened
+    fn update(&self, cache_entry: &mut CacheEntry) -> bool;
+}
