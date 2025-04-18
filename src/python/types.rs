@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::cache::types::CacheEntry;
+
 #[derive(Debug, Default, PartialEq)]
 pub struct PyTests {
     pub tests: HashMap<String, HashSet<String>>,
@@ -21,4 +23,9 @@ impl Into<String> for PyTests {
         }
         output
     }
+}
+
+trait Parser {
+    fn parse_test(&self, root: &str) -> CacheEntry;
+    fn update_tests(&self, cache_entry: &mut CacheEntry) -> bool;
 }
