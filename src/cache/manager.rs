@@ -18,6 +18,7 @@ pub fn get_entry(project_id: &str, cache_update: impl CacheUpdate) -> Option<Cac
     let reader = BufReader::new(entry);
     let mut cache_entry: CacheEntry = serde_json::from_reader(reader).unwrap();
     // should be lambda
+    // If update write to file
     if cache_update.update(&mut cache_entry) {
         return None;
     }

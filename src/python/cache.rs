@@ -1,14 +1,17 @@
 use std::{collections::HashSet, ffi::OsStr, path::Path, time::UNIX_EPOCH};
 
 use rustpython_parser::{Mode, lexer::lex, parse_tokens};
+use std::time::SystemTime;
 use walkdir::WalkDir;
 
-use crate::cache::types::CacheUpdate;
+use crate::cache::types::{CacheEntry, CacheUpdate};
+
+use crate::python::pytest::pytest;
 
 #[derive(Default)]
-pub struct PytestUpdate {}
+pub struct PytestUpdatePytest {}
 
-impl PytestUpdate {
+impl PytestUpdatePytest {
     fn collect_tests_from_file(path: &Path) -> HashSet<String> {
         let source_code = std::fs::read_to_string(path).unwrap();
         let tokens = lex(source_code.as_str(), Mode::Module);
@@ -37,10 +40,8 @@ impl PytestUpdate {
         let collected_tests = Self::collect_tests_from_file(path);
         &collected_tests != tests
     }
-}
 
-impl CacheUpdate for PytestUpdate {
-    fn update(&self, cache_entry: &mut crate::cache::types::CacheEntry) -> bool {
+    fn needs_update(cache_entry: &mut crate::cache::types::CacheEntry) -> bool {
         for entry in WalkDir::new(cache_entry.root_folder.as_str()) {
             let entry = entry.unwrap();
             if entry.file_type().is_file() {
@@ -98,5 +99,23 @@ impl CacheUpdate for PytestUpdate {
             }
         }
         false
+    }
+}
+
+impl CacheUpdate for PytestUpdatePytest {
+    fn update(&self, cache_entry: &mut CacheEntry) -> bool {
+        if Self::needs_update(cache_entry) {
+            // TODO: Refactor (also exists in pytest.rs)
+            let python_tests = pytest();
+            let path = cache_entry.root_folder.clone();
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis();
+            *cache_entry = CacheEntry::new(path, timestamp, python_tests.tests.clone());
+            true
+        } else {
+            false
+        }
     }
 }
