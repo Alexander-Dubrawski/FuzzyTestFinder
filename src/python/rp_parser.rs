@@ -88,7 +88,11 @@ impl RpParser {
                     continue;
                 }
                 let full_path = entry.path().as_os_str().to_str().unwrap();
-                let relative_path = full_path.strip_prefix(&self.root_dir).unwrap().strip_prefix("/").unwrap();
+                let relative_path = full_path
+                    .strip_prefix(&self.root_dir)
+                    .unwrap()
+                    .strip_prefix("/")
+                    .unwrap();
                 let collected_tests = Self::collect_tests_from_file(entry.path());
                 tests.insert(relative_path.to_string(), collected_tests);
             }
@@ -121,7 +125,9 @@ impl RpParser {
                 let full_path = entry.path().as_os_str().to_str().unwrap();
                 let relative_path = full_path
                     .strip_prefix(cache_entry.root_folder.as_str())
-                    .unwrap().strip_prefix("/").unwrap();
+                    .unwrap()
+                    .strip_prefix("/")
+                    .unwrap();
                 if let Ok(modified) = metadata.modified() {
                     if modified.duration_since(UNIX_EPOCH).unwrap().as_millis()
                         > cache_entry.timestamp

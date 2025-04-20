@@ -147,7 +147,9 @@ impl PyTestParser {
                         let full_path = entry.path().as_os_str().to_str().unwrap();
                         let relative_path = full_path
                             .strip_prefix(cache_entry.root_folder.as_str())
-                            .unwrap().strip_prefix("/").unwrap();
+                            .unwrap()
+                            .strip_prefix("/")
+                            .unwrap();
 
                         if Self::check_file_for_new_tests(
                             entry.path(),
