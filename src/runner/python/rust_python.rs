@@ -1,15 +1,27 @@
-use std::{collections::HashMap, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    collections::HashMap,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use sha2::{Digest, Sha256};
 
-use crate::{cache::manager::CacheManager, parser::{python::{pytest::PyTestParser, python_tests::PythonTests, rust_python::RustPytonParser}, Parser, Tests}, runner::Runner, runtime::python::pytest::PytestRuntime, search_engine::fzf::FzfSearchEngine};
+use crate::{
+    cache::manager::CacheManager,
+    parser::{
+        Parser, Tests,
+        python::{pytest::PyTestParser, python_tests::PythonTests, rust_python::RustPytonParser},
+    },
+    runner::Runner,
+    runtime::python::pytest::PytestRuntime,
+    search_engine::fzf::FzfSearchEngine,
+};
 
 pub struct RustPytonRunner {
     parser: RustPytonParser,
     cache_manager: CacheManager,
     search_engine: FzfSearchEngine,
     runtime: PytestRuntime,
-    root_dir: String
+    root_dir: String,
 }
 
 impl RustPytonRunner {
@@ -29,7 +41,7 @@ impl RustPytonRunner {
             cache_manager,
             search_engine,
             runtime,
-            root_dir
+            root_dir,
         }
     }
 }
@@ -43,14 +55,14 @@ impl Runner for RustPytonRunner {
                     self.cache_manager.add_entry(tests.to_json().as_str())
                 }
                 tests
-            },
+            }
             None => {
                 let timestamp = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap()
                     .as_millis();
                 PythonTests::new(self.root_dir.clone(), timestamp, HashMap::new())
-            },
+            }
         };
         let selected_tests = self.search_engine.get_tests_to_run(tests);
         self.runtime.run_tests(selected_tests);

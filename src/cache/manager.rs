@@ -6,14 +6,12 @@ use std::{
 };
 
 pub struct CacheManager {
-    project_id: String
+    project_id: String,
 }
 
 impl CacheManager {
     pub fn new(project_id: String) -> Self {
-        Self {
-            project_id
-        }
+        Self { project_id }
     }
 
     pub fn get_entry(&self) -> Option<BufReader<File>> {
@@ -44,7 +42,4 @@ impl CacheManager {
         writer.write(entry.as_bytes());
         println!("Cache filled.");
     }
-
-
 }
-
