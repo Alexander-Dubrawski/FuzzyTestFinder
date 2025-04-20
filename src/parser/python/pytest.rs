@@ -8,6 +8,19 @@ use std::{
 
 use super::python_tests::PythonTests;
 
+fn get_pytests() -> String {
+    let binding = Command::new("python")
+        .arg("-m")
+        .arg("pytest")
+        .arg("--co")
+        .arg("-q")
+        .output()
+        .expect("failed to retrieve python tests");
+    str::from_utf8(binding.stdout.as_slice())
+        .unwrap()
+        .to_string()
+}
+
 #[derive(Default)]
 pub struct PyTestParser {
     // absolute path
@@ -19,18 +32,9 @@ impl PyTestParser {
         Self { root_dir }
     }
 
-    fn parse_python_tests(&self) -> PythonTests {
-        let binding = Command::new("python")
-            .arg("-m")
-            .arg("pytest")
-            .arg("--co")
-            .arg("-q")
-            .output()
-            .expect("failed to retrieve python tests");
-        let output = str::from_utf8(binding.stdout.as_slice()).unwrap();
-
+    fn parse_python_tests(&self, pytest_output: &str) -> PythonTests {
         let mut py_tests: HashMap<String, HashSet<String>> = HashMap::new();
-        for line in output.lines() {
+        for line in pytest_output.lines() {
             if line.is_empty() {
                 break;
             }
@@ -63,7 +67,7 @@ impl PyTestParser {
 
     pub fn parse_tests(&self, tests: &mut PythonTests) -> bool {
         if tests.update(true) {
-            *tests = self.parse_python_tests();
+            *tests = self.parse_python_tests(get_pytests().as_str());
             true
         } else {
             false
@@ -71,35 +75,35 @@ impl PyTestParser {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use pretty_assertions::assert_eq;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
 
-//     #[test]
-//     fn pytest_parsing() {
-//         let python_source = r#"tests/foo::test_a
-// tests/foo::test_b[None, None]
-// tests/foo/boo::test_c
+    #[test]
+    fn pytest_parsing() {
+        let python_source = r#"tests/foo::test_a
+tests/foo::test_b[None, None]
+tests/foo/boo::test_c
 
-// ------------------------------ coverage ------------------------------
-// Coverage HTML written to dir coverage/html
-//     "#;
-//         let mut expected: HashMap<String, HashSet<String>> = HashMap::new();
-//         expected.insert(
-//             "tests/foo".to_string(),
-//             HashSet::from_iter(
-//                 vec!["test_a".to_string(), "test_b".to_string()]
-//                     .iter()
-//                     .cloned(),
-//             ),
-//         );
-//         expected.insert(
-//             "tests/foo/boo".to_string(),
-//             HashSet::from_iter(vec!["test_c".to_string()].iter().cloned()),
-//         );
-
-//         let result = PyTestParser::parse_python_tests(python_source);
-//         assert_eq!(result, PyTests::new(expected));
-//     }
-// }
+------------------------------ coverage ------------------------------
+Coverage HTML written to dir coverage/html
+    "#;
+        let mut expected: HashMap<String, HashSet<String>> = HashMap::new();
+        expected.insert(
+            "tests/foo".to_string(),
+            HashSet::from_iter(
+                vec!["test_a".to_string(), "test_b".to_string()]
+                    .iter()
+                    .cloned(),
+            ),
+        );
+        expected.insert(
+            "tests/foo/boo".to_string(),
+            HashSet::from_iter(vec!["test_c".to_string()].iter().cloned()),
+        );
+        let parsert = PyTestParser::new("".to_string());
+        let result = parsert.parse_python_tests(python_source);
+        assert_eq!(result.tests, expected);
+    }
+}
