@@ -29,7 +29,7 @@ impl RustPytonRunner {
         let mut hasher = Sha256::new();
         hasher.update(root_dir.as_bytes());
         let result = hasher.finalize();
-        let project_id = format!("{:x}", result);
+        let project_id = format!("{:x}-rust-python", result);
 
         let parser = RustPytonParser::default();
         let cache_manager = CacheManager::new(project_id);

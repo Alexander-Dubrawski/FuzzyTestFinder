@@ -29,7 +29,7 @@ impl PytestRunner {
         let mut hasher = Sha256::new();
         hasher.update(root_dir.as_bytes());
         let result = hasher.finalize();
-        let project_id = format!("{:x}", result);
+        let project_id = format!("{:x}-pytest", result);
 
         let parser = PyTestParser::new(root_dir.clone());
         let cache_manager = CacheManager::new(project_id);
@@ -59,6 +59,7 @@ impl Runner for PytestRunner {
             None => {
                 let mut tests = PythonTests::new(self.root_dir.clone(), 0, HashMap::new());
                 self.parser.parse_tests(&mut tests);
+                self.cache_manager.add_entry(tests.to_json().as_str());
                 tests
             }
         };
