@@ -10,7 +10,10 @@ use rustpython_parser::{Mode, lexer::lex, parse_tokens};
 use serde::{Deserialize, Serialize};
 use walkdir::{DirEntry, WalkDir};
 
-use crate::{errors::FztError, parser::{Test, Tests}};
+use crate::{
+    errors::FztError,
+    parser::{Test, Tests},
+};
 
 fn is_hidden(entry: &DirEntry) -> bool {
     let hidden = entry
@@ -114,20 +117,37 @@ impl PythonTests {
                     continue;
                 }
 
-                if entry.path().extension().and_then(OsStr::to_str).expect("Is file type") != "py" {
+                if entry
+                    .path()
+                    .extension()
+                    .and_then(OsStr::to_str)
+                    .expect("Is file type")
+                    != "py"
+                {
                     continue;
                 }
 
                 let pattern = Regex::new(r"^(test_.*\.py|.*_test\.py)$")?;
-                if !pattern.is_match(entry.path().file_name().unwrap().to_str().expect("Is file type")) {
+                if !pattern.is_match(
+                    entry
+                        .path()
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .expect("Is file type"),
+                ) {
                     continue;
                 }
 
                 let full_path = entry.path().as_os_str().to_str().expect("Is file type");
                 let relative_path = full_path
                     .strip_prefix(self.root_folder.as_str())
-                    .map(|path| path.strip_prefix("/")).flatten()
-                    .ok_or(FztError::GeneralParsingError(format!("File path could not be parsed: {}", full_path)))?;
+                    .map(|path| path.strip_prefix("/"))
+                    .flatten()
+                    .ok_or(FztError::GeneralParsingError(format!(
+                        "File path could not be parsed: {}",
+                        full_path
+                    )))?;
 
                 if let Ok(modified) = metadata.modified() {
                     if modified.duration_since(UNIX_EPOCH).unwrap().as_millis() > self.timestamp {

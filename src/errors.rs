@@ -18,15 +18,14 @@ impl std::error::Error for FztError {}
 impl Display for FztError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FztError::IoError(io_error) =>  write!(f, "{}", io_error),
+            FztError::IoError(io_error) => write!(f, "{}", io_error),
             FztError::StringParsing(utf8_error) => write!(f, "{}", utf8_error),
             FztError::GeneralParsingError(error) => write!(f, "{}", error),
             FztError::TimeError(system_time_error) => write!(f, "{}", system_time_error),
             FztError::PythonParsingError(base_error) => write!(f, "{}", base_error),
             FztError::DictionaryWalking(error) => write!(f, "{}", error),
-            FztError::Regex(error) =>  write!(f, "{}", error),
+            FztError::Regex(error) => write!(f, "{}", error),
         }
-
     }
 }
 
@@ -44,24 +43,24 @@ impl From<Utf8Error> for FztError {
 
 impl From<SystemTimeError> for FztError {
     fn from(value: SystemTimeError) -> Self {
-         Self::TimeError(value)
+        Self::TimeError(value)
     }
 }
 
 impl From<ParseError> for FztError {
-    fn from(value:ParseError) -> Self {
-         Self::PythonParsingError(value)
+    fn from(value: ParseError) -> Self {
+        Self::PythonParsingError(value)
     }
 }
 
 impl From<walkdir::Error> for FztError {
     fn from(value: walkdir::Error) -> Self {
-         Self::DictionaryWalking(value)
+        Self::DictionaryWalking(value)
     }
 }
 
 impl From<regex::Error> for FztError {
     fn from(value: regex::Error) -> Self {
-         Self::Regex(value)
+        Self::Regex(value)
     }
 }

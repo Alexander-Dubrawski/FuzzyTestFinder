@@ -18,7 +18,9 @@ fn get_pytests() -> Result<String, FztError> {
         .arg("-q")
         .output()
         .expect("failed to retrieve python tests");
-    str::from_utf8(binding.stdout.as_slice()).map(|out| out.to_string()).map_err(FztError::from)
+    str::from_utf8(binding.stdout.as_slice())
+        .map(|out| out.to_string())
+        .map_err(FztError::from)
 }
 
 #[derive(Default)]
@@ -45,7 +47,10 @@ impl PyTestParser {
                     let test_name = test.chars().take_while(|&ch| ch != '[').collect::<String>();
                     (path.to_string(), test_name)
                 })
-                .ok_or(FztError::GeneralParsingError(format!("Parsing Pytest failed: {}", line)))?;
+                .ok_or(FztError::GeneralParsingError(format!(
+                    "Parsing Pytest failed: {}",
+                    line
+                )))?;
             let entry = py_tests.get_mut(&path);
             match entry {
                 Some(tests) => {
@@ -58,14 +63,12 @@ impl PyTestParser {
                 }
             }
         }
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)?
-            .as_millis();
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
         Ok(PythonTests::new(self.root_dir.clone(), timestamp, py_tests))
     }
 
-    pub fn parse_tests(&self, tests: &mut PythonTests) ->  Result<bool, FztError> {
-        if tests.update(true) {
+    pub fn parse_tests(&self, tests: &mut PythonTests) -> Result<bool, FztError> {
+        if tests.update(true)? {
             *tests = self.parse_python_tests(get_pytests()?.as_str())?;
             Ok(true)
         } else {

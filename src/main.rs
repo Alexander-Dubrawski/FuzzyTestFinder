@@ -1,8 +1,12 @@
 use std::env;
 
-use FzT::{errors::FztError, runner::{
-    python::{pytest::PytestRunner, rust_python::RustPytonRunner}, Runner
-}};
+use FzT::{
+    errors::FztError,
+    runner::{
+        Runner,
+        python::{pytest::PytestRunner, rust_python::RustPytonRunner},
+    },
+};
 
 // TODO:
 // Add support for --query and direct it to fzf

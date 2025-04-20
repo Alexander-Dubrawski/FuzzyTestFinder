@@ -3,9 +3,15 @@ use std::collections::HashMap;
 use sha2::{Digest, Sha256};
 
 use crate::{
-    cache::manager::CacheManager, errors::FztError, parser::{
-        python::{python_tests::PythonTests, rust_python::RustPytonParser}, Tests
-    }, runner::Runner, runtime::python::pytest::PytestRuntime, search_engine::fzf::FzfSearchEngine
+    cache::manager::CacheManager,
+    errors::FztError,
+    parser::{
+        Tests,
+        python::{python_tests::PythonTests, rust_python::RustPytonParser},
+    },
+    runner::Runner,
+    runtime::python::pytest::PytestRuntime,
+    search_engine::fzf::FzfSearchEngine,
 };
 
 pub struct RustPytonRunner {
@@ -51,13 +57,12 @@ impl Runner for RustPytonRunner {
             }
             None => {
                 let mut tests = PythonTests::new(self.root_dir.clone(), 0, HashMap::new());
-                self.parser.parse_tests(&mut tests);
+                self.parser.parse_tests(&mut tests)?;
                 self.cache_manager.add_entry(tests.to_json().as_str())?;
                 tests
             }
         };
-        let selected_tests = self.search_engine.get_tests_to_run(tests);
-        self.runtime.run_tests(selected_tests);
-        Ok(())
+        let selected_tests = self.search_engine.get_tests_to_run(tests)?;
+        self.runtime.run_tests(selected_tests)
     }
 }

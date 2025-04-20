@@ -3,9 +3,15 @@ use std::collections::HashMap;
 use sha2::{Digest, Sha256};
 
 use crate::{
-    cache::manager::CacheManager, errors::FztError, parser::{
-        python::{pytest::PyTestParser, python_tests::PythonTests}, Tests
-    }, runner::Runner, runtime::python::pytest::PytestRuntime, search_engine::fzf::FzfSearchEngine
+    cache::manager::CacheManager,
+    errors::FztError,
+    parser::{
+        Tests,
+        python::{pytest::PyTestParser, python_tests::PythonTests},
+    },
+    runner::Runner,
+    runtime::python::pytest::PytestRuntime,
+    search_engine::fzf::FzfSearchEngine,
 };
 
 pub struct PytestRunner {
@@ -39,7 +45,7 @@ impl PytestRunner {
 }
 
 impl Runner for PytestRunner {
-    fn run(&self) -> Result<(), FztError>{
+    fn run(&self) -> Result<(), FztError> {
         let tests = match self.cache_manager.get_entry()? {
             Some(reader) => {
                 let mut tests: PythonTests = serde_json::from_reader(reader).unwrap();
@@ -50,13 +56,12 @@ impl Runner for PytestRunner {
             }
             None => {
                 let mut tests = PythonTests::new(self.root_dir.clone(), 0, HashMap::new());
-                self.parser.parse_tests(&mut tests);
+                self.parser.parse_tests(&mut tests)?;
                 self.cache_manager.add_entry(tests.to_json().as_str())?;
                 tests
             }
         };
-        let selected_tests = self.search_engine.get_tests_to_run(tests);
-        self.runtime.run_tests(selected_tests);
-        Ok(())
+        let selected_tests = self.search_engine.get_tests_to_run(tests)?;
+        self.runtime.run_tests(selected_tests)
     }
 }

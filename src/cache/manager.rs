@@ -28,7 +28,7 @@ impl CacheManager {
         }
     }
 
-    pub fn add_entry(&self, entry: &str)  -> Result<(), FztError>{
+    pub fn add_entry(&self, entry: &str) -> Result<(), FztError> {
         let mut cache_location: PathBuf = home_dir().expect("Could not find home directory");
         cache_location.push(".fzt");
         let file_path = cache_location.join(format!("{}.json", self.project_id));

@@ -11,9 +11,7 @@ impl RustPytonParser {
     pub fn parse_tests(&self, tests: &mut PythonTests) -> Result<bool, FztError> {
         let updated = tests.update(false)?;
         if updated {
-            let new_timestamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)?
-                .as_millis();
+            let new_timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
             tests.timestamp = new_timestamp;
         }
         Ok(updated)
