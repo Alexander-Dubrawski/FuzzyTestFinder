@@ -1,3 +1,3 @@
-mod pytest;
-mod python_tests;
-mod rust_python;
+pub mod pytest;
+pub mod python_tests;
+pub mod rust_python;

@@ -74,3 +74,36 @@ impl Parser<PythonTests> for PyTestParser {
         }
     }
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use pretty_assertions::assert_eq;
+
+//     #[test]
+//     fn pytest_parsing() {
+//         let python_source = r#"tests/foo::test_a
+// tests/foo::test_b[None, None]
+// tests/foo/boo::test_c
+
+// ------------------------------ coverage ------------------------------
+// Coverage HTML written to dir coverage/html
+//     "#;
+//         let mut expected: HashMap<String, HashSet<String>> = HashMap::new();
+//         expected.insert(
+//             "tests/foo".to_string(),
+//             HashSet::from_iter(
+//                 vec!["test_a".to_string(), "test_b".to_string()]
+//                     .iter()
+//                     .cloned(),
+//             ),
+//         );
+//         expected.insert(
+//             "tests/foo/boo".to_string(),
+//             HashSet::from_iter(vec!["test_c".to_string()].iter().cloned()),
+//         );
+
+//         let result = PyTestParser::parse_python_tests(python_source);
+//         assert_eq!(result, PyTests::new(expected));
+//     }
+// }

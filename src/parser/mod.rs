@@ -1,4 +1,4 @@
-mod python;
+pub mod python;
 
 pub trait Parser<T: Tests> {
     fn parse_tests(&self, tests: &mut T) -> bool;
