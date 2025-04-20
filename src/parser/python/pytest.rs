@@ -6,9 +6,11 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use crate::errors::FztError;
+
 use super::python_tests::PythonTests;
 
-fn get_pytests() -> String {
+fn get_pytests() -> Result<String, FztError> {
     let binding = Command::new("python")
         .arg("-m")
         .arg("pytest")
@@ -16,9 +18,7 @@ fn get_pytests() -> String {
         .arg("-q")
         .output()
         .expect("failed to retrieve python tests");
-    str::from_utf8(binding.stdout.as_slice())
-        .unwrap()
-        .to_string()
+    str::from_utf8(binding.stdout.as_slice()).map(|out| out.to_string()).map_err(FztError::from)
 }
 
 #[derive(Default)]
@@ -32,7 +32,7 @@ impl PyTestParser {
         Self { root_dir }
     }
 
-    fn parse_python_tests(&self, pytest_output: &str) -> PythonTests {
+    fn parse_python_tests(&self, pytest_output: &str) -> Result<PythonTests, FztError> {
         let mut py_tests: HashMap<String, HashSet<String>> = HashMap::new();
         for line in pytest_output.lines() {
             if line.is_empty() {
@@ -45,7 +45,7 @@ impl PyTestParser {
                     let test_name = test.chars().take_while(|&ch| ch != '[').collect::<String>();
                     (path.to_string(), test_name)
                 })
-                .unwrap();
+                .ok_or(FztError::GeneralParsingError(format!("Parsing Pytest failed: {}", line)))?;
             let entry = py_tests.get_mut(&path);
             match entry {
                 Some(tests) => {
@@ -59,18 +59,17 @@ impl PyTestParser {
             }
         }
         let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .duration_since(UNIX_EPOCH)?
             .as_millis();
-        PythonTests::new(self.root_dir.clone(), timestamp, py_tests)
+        Ok(PythonTests::new(self.root_dir.clone(), timestamp, py_tests))
     }
 
-    pub fn parse_tests(&self, tests: &mut PythonTests) -> bool {
+    pub fn parse_tests(&self, tests: &mut PythonTests) ->  Result<bool, FztError> {
         if tests.update(true) {
-            *tests = self.parse_python_tests(get_pytests().as_str());
-            true
+            *tests = self.parse_python_tests(get_pytests()?.as_str())?;
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 }
@@ -103,7 +102,7 @@ Coverage HTML written to dir coverage/html
             HashSet::from_iter(vec!["test_c".to_string()].iter().cloned()),
         );
         let parsert = PyTestParser::new("".to_string());
-        let result = parsert.parse_python_tests(python_source);
+        let result = parsert.parse_python_tests(python_source).unwrap();
         assert_eq!(result.tests, expected);
     }
 }
