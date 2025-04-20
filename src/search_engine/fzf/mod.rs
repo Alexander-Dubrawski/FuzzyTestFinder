@@ -10,7 +10,7 @@ impl FzfSearchEngine {
     pub fn get_tests_to_run(&self, all_test: impl Tests) -> Vec<String> {
         let mut input = String::new();
         all_test.tests().into_iter().for_each(|test| {
-            input.push_str(format!("{}\n", test.runtime_argument()).as_str());
+            input.push_str(format!("{}", test.runtime_argument()).as_str());
         });
         let echo_input = Command::new("echo")
             .arg(input)

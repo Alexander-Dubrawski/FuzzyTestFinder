@@ -1,5 +1,5 @@
 pub mod python;
 
-trait Runner {
+pub trait Runner {
     fn run(&self);
 }

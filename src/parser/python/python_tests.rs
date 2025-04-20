@@ -129,11 +129,17 @@ impl PythonTests {
                     .unwrap()
                     .strip_prefix("/")
                     .unwrap();
+
                 if let Ok(modified) = metadata.modified() {
                     if modified.duration_since(UNIX_EPOCH).unwrap().as_millis() > self.timestamp {
-                        println!("Modified: {:?}", entry.path());
-
+                        // println!("Modified: {:?}", entry.path());
+                        // println!("{}", relative_path);
                         let new_tests = collect_tests_from_file(entry.path());
+                        if !self.tests.contains_key(relative_path) {
+                            updated = true;
+                            self.tests.insert(relative_path.to_string(), new_tests);
+                            continue;
+                        }
                         if new_tests != self.tests[relative_path] {
                             if only_check_for_change {
                                 return true;
@@ -150,10 +156,10 @@ impl PythonTests {
                 }
                 if let Ok(created) = metadata.created() {
                     if created.duration_since(UNIX_EPOCH).unwrap().as_millis() > self.timestamp {
-                        println!("New file: {:?}", entry.path());
+                        // println!("New file: {:?}", entry.path());
                         let new_tests = collect_tests_from_file(entry.path());
                         if !new_tests.is_empty() {
-                            println!("New tests found");
+                            // println!("New tests found");
                             if only_check_for_change {
                                 return true;
                             }

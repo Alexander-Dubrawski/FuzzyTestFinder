@@ -39,7 +39,7 @@ impl CacheManager {
         let file_path = cache_location.join(format!("{}.json", self.project_id));
         let file = File::create(file_path).unwrap();
         let mut writer = BufWriter::new(file);
-        writer.write(entry.as_bytes());
+        writer.write(entry.as_bytes()).unwrap();
         println!("Cache filled.");
     }
 }

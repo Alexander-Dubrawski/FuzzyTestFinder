@@ -6,7 +6,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::parser::{Parser, Tests};
+use crate::parser::Parser;
 
 use super::python_tests::PythonTests;
 

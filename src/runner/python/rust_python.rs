@@ -9,7 +9,7 @@ use crate::{
     cache::manager::CacheManager,
     parser::{
         Parser, Tests,
-        python::{pytest::PyTestParser, python_tests::PythonTests, rust_python::RustPytonParser},
+        python::{python_tests::PythonTests, rust_python::RustPytonParser},
     },
     runner::Runner,
     runtime::python::pytest::PytestRuntime,
@@ -50,18 +50,18 @@ impl Runner for RustPytonRunner {
     fn run(&self) {
         let tests = match self.cache_manager.get_entry() {
             Some(reader) => {
-                let tests: PythonTests = serde_json::from_reader(reader).unwrap();
+                let mut tests: PythonTests = serde_json::from_reader(reader).unwrap();
                 if self.parser.parse_tests(&mut tests) {
+                    println!("Update Cache");
                     self.cache_manager.add_entry(tests.to_json().as_str())
                 }
                 tests
             }
             None => {
-                let timestamp = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis();
-                PythonTests::new(self.root_dir.clone(), timestamp, HashMap::new())
+                let mut tests = PythonTests::new(self.root_dir.clone(), 0, HashMap::new());
+                self.parser.parse_tests(&mut tests);
+                self.cache_manager.add_entry(tests.to_json().as_str());
+                tests
             }
         };
         let selected_tests = self.search_engine.get_tests_to_run(tests);
