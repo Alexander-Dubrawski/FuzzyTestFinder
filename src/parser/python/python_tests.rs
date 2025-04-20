@@ -25,7 +25,7 @@ fn is_hidden(entry: &DirEntry) -> bool {
 }
 
 fn collect_tests_from_file(path: &Path) -> Result<HashSet<String>, FztError> {
-    let source_code = std::fs::read_to_string(path).unwrap();
+    let source_code = std::fs::read_to_string(path)?;
     let tokens = lex(source_code.as_str(), Mode::Module);
     let ast = parse_tokens(tokens, Mode::Module, "<embedded>")?;
     let mut tests = HashSet::new();
@@ -132,7 +132,7 @@ impl PythonTests {
                     entry
                         .path()
                         .file_name()
-                        .unwrap()
+                        .expect("Is file type")
                         .to_str()
                         .expect("Is file type"),
                 ) {
@@ -150,7 +150,7 @@ impl PythonTests {
                     )))?;
 
                 if let Ok(modified) = metadata.modified() {
-                    if modified.duration_since(UNIX_EPOCH).unwrap().as_millis() > self.timestamp {
+                    if modified.duration_since(UNIX_EPOCH)?.as_millis() > self.timestamp {
                         // println!("Modified: {:?}", entry.path());
                         // println!("{}", relative_path);
                         let new_tests = collect_tests_from_file(entry.path())?;
@@ -168,13 +168,13 @@ impl PythonTests {
                                 "Tests updated: {}",
                                 entry.path().as_os_str().to_str().expect("Is file type")
                             );
-                            let entry = self.tests.get_mut(relative_path).unwrap();
+                            let entry = self.tests.get_mut(relative_path).expect("contains key");
                             *entry = new_tests;
                         }
                     }
                 }
                 if let Ok(created) = metadata.created() {
-                    if created.duration_since(UNIX_EPOCH).unwrap().as_millis() > self.timestamp {
+                    if created.duration_since(UNIX_EPOCH)?.as_millis() > self.timestamp {
                         // println!("New file: {:?}", entry.path());
                         let new_tests = collect_tests_from_file(entry.path())?;
                         if !new_tests.is_empty() {
@@ -194,8 +194,8 @@ impl PythonTests {
 }
 
 impl Tests for PythonTests {
-    fn to_json(&self) -> String {
-        serde_json::to_string(&self).unwrap()
+    fn to_json(&self) -> Result<String, FztError> {
+        serde_json::to_string(&self).map_err(FztError::from)
     }
 
     fn tests(self) -> Vec<impl Test> {

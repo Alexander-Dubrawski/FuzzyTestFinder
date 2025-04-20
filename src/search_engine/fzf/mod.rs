@@ -24,7 +24,9 @@ impl FzfSearchEngine {
             .arg("ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all")
             .arg("--height")
             .arg("50%")
-            .stdin(Stdio::from(echo_input.stdout.unwrap()))
+            .stdin(Stdio::from(
+                echo_input.stdout.expect("echo should has output"),
+            ))
             .output()?;
         let output: Vec<String> = str::from_utf8(output.stdout.as_slice())?
             .lines()

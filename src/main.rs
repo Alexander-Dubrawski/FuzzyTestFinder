@@ -15,7 +15,7 @@ use FzT::{
 // Add cache clear option
 fn main() -> Result<(), FztError> {
     let pytest = false;
-    let path = env::current_dir().unwrap();
+    let path = env::current_dir()?;
     let path_str = path.to_string_lossy();
     if pytest {
         let runner = PytestRunner::new(path_str.to_string());

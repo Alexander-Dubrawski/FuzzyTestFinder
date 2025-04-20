@@ -11,6 +11,7 @@ pub enum FztError {
     TimeError(SystemTimeError),
     DictionaryWalking(walkdir::Error),
     Regex(regex::Error),
+    Json(serde_json::Error),
 }
 
 impl std::error::Error for FztError {}
@@ -25,6 +26,7 @@ impl Display for FztError {
             FztError::PythonParsingError(base_error) => write!(f, "{}", base_error),
             FztError::DictionaryWalking(error) => write!(f, "{}", error),
             FztError::Regex(error) => write!(f, "{}", error),
+            FztError::Json(error) => write!(f, "{}", error),
         }
     }
 }
@@ -62,5 +64,11 @@ impl From<walkdir::Error> for FztError {
 impl From<regex::Error> for FztError {
     fn from(value: regex::Error) -> Self {
         Self::Regex(value)
+    }
+}
+
+impl From<serde_json::Error> for FztError {
+    fn from(value: serde_json::Error) -> Self {
+        Self::Json(value)
     }
 }

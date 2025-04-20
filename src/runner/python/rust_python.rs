@@ -48,17 +48,17 @@ impl Runner for RustPytonRunner {
     fn run(&self) -> Result<(), FztError> {
         let tests = match self.cache_manager.get_entry()? {
             Some(reader) => {
-                let mut tests: PythonTests = serde_json::from_reader(reader).unwrap();
+                let mut tests: PythonTests = serde_json::from_reader(reader)?;
                 if self.parser.parse_tests(&mut tests)? {
                     println!("Update Cache");
-                    self.cache_manager.add_entry(tests.to_json().as_str())?
+                    self.cache_manager.add_entry(tests.to_json()?.as_str())?
                 }
                 tests
             }
             None => {
                 let mut tests = PythonTests::new(self.root_dir.clone(), 0, HashMap::new());
                 self.parser.parse_tests(&mut tests)?;
-                self.cache_manager.add_entry(tests.to_json().as_str())?;
+                self.cache_manager.add_entry(tests.to_json()?.as_str())?;
                 tests
             }
         };
