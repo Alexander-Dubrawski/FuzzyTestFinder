@@ -1,9 +1,5 @@
 pub mod python;
 
-pub trait Parser<T: Tests> {
-    fn parse_tests(&self, tests: &mut T) -> bool;
-}
-
 pub trait Test {
     fn runtime_argument(self) -> String;
     fn search_item_name(&self) -> String;

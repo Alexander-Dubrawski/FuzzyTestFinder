@@ -6,8 +6,6 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::parser::Parser;
-
 use super::python_tests::PythonTests;
 
 #[derive(Default)]
@@ -62,10 +60,8 @@ impl PyTestParser {
             .as_millis();
         PythonTests::new(self.root_dir.clone(), timestamp, py_tests)
     }
-}
 
-impl Parser<PythonTests> for PyTestParser {
-    fn parse_tests(&self, tests: &mut PythonTests) -> bool {
+    pub fn parse_tests(&self, tests: &mut PythonTests) -> bool {
         if tests.update(true) {
             *tests = self.parse_python_tests();
             true

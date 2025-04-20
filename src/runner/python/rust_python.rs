@@ -1,14 +1,11 @@
-use std::{
-    collections::HashMap,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::collections::HashMap;
 
 use sha2::{Digest, Sha256};
 
 use crate::{
     cache::manager::CacheManager,
     parser::{
-        Parser, Tests,
+        Tests,
         python::{python_tests::PythonTests, rust_python::RustPytonParser},
     },
     runner::Runner,
