@@ -1,4 +1,9 @@
-use FzT::python::pytest::run;
+use std::env;
+
+use FzT::runner::{
+    Runner,
+    python::{pytest::PytestRunner, rust_python::RustPytonRunner},
+};
 
 // TODO:
 // Add support for --query and direct it to fzf
@@ -6,5 +11,14 @@ use FzT::python::pytest::run;
 // Add window preview mode seeing the code
 // Add cache clear option
 fn main() {
-    run();
+    let pytest = false;
+    let path = env::current_dir().unwrap();
+    let path_str = path.to_string_lossy();
+    if pytest {
+        let runner = PytestRunner::new(path_str.to_string());
+        runner.run();
+    } else {
+        let runner = RustPytonRunner::new(path_str.to_string());
+        runner.run();
+    }
 }
