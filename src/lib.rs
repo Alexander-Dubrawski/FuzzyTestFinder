@@ -1,4 +1,5 @@
 pub mod cache;
+pub mod errors;
 pub mod parser;
 pub mod runner;
 pub mod runtime;

@@ -10,7 +10,10 @@ use rustpython_parser::{Mode, lexer::lex, parse_tokens};
 use serde::{Deserialize, Serialize};
 use walkdir::{DirEntry, WalkDir};
 
-use crate::parser::{Test, Tests};
+use crate::{
+    errors::FztError,
+    parser::{Test, Tests},
+};
 
 fn is_hidden(entry: &DirEntry) -> bool {
     let hidden = entry
@@ -21,10 +24,10 @@ fn is_hidden(entry: &DirEntry) -> bool {
     hidden
 }
 
-fn collect_tests_from_file(path: &Path) -> HashSet<String> {
-    let source_code = std::fs::read_to_string(path).unwrap();
+fn collect_tests_from_file(path: &Path) -> Result<HashSet<String>, FztError> {
+    let source_code = std::fs::read_to_string(path)?;
     let tokens = lex(source_code.as_str(), Mode::Module);
-    let ast = parse_tokens(tokens, Mode::Module, "<embedded>").unwrap();
+    let ast = parse_tokens(tokens, Mode::Module, "<embedded>")?;
     let mut tests = HashSet::new();
     match ast {
         rustpython_parser::ast::Mod::Module(mod_module) => {
@@ -42,7 +45,7 @@ fn collect_tests_from_file(path: &Path) -> HashSet<String> {
         }
         _ => todo!(),
     }
-    tests
+    Ok(tests)
 }
 
 pub struct PythonTest {
@@ -101,40 +104,56 @@ impl PythonTests {
         updated
     }
 
-    pub fn update(&mut self, only_check_for_change: bool) -> bool {
+    pub fn update(&mut self, only_check_for_change: bool) -> Result<bool, FztError> {
         let mut updated = false;
         for entry in WalkDir::new(self.root_folder.as_str())
             .into_iter()
             .filter_entry(|e| !is_hidden(e))
         {
-            let entry = entry.unwrap();
+            let entry = entry?;
             if entry.file_type().is_file() {
-                let metadata = std::fs::metadata(entry.path()).unwrap();
+                let metadata = std::fs::metadata(entry.path())?;
                 if entry.path().extension().is_none() {
                     continue;
                 }
 
-                if entry.path().extension().and_then(OsStr::to_str).unwrap() != "py" {
+                if entry
+                    .path()
+                    .extension()
+                    .and_then(OsStr::to_str)
+                    .expect("Is file type")
+                    != "py"
+                {
                     continue;
                 }
 
-                let pattern = Regex::new(r"^(test_.*\.py|.*_test\.py)$").unwrap();
-                if !pattern.is_match(entry.path().file_name().unwrap().to_str().unwrap()) {
+                let pattern = Regex::new(r"^(test_.*\.py|.*_test\.py)$")?;
+                if !pattern.is_match(
+                    entry
+                        .path()
+                        .file_name()
+                        .expect("Is file type")
+                        .to_str()
+                        .expect("Is file type"),
+                ) {
                     continue;
                 }
 
-                let full_path = entry.path().as_os_str().to_str().unwrap();
+                let full_path = entry.path().as_os_str().to_str().expect("Is file type");
                 let relative_path = full_path
                     .strip_prefix(self.root_folder.as_str())
-                    .unwrap()
-                    .strip_prefix("/")
-                    .unwrap();
+                    .map(|path| path.strip_prefix("/"))
+                    .flatten()
+                    .ok_or(FztError::GeneralParsingError(format!(
+                        "File path could not be parsed: {}",
+                        full_path
+                    )))?;
 
                 if let Ok(modified) = metadata.modified() {
-                    if modified.duration_since(UNIX_EPOCH).unwrap().as_millis() > self.timestamp {
+                    if modified.duration_since(UNIX_EPOCH)?.as_millis() > self.timestamp {
                         // println!("Modified: {:?}", entry.path());
                         // println!("{}", relative_path);
-                        let new_tests = collect_tests_from_file(entry.path());
+                        let new_tests = collect_tests_from_file(entry.path())?;
                         if !self.tests.contains_key(relative_path) {
                             updated = true;
                             self.tests.insert(relative_path.to_string(), new_tests);
@@ -142,26 +161,26 @@ impl PythonTests {
                         }
                         if new_tests != self.tests[relative_path] {
                             if only_check_for_change {
-                                return true;
+                                return Ok(true);
                             }
                             updated = true;
                             println!(
                                 "Tests updated: {}",
-                                entry.path().as_os_str().to_str().unwrap()
+                                entry.path().as_os_str().to_str().expect("Is file type")
                             );
-                            let entry = self.tests.get_mut(relative_path).unwrap();
+                            let entry = self.tests.get_mut(relative_path).expect("contains key");
                             *entry = new_tests;
                         }
                     }
                 }
                 if let Ok(created) = metadata.created() {
-                    if created.duration_since(UNIX_EPOCH).unwrap().as_millis() > self.timestamp {
+                    if created.duration_since(UNIX_EPOCH)?.as_millis() > self.timestamp {
                         // println!("New file: {:?}", entry.path());
-                        let new_tests = collect_tests_from_file(entry.path());
+                        let new_tests = collect_tests_from_file(entry.path())?;
                         if !new_tests.is_empty() {
                             // println!("New tests found");
                             if only_check_for_change {
-                                return true;
+                                return Ok(true);
                             }
                             self.tests.insert(relative_path.to_string(), new_tests);
                             updated = true;
@@ -170,13 +189,13 @@ impl PythonTests {
                 }
             }
         }
-        updated
+        Ok(updated)
     }
 }
 
 impl Tests for PythonTests {
-    fn to_json(&self) -> String {
-        serde_json::to_string(&self).unwrap()
+    fn to_json(&self) -> Result<String, FztError> {
+        serde_json::to_string(&self).map_err(FztError::from)
     }
 
     fn tests(self) -> Vec<impl Test> {
@@ -189,7 +208,7 @@ impl Tests for PythonTests {
         output
     }
 
-    fn update(&mut self, only_check_for_update: bool) -> bool {
+    fn update(&mut self, only_check_for_update: bool) -> Result<bool, FztError> {
         self.update(only_check_for_update)
     }
 }

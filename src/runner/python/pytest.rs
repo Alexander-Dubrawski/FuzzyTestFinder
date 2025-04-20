@@ -4,6 +4,7 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     cache::manager::CacheManager,
+    errors::FztError,
     parser::{
         Tests,
         python::{pytest::PyTestParser, python_tests::PythonTests},
@@ -44,23 +45,23 @@ impl PytestRunner {
 }
 
 impl Runner for PytestRunner {
-    fn run(&self) {
-        let tests = match self.cache_manager.get_entry() {
+    fn run(&self) -> Result<(), FztError> {
+        let tests = match self.cache_manager.get_entry()? {
             Some(reader) => {
-                let mut tests: PythonTests = serde_json::from_reader(reader).unwrap();
-                if self.parser.parse_tests(&mut tests) {
-                    self.cache_manager.add_entry(tests.to_json().as_str())
+                let mut tests: PythonTests = serde_json::from_reader(reader)?;
+                if self.parser.parse_tests(&mut tests)? {
+                    self.cache_manager.add_entry(tests.to_json().as_str())?
                 }
                 tests
             }
             None => {
                 let mut tests = PythonTests::new(self.root_dir.clone(), 0, HashMap::new());
-                self.parser.parse_tests(&mut tests);
-                self.cache_manager.add_entry(tests.to_json().as_str());
+                self.parser.parse_tests(&mut tests)?;
+                self.cache_manager.add_entry(tests.to_json().as_str())?;
                 tests
             }
         };
-        let selected_tests = self.search_engine.get_tests_to_run(tests);
-        self.runtime.run_tests(selected_tests);
+        let selected_tests = self.search_engine.get_tests_to_run(tests)?;
+        self.runtime.run_tests(selected_tests)
     }
 }
