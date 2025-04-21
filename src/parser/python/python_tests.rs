@@ -230,7 +230,6 @@ mod tests {
         let mut path = std::env::current_dir().unwrap();
         path.push("src/parser/python/test_data");
         let path_str = path.to_string_lossy();
-        println!("Path: {path_str}");
         let mut pytest = PythonTests::new_empty(path_str.to_string());
         let mut expected_tests: HashMap<String, HashSet<String>> = HashMap::new();
         expected_tests.insert(

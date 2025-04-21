@@ -36,7 +36,6 @@ impl CacheManager {
         let file = File::create(&self.cache_file)?;
         let mut writer = BufWriter::new(file);
         writer.write(entry.as_bytes())?;
-        println!("Cache filled.");
         Ok(())
     }
 }
