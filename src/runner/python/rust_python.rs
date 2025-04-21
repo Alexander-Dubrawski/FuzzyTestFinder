@@ -56,7 +56,7 @@ impl Runner for RustPytonRunner {
                 tests
             }
             None => {
-                let mut tests = PythonTests::new(self.root_dir.clone(), 0, HashMap::new());
+                let mut tests = PythonTests::new_empty(self.root_dir.clone());
                 self.parser.parse_tests(&mut tests)?;
                 self.cache_manager.add_entry(tests.to_json()?.as_str())?;
                 tests
