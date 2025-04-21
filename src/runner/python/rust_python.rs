@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use sha2::{Digest, Sha256};
 
 use crate::{
@@ -10,20 +8,20 @@ use crate::{
         python::{python_tests::PythonTests, rust_python::RustPytonParser},
     },
     runner::Runner,
-    runtime::python::pytest::PytestRuntime,
-    search_engine::fzf::FzfSearchEngine,
+    runtime::Runtime,
+    search_engine::SearchEngine,
 };
 
-pub struct RustPytonRunner {
+pub struct RustPytonRunner<SE: SearchEngine, RT: Runtime> {
     parser: RustPytonParser,
     cache_manager: CacheManager,
-    search_engine: FzfSearchEngine,
-    runtime: PytestRuntime,
+    search_engine: SE,
+    runtime: RT,
     root_dir: String,
 }
 
-impl RustPytonRunner {
-    pub fn new(root_dir: String) -> Self {
+impl<SE: SearchEngine, RT: Runtime> RustPytonRunner<SE, RT> {
+    pub fn new(root_dir: String, search_engine: SE, runtime: RT) -> Self {
         let mut hasher = Sha256::new();
         hasher.update(root_dir.as_bytes());
         let result = hasher.finalize();
@@ -31,8 +29,6 @@ impl RustPytonRunner {
 
         let parser = RustPytonParser::default();
         let cache_manager = CacheManager::new(project_id);
-        let search_engine = FzfSearchEngine::default();
-        let runtime = PytestRuntime::default();
 
         Self {
             parser,
@@ -44,7 +40,7 @@ impl RustPytonRunner {
     }
 }
 
-impl Runner for RustPytonRunner {
+impl<SE: SearchEngine, RT: Runtime> Runner for RustPytonRunner<SE, RT> {
     fn run(&self) -> Result<(), FztError> {
         let tests = match self.cache_manager.get_entry()? {
             Some(reader) => {
@@ -63,5 +59,9 @@ impl Runner for RustPytonRunner {
         };
         let selected_tests = self.search_engine.get_tests_to_run(tests)?;
         self.runtime.run_tests(selected_tests)
+    }
+
+    fn clear_cache(&self) -> Result<(), FztError> {
+        self.cache_manager.clear_cache()
     }
 }

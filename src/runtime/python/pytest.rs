@@ -1,12 +1,12 @@
 use std::process::Command;
 
-use crate::errors::FztError;
+use crate::{errors::FztError, runtime::Runtime};
 
 #[derive(Default)]
 pub struct PytestRuntime {}
 
-impl PytestRuntime {
-    pub fn run_tests(&self, tests: Vec<String>) -> Result<(), FztError> {
+impl Runtime for PytestRuntime {
+    fn run_tests(&self, tests: Vec<String>) -> Result<(), FztError> {
         let mut command = Command::new("python");
         command.arg("-m");
         command.arg("pytest");

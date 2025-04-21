@@ -1,27 +1,64 @@
 use std::env;
 
 use FzT::{
+    cli::{PythonParser, cli_parser::parse_cli},
     errors::FztError,
     runner::{
         Runner,
         python::{pytest::PytestRunner, rust_python::RustPytonRunner},
     },
+    runtime::python::pytest::PytestRuntime,
+    search_engine::fzf::FzfSearchEngine,
 };
 
-// TODO:
-// Add support for --query and direct it to fzf
-// Add cache function / one cache per project
-// Add window preview mode seeing the code
-// Add cache clear option
 fn main() -> Result<(), FztError> {
-    let pytest = false;
+    let config = parse_cli()?;
     let path = env::current_dir()?;
     let path_str = path.to_string_lossy();
-    if pytest {
-        let runner = PytestRunner::new(path_str.to_string());
-        runner.run()
-    } else {
-        let runner = RustPytonRunner::new(path_str.to_string());
-        runner.run()
+
+    let search_engine = match config.search_engine {
+        FzT::cli::SearchEngine::FzF => FzfSearchEngine::default(),
+    };
+
+    match config.language {
+        Some(language) => match language {
+            FzT::cli::Language::Python((PythonParser::Pytest, _)) => {
+                let runner = PytestRunner::new(
+                    path_str.to_string(),
+                    search_engine,
+                    PytestRuntime::default(),
+                );
+                if config.clear_cache {
+                    runner.clear_cache()
+                } else {
+                    runner.run()
+                }
+            }
+            FzT::cli::Language::Python((PythonParser::RustPython, _)) => {
+                let runner = RustPytonRunner::new(
+                    path_str.to_string(),
+                    search_engine,
+                    PytestRuntime::default(),
+                );
+                if config.clear_cache {
+                    runner.clear_cache()
+                } else {
+                    runner.run()
+                }
+            }
+        },
+        None => {
+            // TODO: If more languages supported use auto language detection
+            let runner = RustPytonRunner::new(
+                path_str.to_string(),
+                search_engine,
+                PytestRuntime::default(),
+            );
+            if config.clear_cache {
+                runner.clear_cache()
+            } else {
+                runner.run()
+            }
+        }
     }
 }

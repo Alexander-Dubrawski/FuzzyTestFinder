@@ -12,6 +12,7 @@ pub enum FztError {
     DictionaryWalking(walkdir::Error),
     Regex(regex::Error),
     Json(serde_json::Error),
+    UserError(String),
 }
 
 impl std::error::Error for FztError {}
@@ -27,6 +28,7 @@ impl Display for FztError {
             FztError::DictionaryWalking(error) => write!(f, "{}", error),
             FztError::Regex(error) => write!(f, "{}", error),
             FztError::Json(error) => write!(f, "{}", error),
+            FztError::UserError(error) => write!(f, "{}", error),
         }
     }
 }
