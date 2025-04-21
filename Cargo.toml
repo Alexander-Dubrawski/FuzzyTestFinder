@@ -12,6 +12,7 @@ walkdir = "2.4.0"
 sha2 = "0.10.8"
 home = "0.5"
 regex = "1"
+clap = { version = "4.5.37", features = ["derive"] }
 
 [dev-dependencies]
 pretty_assertions = "1.4.1"
