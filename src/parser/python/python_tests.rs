@@ -2,7 +2,7 @@ use std::{
     collections::{HashMap, HashSet},
     ffi::OsStr,
     path::Path,
-    time::UNIX_EPOCH,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use regex::Regex;
@@ -89,6 +89,14 @@ impl PythonTests {
         }
     }
 
+    pub fn new_empty(root_folder: String) -> Self {
+        Self {
+            root_folder,
+            timestamp: 0,
+            tests: HashMap::new(),
+        }
+    }
+
     pub fn filter_out_deleted_files(&mut self) -> bool {
         let mut tests_to_remove = vec![];
         for path in self.tests.keys() {
@@ -151,8 +159,6 @@ impl PythonTests {
 
                 if let Ok(modified) = metadata.modified() {
                     if modified.duration_since(UNIX_EPOCH)?.as_millis() > self.timestamp {
-                        // println!("Modified: {:?}", entry.path());
-                        // println!("{}", relative_path);
                         let new_tests = collect_tests_from_file(entry.path())?;
                         if !self.tests.contains_key(relative_path) {
                             updated = true;
@@ -175,10 +181,8 @@ impl PythonTests {
                 }
                 if let Ok(created) = metadata.created() {
                     if created.duration_since(UNIX_EPOCH)?.as_millis() > self.timestamp {
-                        // println!("New file: {:?}", entry.path());
                         let new_tests = collect_tests_from_file(entry.path())?;
                         if !new_tests.is_empty() {
-                            // println!("New tests found");
                             if only_check_for_change {
                                 return Ok(true);
                             }
@@ -188,6 +192,9 @@ impl PythonTests {
                     }
                 }
             }
+        }
+        if updated {
+            self.timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
         }
         Ok(updated)
     }
@@ -210,5 +217,42 @@ impl Tests for PythonTests {
 
     fn update(&mut self, only_check_for_update: bool) -> Result<bool, FztError> {
         self.update(only_check_for_update)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn collect_tests() {
+        let mut path = std::env::current_dir().unwrap();
+        path.push("src/parser/python/test_data");
+        let path_str = path.to_string_lossy();
+        let mut pytest = PythonTests::new_empty(path_str.to_string());
+        let mut expected_tests: HashMap<String, HashSet<String>> = HashMap::new();
+        expected_tests.insert(
+            "berlin/berlin_test.py".to_string(),
+            HashSet::from_iter(vec!["test_berlin"].into_iter().map(|v| v.to_string())),
+        );
+        expected_tests.insert(
+            "berlin/hamburg/test_hamburg.py".to_string(),
+            HashSet::from_iter(
+                vec!["test_hamburg", "test_hamburg_harburg"]
+                    .into_iter()
+                    .map(|v| v.to_string()),
+            ),
+        );
+        expected_tests.insert(
+            "berlin/potsdam/potsdam_test.py".to_string(),
+            HashSet::from_iter(vec!["test_potsdam"].into_iter().map(|v| v.to_string())),
+        );
+
+        assert!(pytest.update(false).unwrap());
+
+        assert_eq!(pytest.tests, expected_tests);
+
+        assert!(!pytest.update(true).unwrap());
     }
 }
