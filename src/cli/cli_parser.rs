@@ -10,10 +10,11 @@ use super::Config;
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
-    #[arg(default_value_t = String::from("FzF"))]
+    #[arg(long, default_value_t = String::from("FzF"))]
     search_engine: String,
 
-    clear_cache: Option<bool>,
+    #[arg(long, default_value_t = false)]
+    clear_cache: bool,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -48,14 +49,14 @@ pub fn parse_cli() -> Result<Config, FztError> {
                 "rustpython" => Ok(PythonParser::RustPython),
                 _ => Err(FztError::UserError(format!(
                     "Unknown parser: {} Supported are: pytest, rustpython",
-                    cli.search_engine.to_lowercase()
+                    parser.to_lowercase()
                 ))),
             }?;
             let runtime = match runtime.to_lowercase().as_str() {
                 "pytest" => Ok(PythonRuntime::Pytest),
                 _ => Err(FztError::UserError(format!(
                     "Unknown runtime: {} Supported are: pytest",
-                    cli.search_engine.to_lowercase()
+                    runtime.to_lowercase()
                 ))),
             }?;
             Ok::<Option<Language>, FztError>(Some(Language::Python((parser, runtime))))
@@ -65,6 +66,6 @@ pub fn parse_cli() -> Result<Config, FztError> {
     Ok(Config {
         language,
         search_engine,
-        clear_cache: cli.clear_cache.unwrap_or(false),
+        clear_cache: cli.clear_cache,
     })
 }
