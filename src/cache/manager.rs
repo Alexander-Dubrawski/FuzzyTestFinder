@@ -38,6 +38,13 @@ impl CacheManager {
         writer.write(entry.as_bytes())?;
         Ok(())
     }
+
+    pub fn clear_cache(&self) -> Result<(), FztError> {
+        if Path::new(&self.cache_file).exists() {
+            std::fs::remove_file(&self.cache_file)?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
