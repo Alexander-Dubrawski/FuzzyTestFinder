@@ -10,7 +10,7 @@ use super::Config;
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
-    #[arg(long, default_value_t = String::from("FzF"))]
+    #[arg(long, default_value_t = String::from("FzF"), value_parser=["FzF"])]
     search_engine: String,
 
     #[arg(long, default_value_t = false)]
@@ -23,10 +23,10 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Python {
-        #[arg(default_value_t = String::from("RustPython"))]
+        #[arg(default_value_t = String::from("RustPython"), value_parser=["RustPython", "PyTest"])]
         parser: String,
 
-        #[arg(default_value_t = String::from("Pytest"))]
+        #[arg(default_value_t = String::from("Pytest"), value_parser=["PyTest"])]
         runtime: String,
     },
 }
