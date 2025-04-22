@@ -33,15 +33,8 @@ fn run_fzf(input: &str, read_null: bool) -> Result<Output, FztError> {
     Ok(output)
 }
 
-pub struct FzfSearchEngine {
-    cache_manager: CacheManager,
-}
-
-impl FzfSearchEngine {
-    pub fn new(cache_manager: CacheManager) -> Self {
-        Self { cache_manager }
-    }
-}
+#[derive(Default)]
+pub struct FzfSearchEngine {}
 
 impl SearchEngine for FzfSearchEngine {
     fn get_tests_to_run(&self, all_test: impl Tests) -> Result<Vec<String>, FztError> {
@@ -54,16 +47,10 @@ impl SearchEngine for FzfSearchEngine {
             .lines()
             .map(|line| line.to_string())
             .collect();
-        self.cache_manager.update_history(tests.iter().as_ref())?;
         Ok(tests)
     }
 
-    fn get_recent_history_command(&self) -> Result<Vec<String>, FztError> {
-        self.cache_manager.recent_history_command()
-    }
-
-    fn get_from_history(&self) -> Result<Vec<String>, FztError> {
-        let history = self.cache_manager.history()?;
+    fn get_from_history(&self, history: Vec<Vec<String>>) -> Result<Vec<String>, FztError> {
         let mut input = String::new();
         history.into_iter().for_each(|tests| {
             let mut command = String::new();
