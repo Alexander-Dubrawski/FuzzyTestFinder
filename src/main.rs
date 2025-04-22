@@ -31,7 +31,7 @@ fn main() -> Result<(), FztError> {
                 if config.clear_cache {
                     runner.clear_cache()
                 } else {
-                    runner.run()
+                    runner.run(config.history, config.last)
                 }
             }
             FzT::cli::Language::Python((PythonParser::RustPython, _)) => {
@@ -43,7 +43,7 @@ fn main() -> Result<(), FztError> {
                 if config.clear_cache {
                     runner.clear_cache()
                 } else {
-                    runner.run()
+                    runner.run(config.history, config.last)
                 }
             }
         },
@@ -57,7 +57,7 @@ fn main() -> Result<(), FztError> {
             if config.clear_cache {
                 runner.clear_cache()
             } else {
-                runner.run()
+                runner.run(config.history, config.last)
             }
         }
     }
