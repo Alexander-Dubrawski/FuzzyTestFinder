@@ -60,14 +60,11 @@ impl SearchEngine for FzfSearchEngine {
                 command.push_str(format!("{test}\n").as_str());
             });
             command.remove(command.len() - 1);
-            // TODO: remove last \0
             input.push_str(format!("{command}\0").as_str());
         });
-        println!("{}", input);
         let mut output = run_fzf(input.as_str(), true)?.stdout;
         // Replace Null byte with new line
         output.iter_mut().filter(|p| **p == 0).for_each(|p| *p = 10);
-        // TODO: Add test for formatting
         Ok(str::from_utf8(output.as_slice())?
             .lines()
             .map(|line| line.to_string())
