@@ -12,6 +12,8 @@ use crate::{
     search_engine::SearchEngine,
 };
 
+use super::history::get_tests;
+
 pub struct RustPytonRunner<SE: SearchEngine, RT: Runtime> {
     parser: RustPytonParser,
     cache_manager: CacheManager,
@@ -57,21 +59,13 @@ impl<SE: SearchEngine, RT: Runtime> Runner for RustPytonRunner<SE, RT> {
                 tests
             }
         };
-        let selected_tests = if last {
-            let selected_tests = self.cache_manager.recent_history_command()?;
-            selected_tests
-        } else if history {
-            let history = self.cache_manager.history()?;
-            let selected_tests = self.search_engine.get_from_history(history)?;
-            self.cache_manager
-                .update_history(selected_tests.iter().as_ref())?;
-            selected_tests
-        } else {
-            let selected_tests = self.search_engine.get_tests_to_run(tests)?;
-            self.cache_manager
-                .update_history(selected_tests.iter().as_ref())?;
-            selected_tests
-        };
+        let selected_tests = get_tests(
+            history,
+            last,
+            &self.cache_manager,
+            &self.search_engine,
+            tests,
+        )?;
         self.runtime.run_tests(selected_tests)
     }
 
