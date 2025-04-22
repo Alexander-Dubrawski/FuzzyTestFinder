@@ -74,6 +74,6 @@ pub fn parse_cli() -> Result<Config, FztError> {
         search_engine,
         clear_cache: cli.clear_cache,
         history: cli.history,
-        last: cli.last
+        last: cli.last,
     })
 }

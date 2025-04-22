@@ -22,5 +22,5 @@ pub struct Config {
     pub search_engine: SearchEngine,
     pub clear_cache: bool,
     pub history: bool,
-    pub last: bool, 
+    pub last: bool,
 }

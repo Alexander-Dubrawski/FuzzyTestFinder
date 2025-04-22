@@ -7,33 +7,30 @@ use crate::parser::{Test, Tests};
 
 use super::SearchEngine;
 
-fn run_fzf(input: &str, read_null: bool) ->  Result<Output, FztError> {
+fn run_fzf(input: &str, read_null: bool) -> Result<Output, FztError> {
     let echo_input = Command::new("echo")
-            .arg(input)
-            .stdout(Stdio::piped())
-            .spawn()?;
+        .arg(input)
+        .stdout(Stdio::piped())
+        .spawn()?;
 
-        let mut command = Command::new("fzf");
-        command.arg("-m")
-            .arg("--bind")
-            .arg("ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all")
-            .arg("--height")
-            .arg("50%");
+    let mut command = Command::new("fzf");
+    command
+        .arg("-m")
+        .arg("--bind")
+        .arg("ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all")
+        .arg("--height")
+        .arg("50%");
 
-        if read_null {
-            command.arg("--read0").arg("--gap");
-        }
+    if read_null {
+        command.arg("--read0").arg("--gap");
+    }
 
-        let output = 
-            command.stdin(Stdio::from(
-                echo_input.stdout.expect("echo should has output"),
-            ))
-            .output()?;
-        Ok(output)
-        Ok(str::from_utf8(output.stdout.as_slice())?
-            .lines()
-            .map(|line| line.to_string())
-            .collect())
+    let output = command
+        .stdin(Stdio::from(
+            echo_input.stdout.expect("echo should has output"),
+        ))
+        .output()?;
+    Ok(output)
 }
 
 pub struct FzfSearchEngine {
@@ -42,11 +39,8 @@ pub struct FzfSearchEngine {
 
 impl FzfSearchEngine {
     pub fn new(cache_manager: CacheManager) -> Self {
-        Self {
-            cache_manager
-        }
+        Self { cache_manager }
     }
-
 }
 
 impl SearchEngine for FzfSearchEngine {
@@ -57,9 +51,9 @@ impl SearchEngine for FzfSearchEngine {
         });
         let output = run_fzf(input.as_str(), false)?;
         let tests: Vec<String> = str::from_utf8(output.stdout.as_slice())?
-                    .lines()
-                    .map(|line| line.to_string())
-                    .collect();
+            .lines()
+            .map(|line| line.to_string())
+            .collect();
         self.cache_manager.update_history(tests.iter().as_ref())?;
         Ok(tests)
     }
@@ -80,6 +74,10 @@ impl SearchEngine for FzfSearchEngine {
             input.push_str(format!("{command}\n").as_str());
         });
         let output = run_fzf(input.as_str(), true)?;
-        Ok(str::from_utf8(output.stdout.as_slice())?.split("\0").into_iter().map(|test|test.to_string()).collect())
+        Ok(str::from_utf8(output.stdout.as_slice())?
+            .split("\0")
+            .into_iter()
+            .map(|test| test.to_string())
+            .collect())
     }
 }
