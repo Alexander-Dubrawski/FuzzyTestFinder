@@ -2,7 +2,6 @@ use std::io::Write;
 use std::process::{Command, Output, Stdio};
 use std::str;
 
-use crate::cache::manager::CacheManager;
 use crate::errors::FztError;
 use crate::parser::{Test, Tests};
 

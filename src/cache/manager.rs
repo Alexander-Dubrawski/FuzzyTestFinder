@@ -68,7 +68,7 @@ impl CacheManager {
         history.push(tests.to_vec());
         let file = File::create(&self.history_file)?;
         let mut writer = BufWriter::new(file);
-        if history.len() < 200 {
+        if history.len() < HISTORY_SIZE {
             serde_json::to_writer(&mut writer, &history)?;
         } else {
             serde_json::to_writer(&mut writer, &history[1..])?;
