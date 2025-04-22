@@ -45,6 +45,18 @@ impl CacheManager {
         }
         Ok(())
     }
+
+    pub fn update_history(&self, tests: &[String]) -> Result<(), FztError> {
+        todo!()
+    }
+
+    pub fn recent_history_command(&self) -> Result<Vec<String>, FztError> {
+        todo!()
+    }
+
+    pub fn history(&self) -> Result<Vec<Vec<String>>, FztError> {
+        todo!()
+    }
 }
 
 #[cfg(test)]

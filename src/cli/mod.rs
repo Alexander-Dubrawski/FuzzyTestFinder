@@ -21,4 +21,6 @@ pub struct Config {
     pub language: Option<Language>,
     pub search_engine: SearchEngine,
     pub clear_cache: bool,
+    pub history: bool,
+    pub last: bool, 
 }

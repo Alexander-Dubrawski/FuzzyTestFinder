@@ -42,7 +42,7 @@ impl<SE: SearchEngine, RT: Runtime> PytestRunner<SE, RT> {
 }
 
 impl<SE: SearchEngine, RT: Runtime> Runner for PytestRunner<SE, RT> {
-    fn run(&self) -> Result<(), FztError> {
+    fn run(&self,  history: bool, last: bool) -> Result<(), FztError> {
         let tests = match self.cache_manager.get_entry()? {
             Some(reader) => {
                 let mut tests: PythonTests = serde_json::from_reader(reader)?;

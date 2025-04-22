@@ -16,6 +16,12 @@ struct Cli {
     #[arg(long, default_value_t = false)]
     clear_cache: bool,
 
+    #[arg(long, default_value_t = false, short)]
+    last: bool,
+
+    #[arg(long, default_value_t = false, short)]
+    history: bool,
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -67,5 +73,7 @@ pub fn parse_cli() -> Result<Config, FztError> {
         language,
         search_engine,
         clear_cache: cli.clear_cache,
+        history: cli.history,
+        last: cli.last
     })
 }

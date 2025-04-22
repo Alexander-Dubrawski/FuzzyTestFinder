@@ -41,7 +41,7 @@ impl<SE: SearchEngine, RT: Runtime> RustPytonRunner<SE, RT> {
 }
 
 impl<SE: SearchEngine, RT: Runtime> Runner for RustPytonRunner<SE, RT> {
-    fn run(&self) -> Result<(), FztError> {
+    fn run(&self,  history: bool, last: bool) -> Result<(), FztError> {
         let tests = match self.cache_manager.get_entry()? {
             Some(reader) => {
                 let mut tests: PythonTests = serde_json::from_reader(reader)?;
