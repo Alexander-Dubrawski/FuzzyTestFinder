@@ -10,11 +10,14 @@ use super::Config;
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
-    #[arg(long, default_value_t = String::from("FzF"), value_parser=["FzF"])]
-    search_engine: String,
+    #[arg(long, value_parser=["FzF"])]
+    search_engine: Option<String>,
 
     #[arg(long, default_value_t = false)]
     clear_cache: bool,
+
+    #[arg(long, default_value_t = false)]
+    default: bool,
 
     #[arg(long, default_value_t = false, short)]
     last: bool,
@@ -40,13 +43,17 @@ enum Commands {
 pub fn parse_cli() -> Result<Config, FztError> {
     let cli = Cli::parse();
 
-    let search_engine = match cli.search_engine.to_lowercase().as_str() {
-        "fzf" => Ok(SearchEngine::FzF),
-        _ => Err(FztError::UserError(format!(
-            "Unknown search engine: {} Supported are: fzf",
-            cli.search_engine.to_lowercase()
-        ))),
-    }?;
+    let search_engine = if let Some(search_engine) = cli.search_engine {
+        match search_engine.to_lowercase().as_str() {
+            "fzf" => Ok(Some(SearchEngine::FzF)),
+            _ => Err(FztError::UserError(format!(
+                "Unknown search engine: {} Supported are: fzf",
+                search_engine.to_lowercase()
+            ))),
+        }?
+    } else {
+        None
+    };
 
     let language = match &cli.command {
         Some(Commands::Python { parser, runtime }) => {
@@ -75,5 +82,6 @@ pub fn parse_cli() -> Result<Config, FztError> {
         clear_cache: cli.clear_cache,
         history: cli.history,
         last: cli.last,
+        default: cli.default,
     })
 }

@@ -1,8 +1,10 @@
 use std::env;
 
 use FzT::{
+    cache::helper::project_hash,
     cli::{PythonParser, cli_parser::parse_cli},
     errors::FztError,
+    metadata::handle_metadata,
     runner::{
         Runner,
         python::{pytest::PytestRunner, rust_python::RustPytonRunner},
@@ -12,12 +14,19 @@ use FzT::{
 };
 
 fn main() -> Result<(), FztError> {
-    let config = parse_cli()?;
+    let mut config = parse_cli()?;
     let path = env::current_dir()?;
     let path_str = path.to_string_lossy();
 
+    let project_id = project_hash(path_str.to_string());
+
+    handle_metadata(&mut config, project_id)?;
+
     let search_engine = match config.search_engine {
-        FzT::cli::SearchEngine::FzF => FzfSearchEngine::default(),
+        Some(search_engine) => match search_engine {
+            FzT::cli::SearchEngine::FzF => FzfSearchEngine::default(),
+        },
+        None => FzfSearchEngine::default(),
     };
 
     match config.language {

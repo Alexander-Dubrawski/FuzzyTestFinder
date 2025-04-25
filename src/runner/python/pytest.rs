@@ -1,7 +1,5 @@
-use sha2::{Digest, Sha256};
-
 use crate::{
-    cache::manager::CacheManager,
+    cache::{helper::project_hash, manager::CacheManager},
     errors::FztError,
     parser::{
         Tests,
@@ -25,10 +23,7 @@ pub struct PytestRunner<SE: SearchEngine, RT: Runtime> {
 
 impl<SE: SearchEngine, RT: Runtime> PytestRunner<SE, RT> {
     pub fn new(root_dir: String, search_engine: SE, runtime: RT) -> Self {
-        let mut hasher = Sha256::new();
-        hasher.update(root_dir.as_bytes());
-        let result = hasher.finalize();
-        let project_id = format!("{:x}-pytest", result);
+        let project_id = format!("{}-pytest", project_hash(root_dir.clone()));
 
         let parser = PyTestParser::new(root_dir.clone());
         let cache_manager = CacheManager::new(project_id);
