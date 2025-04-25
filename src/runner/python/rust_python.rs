@@ -1,7 +1,5 @@
-use sha2::{Digest, Sha256};
-
 use crate::{
-    cache::manager::CacheManager,
+    cache::{helper::project_hash, manager::CacheManager},
     errors::FztError,
     parser::{
         Tests,
@@ -11,6 +9,8 @@ use crate::{
     runtime::Runtime,
     search_engine::SearchEngine,
 };
+
+use super::history::get_tests;
 
 pub struct RustPytonRunner<SE: SearchEngine, RT: Runtime> {
     parser: RustPytonParser,
@@ -22,11 +22,7 @@ pub struct RustPytonRunner<SE: SearchEngine, RT: Runtime> {
 
 impl<SE: SearchEngine, RT: Runtime> RustPytonRunner<SE, RT> {
     pub fn new(root_dir: String, search_engine: SE, runtime: RT) -> Self {
-        let mut hasher = Sha256::new();
-        hasher.update(root_dir.as_bytes());
-        let result = hasher.finalize();
-        let project_id = format!("{:x}-rust-python", result);
-
+        let project_id = format!("{}-pytest", project_hash(root_dir.clone()));
         let parser = RustPytonParser::default();
         let cache_manager = CacheManager::new(project_id);
 
@@ -41,7 +37,7 @@ impl<SE: SearchEngine, RT: Runtime> RustPytonRunner<SE, RT> {
 }
 
 impl<SE: SearchEngine, RT: Runtime> Runner for RustPytonRunner<SE, RT> {
-    fn run(&self) -> Result<(), FztError> {
+    fn run(&self, history: bool, last: bool) -> Result<(), FztError> {
         let tests = match self.cache_manager.get_entry()? {
             Some(reader) => {
                 let mut tests: PythonTests = serde_json::from_reader(reader)?;
@@ -57,7 +53,13 @@ impl<SE: SearchEngine, RT: Runtime> Runner for RustPytonRunner<SE, RT> {
                 tests
             }
         };
-        let selected_tests = self.search_engine.get_tests_to_run(tests)?;
+        let selected_tests = get_tests(
+            history,
+            last,
+            &self.cache_manager,
+            &self.search_engine,
+            tests,
+        )?;
         self.runtime.run_tests(selected_tests)
     }
 

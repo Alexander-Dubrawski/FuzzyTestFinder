@@ -7,8 +7,13 @@ use std::{
 
 use crate::errors::FztError;
 
+use super::types::MetaData;
+
+const HISTORY_SIZE: usize = 200;
+
 pub struct CacheManager {
     cache_file: PathBuf,
+    history_file: PathBuf,
 }
 
 impl CacheManager {
@@ -16,11 +21,42 @@ impl CacheManager {
         let mut cache_location = home_dir().expect("Could not find home directory");
         cache_location.push(".fzt");
         let cache_file = cache_location.join(format!("{}.json", project_id));
-        Self { cache_file }
+        let history_file = cache_location.join(format!("{}-history.json", project_id));
+        Self {
+            cache_file,
+            history_file,
+        }
     }
 
-    pub fn new_from_path(cache_file: PathBuf) -> Self {
-        Self { cache_file }
+    pub fn save_meta(project_id: &str, meta_data: MetaData) -> Result<(), FztError> {
+        let mut meta_location = home_dir().expect("Could not find home directory");
+        meta_location.push(".fzt");
+        let path = meta_location.join(format!("{}-metadata.json", project_id));
+        let file = File::create(&path)?;
+        let mut writer = BufWriter::new(file);
+        serde_json::to_writer(&mut writer, &meta_data)?;
+        Ok(())
+    }
+
+    pub fn get_meta(project_id: &str) -> Result<Option<MetaData>, FztError> {
+        let mut meta_location = home_dir().expect("Could not find home directory");
+        meta_location.push(".fzt");
+        let path = meta_location.join(format!("{}-metadata.json", project_id));
+
+        if !Path::new(&path).exists() {
+            Ok(None)
+        } else {
+            let entry = File::open(&path)?;
+            let reader = BufReader::new(entry);
+            Ok(serde_json::from_reader(reader)?)
+        }
+    }
+
+    pub fn new_from_path(cache_file: PathBuf, history_file: PathBuf) -> Self {
+        Self {
+            cache_file,
+            history_file,
+        }
     }
 
     pub fn get_entry(&self) -> Result<Option<BufReader<File>>, FztError> {
@@ -45,6 +81,40 @@ impl CacheManager {
         }
         Ok(())
     }
+
+    pub fn update_history(&self, tests: &[String]) -> Result<(), FztError> {
+        let mut history = if !Path::new(&self.history_file).exists() {
+            vec![]
+        } else {
+            let file = File::open(&self.history_file)?;
+            let reader = BufReader::new(file);
+            let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
+            content
+        };
+        history.push(tests.to_vec());
+        let file = File::create(&self.history_file)?;
+        let mut writer = BufWriter::new(file);
+        if history.len() < HISTORY_SIZE {
+            serde_json::to_writer(&mut writer, &history)?;
+        } else {
+            serde_json::to_writer(&mut writer, &history[1..])?;
+        }
+        Ok(())
+    }
+
+    pub fn recent_history_command(&self) -> Result<Vec<String>, FztError> {
+        let file = File::open(&self.history_file)?;
+        let reader = BufReader::new(file);
+        let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
+        Ok(content.last().map(|tests| tests.clone()).unwrap_or(vec![]))
+    }
+
+    pub fn history(&self) -> Result<Vec<Vec<String>>, FztError> {
+        let file = File::open(&self.history_file)?;
+        let reader = BufReader::new(file);
+        let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
+        Ok(content)
+    }
 }
 
 #[cfg(test)]
@@ -58,7 +128,7 @@ mod tests {
     #[test]
     fn get_non_existing_entry() {
         let path = PathBuf::from("/ifhoeowhfoew/oihsoehwofihwoih.json");
-        let manager = CacheManager::new_from_path(path);
+        let manager = CacheManager::new_from_path(path, PathBuf::from("file.path()"));
         let result = manager.get_entry().unwrap();
         assert!(result.is_none());
     }
@@ -67,7 +137,7 @@ mod tests {
     fn get_existing_entry() {
         let file = NamedTempFile::new().unwrap();
         let path = PathBuf::from(file.path());
-        let manager = CacheManager::new_from_path(path);
+        let manager = CacheManager::new_from_path(path, PathBuf::from("file.path()"));
         let mut reader = manager.get_entry().unwrap().unwrap();
         let mut file_content = String::new();
         reader.read_to_string(&mut file_content).unwrap();
@@ -79,7 +149,7 @@ mod tests {
         let mut file = NamedTempFile::new().unwrap();
         writeln!(file, "Old").unwrap();
         let path = PathBuf::from(file.path());
-        let manager = CacheManager::new_from_path(path.clone());
+        let manager = CacheManager::new_from_path(path.clone(), PathBuf::from("file.path()"));
         manager.add_entry("New").unwrap();
 
         let entry = File::open(path).unwrap();

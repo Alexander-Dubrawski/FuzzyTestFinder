@@ -61,11 +61,11 @@ impl PythonTest {
 
 impl Test for PythonTest {
     fn runtime_argument(self) -> String {
-        format!("{}::{}\n", self.path, self.test)
+        format!("{}::{}", self.path, self.test)
     }
 
     fn search_item_name(&self) -> String {
-        format!("{}::{}\n", self.path, self.test)
+        format!("{}::{}", self.path, self.test)
     }
 }
 
