@@ -38,6 +38,7 @@ enum Commands {
         #[arg(default_value_t = String::from("Pytest"), value_parser=["PyTest"])]
         runtime: String,
     },
+    Rust,
 }
 
 pub fn parse_cli() -> Result<Config, FztError> {
@@ -74,6 +75,7 @@ pub fn parse_cli() -> Result<Config, FztError> {
             }?;
             Ok::<Option<Language>, FztError>(Some(Language::Python((parser, runtime))))
         }
+        Some(Commands::Rust) => Ok::<Option<Language>, FztError>(Some(Language::Rust)),
         None => Ok(None),
     }?;
     Ok(Config {

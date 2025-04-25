@@ -55,6 +55,7 @@ fn main() -> Result<(), FztError> {
                     runner.run(config.history, config.last)
                 }
             }
+            FzT::cli::Language::Rust => todo!(),
         },
         None => {
             // TODO: If more languages supported use auto language detection

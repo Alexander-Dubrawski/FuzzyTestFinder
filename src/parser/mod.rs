@@ -1,6 +1,7 @@
 use crate::errors::FztError;
 
 pub mod python;
+pub mod rust;
 
 pub trait Test {
     fn runtime_argument(self) -> String;

@@ -5,6 +5,7 @@ pub mod cli_parser;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Language {
     Python((PythonParser, PythonRuntime)),
+    Rust,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
