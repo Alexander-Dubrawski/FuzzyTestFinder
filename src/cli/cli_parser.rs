@@ -28,6 +28,9 @@ struct Cli {
     #[arg(long, default_value_t = false, short)]
     verbose: bool,
 
+    #[arg(long, default_value_t = false, short)]
+    debug: bool,
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -87,5 +90,6 @@ pub fn parse_cli() -> Result<Config, FztError> {
         last: cli.last,
         default: cli.default,
         verbose: cli.verbose,
+        debug: cli.debug,
     })
 }
