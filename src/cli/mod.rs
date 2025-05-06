@@ -31,4 +31,5 @@ pub struct Config {
     pub last: bool,
     pub default: bool,
     pub verbose: bool,
+    pub debug: bool,
 }
