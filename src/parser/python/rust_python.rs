@@ -1,4 +1,4 @@
-use crate::errors::FztError;
+use crate::{errors::FztError, parser::Tests};
 
 use super::python_tests::PythonTests;
 

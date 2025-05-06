@@ -62,7 +62,11 @@ impl<SE: SearchEngine, RT: Runtime> Runner for PytestRunner<SE, RT> {
             &self.search_engine,
             tests,
         )?;
-        self.runtime.run_tests(selected_tests)
+        if !selected_tests.is_empty() {
+            self.runtime.run_tests(selected_tests)
+        } else {
+            Ok(())
+        }
     }
 
     fn clear_cache(&self) -> Result<(), FztError> {
