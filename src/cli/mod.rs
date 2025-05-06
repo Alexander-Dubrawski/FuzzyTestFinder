@@ -30,4 +30,5 @@ pub struct Config {
     pub history: bool,
     pub last: bool,
     pub default: bool,
+    pub verbose: bool,
 }
