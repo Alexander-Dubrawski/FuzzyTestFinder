@@ -103,17 +103,25 @@ impl CacheManager {
     }
 
     pub fn recent_history_command(&self) -> Result<Vec<String>, FztError> {
-        let file = File::open(&self.history_file)?;
-        let reader = BufReader::new(file);
-        let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
-        Ok(content.last().map(|tests| tests.clone()).unwrap_or(vec![]))
+        if !Path::new(&self.history_file).exists() {
+            Ok(vec![])
+        } else {
+            let file = File::open(&self.history_file)?;
+            let reader = BufReader::new(file);
+            let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
+            Ok(content.last().map(|tests| tests.clone()).unwrap_or(vec![]))
+        }
     }
 
     pub fn history(&self) -> Result<Vec<Vec<String>>, FztError> {
-        let file = File::open(&self.history_file)?;
-        let reader = BufReader::new(file);
-        let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
-        Ok(content)
+        if !Path::new(&self.history_file).exists() {
+            Ok(vec![vec![]])
+        } else {
+            let file = File::open(&self.history_file)?;
+            let reader = BufReader::new(file);
+            let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
+            Ok(content)
+        }
     }
 }
 

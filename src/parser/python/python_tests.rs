@@ -106,13 +106,12 @@ impl PythonTests {
         }
         let updated = tests_to_remove.len() > 0;
         tests_to_remove.into_iter().for_each(|test_path| {
-            println!("Removed test file");
             self.tests.remove(&test_path);
         });
         updated
     }
 
-    pub fn update(&mut self, only_check_for_change: bool) -> Result<bool, FztError> {
+    pub fn update_tests(&mut self, only_check_for_change: bool) -> Result<bool, FztError> {
         let mut updated = false;
         for entry in WalkDir::new(self.root_folder.as_str())
             .into_iter()
@@ -216,7 +215,12 @@ impl Tests for PythonTests {
     }
 
     fn update(&mut self, only_check_for_update: bool) -> Result<bool, FztError> {
-        self.update(only_check_for_update)
+        let updated = self.filter_out_deleted_files();
+        if only_check_for_update && updated {
+            Ok(true)
+        } else {
+            Ok(self.update_tests(only_check_for_update)? || updated)
+        }
     }
 }
 
@@ -249,10 +253,10 @@ mod tests {
             HashSet::from_iter(vec!["test_potsdam"].into_iter().map(|v| v.to_string())),
         );
 
-        assert!(pytest.update(false).unwrap());
+        assert!(pytest.update_tests(false).unwrap());
 
         assert_eq!(pytest.tests, expected_tests);
 
-        assert!(!pytest.update(true).unwrap());
+        assert!(!pytest.update_tests(true).unwrap());
     }
 }

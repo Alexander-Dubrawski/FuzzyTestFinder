@@ -22,7 +22,7 @@ pub struct RustPytonRunner<SE: SearchEngine, RT: Runtime> {
 
 impl<SE: SearchEngine, RT: Runtime> RustPytonRunner<SE, RT> {
     pub fn new(root_dir: String, search_engine: SE, runtime: RT) -> Self {
-        let project_id = format!("{}-pytest", project_hash(root_dir.clone()));
+        let project_id = format!("{}-rust-python", project_hash(root_dir.clone()));
         let parser = RustPytonParser::default();
         let cache_manager = CacheManager::new(project_id);
 
@@ -60,7 +60,11 @@ impl<SE: SearchEngine, RT: Runtime> Runner for RustPytonRunner<SE, RT> {
             &self.search_engine,
             tests,
         )?;
-        self.runtime.run_tests(selected_tests)
+        if !selected_tests.is_empty() {
+            self.runtime.run_tests(selected_tests)
+        } else {
+            Ok(())
+        }
     }
 
     fn clear_cache(&self) -> Result<(), FztError> {

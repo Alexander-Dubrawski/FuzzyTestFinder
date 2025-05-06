@@ -53,14 +53,17 @@ impl SearchEngine for FzfSearchEngine {
 
     fn get_from_history(&self, history: Vec<Vec<String>>) -> Result<Vec<String>, FztError> {
         let mut input = String::new();
-        history.into_iter().for_each(|tests| {
-            let mut command = String::new();
-            tests.into_iter().for_each(|test| {
-                command.push_str(format!("{test}\n").as_str());
+        history
+            .into_iter()
+            .filter(|tests| !tests.is_empty())
+            .for_each(|tests| {
+                let mut command = String::new();
+                tests.into_iter().for_each(|test| {
+                    command.push_str(format!("{test}\n").as_str());
+                });
+                command.remove(command.len() - 1);
+                input.push_str(format!("{command}\0").as_str());
             });
-            command.remove(command.len() - 1);
-            input.push_str(format!("{command}\0").as_str());
-        });
         let mut output = run_fzf(input.as_str(), true)?.stdout;
         // Replace Null byte with new line
         output.iter_mut().filter(|p| **p == 0).for_each(|p| *p = 10);
