@@ -46,15 +46,10 @@ enum Commands {
     },
 }
 
-// Custom CLI parser that handles -- specially
 fn parse_args(cmd: Command) -> (Cli, Vec<String>) {
-    // Get raw command line arguments
     let raw_args: Vec<String> = std::env::args().collect();
-
-    // Find the position of -- if it exists
     let dash_dash_pos = raw_args.iter().position(|arg| arg == "--");
 
-    // Split based on -- position
     let (cli_args, runtime_args) = match dash_dash_pos {
         Some(pos) => {
             // Split at -- position
@@ -66,13 +61,9 @@ fn parse_args(cmd: Command) -> (Cli, Vec<String>) {
             };
             (cli, runtime)
         }
-        None => {
-            // No -- found, all args are CLI args
-            (raw_args, Vec::new())
-        }
+        None => (raw_args, Vec::new()),
     };
 
-    // Parse the CLI arguments using our configured command
     let matches = cmd.get_matches_from(cli_args);
     let cli = Cli::from_arg_matches(&matches).expect("Failed to parse arguments");
 
@@ -82,7 +73,6 @@ fn parse_args(cmd: Command) -> (Cli, Vec<String>) {
 fn configure_commands() -> Command {
     let mut cmd = Cli::command();
 
-    // Configure main command
     cmd = cmd.override_usage("FzT [OPTIONS] [COMMAND] [ARGS]... [-- RUNTIME_ARGS]...");
     cmd = cmd.after_help(
         "Runtime Arguments:\n  \
