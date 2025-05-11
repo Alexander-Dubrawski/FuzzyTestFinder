@@ -34,4 +34,5 @@ pub struct Config {
     pub verbose: bool,
     pub clear_history: bool,
     pub runtime_args: Vec<String>,
+    pub all: bool,
 }

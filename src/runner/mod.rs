@@ -13,6 +13,7 @@ pub struct RunnerConfig {
     pub verbose: bool,
     pub clear_history: bool,
     pub runtime_args: Vec<String>,
+    pub all: bool,
 }
 
 impl From<Config> for RunnerConfig {
@@ -24,6 +25,7 @@ impl From<Config> for RunnerConfig {
             verbose: value.verbose,
             clear_history: value.clear_history,
             runtime_args: value.runtime_args,
+            all: value.all,
         }
     }
 }

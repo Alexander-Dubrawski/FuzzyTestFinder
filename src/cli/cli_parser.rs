@@ -13,23 +13,45 @@ struct Cli {
     #[arg(long, value_parser=["FzF"])]
     search_engine: Option<String>,
 
-    #[arg(long, default_value_t = false)]
+    #[arg(
+        long,
+        default_value_t = false,
+        help = "Clear test build directory cache"
+    )]
     clear_cache: bool,
 
     #[arg(long, default_value_t = false)]
     default: bool,
 
-    #[arg(long, default_value_t = false, short)]
+    #[arg(
+        long,
+        default_value_t = false,
+        short,
+        help = "Run recently used test command"
+    )]
     last: bool,
 
-    #[arg(long, default_value_t = false, short)]
+    #[arg(
+        long,
+        default_value_t = false,
+        short,
+        help = "Parse tests commands from history"
+    )]
     history: bool,
 
-    #[arg(long, default_value_t = false, short)]
+    #[arg(long, default_value_t = false, short, help = "Clear history")]
     clear_history: bool,
 
     #[arg(long, default_value_t = false, short)]
     verbose: bool,
+
+    #[arg(
+        long,
+        default_value_t = false,
+        short,
+        help = "Run all tests in project"
+    )]
+    all: bool,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -142,5 +164,6 @@ pub fn parse_cli() -> Result<Config, FztError> {
         verbose: cli.verbose,
         clear_history: cli.clear_history,
         runtime_args,
+        all: cli.all,
     })
 }

@@ -1,5 +1,7 @@
 use crate::{
-    cache::manager::CacheManager, errors::FztError, parser::python::python_tests::PythonTests,
+    cache::manager::CacheManager,
+    errors::FztError,
+    parser::{Test, Tests, python::python_tests::PythonTests},
     search_engine::SearchEngine,
 };
 
@@ -9,8 +11,15 @@ pub fn get_tests<SE: SearchEngine>(
     cache_manager: &CacheManager,
     search_engine: &SE,
     tests: PythonTests,
+    all: bool,
 ) -> Result<Vec<String>, FztError> {
-    if last {
+    if all {
+        Ok(tests
+            .tests()
+            .into_iter()
+            .map(|test| test.runtime_argument())
+            .collect())
+    } else if last {
         cache_manager.recent_history_command()
     } else if history {
         let history = cache_manager.history()?;
