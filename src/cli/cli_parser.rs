@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 
 use crate::{
     cli::{Language, PythonParser, PythonRuntime, SearchEngine},
@@ -31,9 +31,6 @@ struct Cli {
     #[arg(long, default_value_t = false, short)]
     verbose: bool,
 
-    #[arg(long, default_value_t = false, short)]
-    debug: bool,
-
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -44,13 +41,62 @@ enum Commands {
         #[arg(default_value_t = String::from("RustPython"), value_parser=["RustPython", "PyTest"])]
         parser: String,
 
-        #[arg(default_value_t = String::from("Pytest"), value_parser=["PyTest"])]
+        #[arg(default_value_t = String::from("PyTest"), value_parser=["PyTest"])]
         runtime: String,
     },
 }
 
+fn parse_args(cmd: Command) -> (Cli, Vec<String>) {
+    let raw_args: Vec<String> = std::env::args().collect();
+    let dash_dash_pos = raw_args.iter().position(|arg| arg == "--");
+
+    let (cli_args, runtime_args) = match dash_dash_pos {
+        Some(pos) => {
+            // Split at -- position
+            let cli = raw_args[..pos].to_vec();
+            let runtime = if pos + 1 < raw_args.len() {
+                raw_args[pos + 1..].to_vec()
+            } else {
+                Vec::new()
+            };
+            (cli, runtime)
+        }
+        None => (raw_args, Vec::new()),
+    };
+
+    let matches = cmd.get_matches_from(cli_args);
+    let cli = Cli::from_arg_matches(&matches).expect("Failed to parse arguments");
+
+    (cli, runtime_args)
+}
+
+fn configure_commands() -> Command {
+    let mut cmd = Cli::command();
+
+    cmd = cmd.override_usage("FzT [OPTIONS] [COMMAND] [ARGS]... [-- RUNTIME_ARGS]...");
+    cmd = cmd.after_help(
+        "Runtime Arguments:\n  \
+        Arguments after -- are passed directly to the runtime\n  \
+        Example: fzt -v python RustPython PyTest -- --pdb",
+    );
+
+    if let Some(python_cmd) = cmd.find_subcommand_mut("python") {
+        *python_cmd = python_cmd
+            .clone()
+            .override_usage("FzT python [ARGS]... [-- RUNTIME_ARGS]...");
+        *python_cmd = python_cmd.clone().after_help(
+            "Runtime Arguments:\n  \
+            Arguments after -- are passed directly to the runtime\n  \
+            Example: fzt python RustPython PyTest -- --pdb",
+        );
+    }
+
+    cmd
+}
+
 pub fn parse_cli() -> Result<Config, FztError> {
-    let cli = Cli::parse();
+    let cmd = configure_commands();
+    let (cli, runtime_args) = parse_args(cmd);
 
     let search_engine = if let Some(search_engine) = cli.search_engine {
         match search_engine.to_lowercase().as_str() {
@@ -85,6 +131,7 @@ pub fn parse_cli() -> Result<Config, FztError> {
         }
         None => Ok(None),
     }?;
+
     Ok(Config {
         language,
         search_engine,
@@ -93,7 +140,7 @@ pub fn parse_cli() -> Result<Config, FztError> {
         last: cli.last,
         default: cli.default,
         verbose: cli.verbose,
-        debug: cli.debug,
         clear_history: cli.clear_history,
+        runtime_args,
     })
 }

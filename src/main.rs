@@ -22,70 +22,39 @@ fn main() -> Result<(), FztError> {
 
     handle_metadata(&mut config, project_id)?;
 
-    let search_engine = match config.search_engine {
+    let search_engine = match config.clone().search_engine {
         Some(search_engine) => match search_engine {
             FzT::cli::SearchEngine::FzF => FzfSearchEngine::default(),
         },
         None => FzfSearchEngine::default(),
     };
 
-    match config.language {
+    match config.clone().language {
         Some(language) => match language {
-            FzT::cli::Language::Python((PythonParser::Pytest, _)) => {
-                let runner = PytestRunner::new(
-                    path_str.to_string(),
-                    search_engine,
-                    PytestRuntime::default(),
-                );
-                if config.clear_cache || config.clear_history {
-                    if config.clear_cache {
-                        runner.clear_cache()?;
-                    }
-                    if config.clear_history {
-                        runner.clear_history()?;
-                    }
-                    Ok(())
-                } else {
-                    runner.run(config.history, config.last, config.verbose, config.debug)
-                }
-            }
-            FzT::cli::Language::Python((PythonParser::RustPython, _)) => {
-                let runner = RustPytonRunner::new(
-                    path_str.to_string(),
-                    search_engine,
-                    PytestRuntime::default(),
-                );
-                if config.clear_cache || config.clear_history {
-                    if config.clear_cache {
-                        runner.clear_cache()?;
-                    }
-                    if config.clear_history {
-                        runner.clear_history()?;
-                    }
-                    Ok(())
-                } else {
-                    runner.run(config.history, config.last, config.verbose, config.debug)
-                }
-            }
-        },
-        None => {
-            // TODO: If more languages supported use auto language detection
-            let runner = RustPytonRunner::new(
+            FzT::cli::Language::Python((PythonParser::Pytest, _)) => PytestRunner::new(
                 path_str.to_string(),
                 search_engine,
                 PytestRuntime::default(),
-            );
-            if config.clear_cache || config.clear_history {
-                if config.clear_cache {
-                    runner.clear_cache()?;
-                }
-                if config.clear_history {
-                    runner.clear_history()?;
-                }
-                Ok(())
-            } else {
-                runner.run(config.history, config.last, config.verbose, config.debug)
-            }
+                config,
+            )
+            .run(),
+            FzT::cli::Language::Python((PythonParser::RustPython, _)) => RustPytonRunner::new(
+                path_str.to_string(),
+                search_engine,
+                PytestRuntime::default(),
+                config,
+            )
+            .run(),
+        },
+        None => {
+            // TODO: If more languages supported use auto language detection
+            RustPytonRunner::new(
+                path_str.to_string(),
+                search_engine,
+                PytestRuntime::default(),
+                config,
+            )
+            .run()
         }
     }
 }
