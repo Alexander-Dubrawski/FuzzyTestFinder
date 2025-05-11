@@ -37,8 +37,14 @@ fn main() -> Result<(), FztError> {
                     search_engine,
                     PytestRuntime::default(),
                 );
-                if config.clear_cache {
-                    runner.clear_cache()
+                if config.clear_cache || config.clear_history {
+                    if config.clear_cache {
+                        runner.clear_cache()?;
+                    }
+                    if config.clear_history {
+                        runner.clear_history()?;
+                    }
+                    Ok(())
                 } else {
                     runner.run(config.history, config.last, config.verbose, config.debug)
                 }
@@ -49,8 +55,14 @@ fn main() -> Result<(), FztError> {
                     search_engine,
                     PytestRuntime::default(),
                 );
-                if config.clear_cache {
-                    runner.clear_cache()
+                if config.clear_cache || config.clear_history {
+                    if config.clear_cache {
+                        runner.clear_cache()?;
+                    }
+                    if config.clear_history {
+                        runner.clear_history()?;
+                    }
+                    Ok(())
                 } else {
                     runner.run(config.history, config.last, config.verbose, config.debug)
                 }
@@ -63,8 +75,14 @@ fn main() -> Result<(), FztError> {
                 search_engine,
                 PytestRuntime::default(),
             );
-            if config.clear_cache {
-                runner.clear_cache()
+            if config.clear_cache || config.clear_history {
+                if config.clear_cache {
+                    runner.clear_cache()?;
+                }
+                if config.clear_history {
+                    runner.clear_history()?;
+                }
+                Ok(())
             } else {
                 runner.run(config.history, config.last, config.verbose, config.debug)
             }

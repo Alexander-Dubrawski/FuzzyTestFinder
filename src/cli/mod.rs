@@ -32,4 +32,5 @@ pub struct Config {
     pub default: bool,
     pub verbose: bool,
     pub debug: bool,
+    pub clear_history: bool,
 }
