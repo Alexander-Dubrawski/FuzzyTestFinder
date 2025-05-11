@@ -70,4 +70,8 @@ impl<SE: SearchEngine, RT: Runtime> Runner for RustPytonRunner<SE, RT> {
     fn clear_cache(&self) -> Result<(), FztError> {
         self.cache_manager.clear_cache()
     }
+
+    fn clear_history(&self) -> Result<(), FztError> {
+        self.cache_manager.clear_history()
+    }
 }

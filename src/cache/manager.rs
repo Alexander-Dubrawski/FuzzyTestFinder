@@ -1,5 +1,6 @@
 use home::home_dir;
 use std::{
+    collections::VecDeque,
     fs::File,
     io::{BufReader, BufWriter, Write},
     path::{Path, PathBuf},
@@ -82,23 +83,32 @@ impl CacheManager {
         Ok(())
     }
 
+    pub fn clear_history(&self) -> Result<(), FztError> {
+        if Path::new(&self.history_file).exists() {
+            std::fs::remove_file(&self.history_file)?;
+        }
+        Ok(())
+    }
+
     pub fn update_history(&self, tests: &[String]) -> Result<(), FztError> {
+        if tests.is_empty() {
+            return Ok(());
+        }
         let mut history = if !Path::new(&self.history_file).exists() {
-            vec![]
+            VecDeque::new()
         } else {
             let file = File::open(&self.history_file)?;
             let reader = BufReader::new(file);
-            let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
+            let content: VecDeque<Vec<String>> = serde_json::from_reader(reader)?;
             content
         };
-        history.push(tests.to_vec());
+        history.push_front(tests.to_vec());
         let file = File::create(&self.history_file)?;
         let mut writer = BufWriter::new(file);
-        if history.len() < HISTORY_SIZE {
-            serde_json::to_writer(&mut writer, &history)?;
-        } else {
-            serde_json::to_writer(&mut writer, &history[1..])?;
+        if history.len() > HISTORY_SIZE {
+            history.pop_back();
         }
+        serde_json::to_writer(&mut writer, &history)?;
         Ok(())
     }
 
