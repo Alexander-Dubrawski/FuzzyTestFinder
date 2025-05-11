@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, process::Command};
+use std::process::Command;
 
 use crate::{errors::FztError, runtime::Runtime};
 
@@ -6,7 +6,12 @@ use crate::{errors::FztError, runtime::Runtime};
 pub struct PytestRuntime {}
 
 impl Runtime for PytestRuntime {
-    fn run_tests(&self, tests: Vec<String>, verbose: bool, runtime_ags: &[String]) -> Result<(), FztError> {
+    fn run_tests(
+        &self,
+        tests: Vec<String>,
+        verbose: bool,
+        runtime_ags: &[String],
+    ) -> Result<(), FztError> {
         let mut command = Command::new("python");
         command.arg("-m");
         command.arg("pytest");

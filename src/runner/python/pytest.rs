@@ -74,8 +74,11 @@ impl<SE: SearchEngine, RT: Runtime> Runner for PytestRunner<SE, RT> {
             tests,
         )?;
         if !selected_tests.is_empty() {
-            self.runtime
-                .run_tests(selected_tests, self.config.verbose, &self.config.runtime_args.as_slice())
+            self.runtime.run_tests(
+                selected_tests,
+                self.config.verbose,
+                &self.config.runtime_args.as_slice(),
+            )
         } else {
             Ok(())
         }
