@@ -23,6 +23,7 @@ pub enum SearchEngine {
     FzF,
 }
 
+#[derive(Clone)]
 pub struct Config {
     pub language: Option<Language>,
     pub search_engine: Option<SearchEngine>,
@@ -33,4 +34,5 @@ pub struct Config {
     pub verbose: bool,
     pub debug: bool,
     pub clear_history: bool,
+    pub runtime_args: Vec<String>,
 }

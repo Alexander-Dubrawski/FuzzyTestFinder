@@ -34,6 +34,9 @@ struct Cli {
     #[arg(long, default_value_t = false, short)]
     debug: bool,
 
+    #[arg(long, short, value_delimiter = ' ', num_args = 1..)]
+    runtime_args: Option<Vec<String>>,
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -64,6 +67,11 @@ pub fn parse_cli() -> Result<Config, FztError> {
         None
     };
 
+    let runtime_args = match &cli.runtime_args {
+        Some(args) => args.clone(),
+        None => vec![],
+    };
+
     let language = match &cli.command {
         Some(Commands::Python { parser, runtime }) => {
             let parser = match parser.to_lowercase().as_str() {
@@ -85,6 +93,7 @@ pub fn parse_cli() -> Result<Config, FztError> {
         }
         None => Ok(None),
     }?;
+
     Ok(Config {
         language,
         search_engine,
@@ -95,5 +104,6 @@ pub fn parse_cli() -> Result<Config, FztError> {
         verbose: cli.verbose,
         debug: cli.debug,
         clear_history: cli.clear_history,
+        runtime_args,
     })
 }
