@@ -32,7 +32,6 @@ pub struct Config {
     pub last: bool,
     pub default: bool,
     pub verbose: bool,
-    pub debug: bool,
     pub clear_history: bool,
     pub runtime_args: Vec<String>,
 }

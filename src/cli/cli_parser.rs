@@ -31,10 +31,7 @@ struct Cli {
     #[arg(long, default_value_t = false, short)]
     verbose: bool,
 
-    #[arg(long, default_value_t = false, short)]
-    debug: bool,
-
-    #[arg(long, short, value_delimiter = ' ', num_args = 1..)]
+    #[arg(long, short, value_delimiter = ' ', num_args = 1.., allow_hyphen_values = true, help = "Arguments to pass to the runtime (MUST be used as the last option)")]
     runtime_args: Option<Vec<String>>,
 
     #[command(subcommand)]
@@ -102,7 +99,6 @@ pub fn parse_cli() -> Result<Config, FztError> {
         last: cli.last,
         default: cli.default,
         verbose: cli.verbose,
-        debug: cli.debug,
         clear_history: cli.clear_history,
         runtime_args,
     })

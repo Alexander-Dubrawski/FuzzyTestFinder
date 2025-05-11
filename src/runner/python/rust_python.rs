@@ -74,7 +74,7 @@ impl<SE: SearchEngine, RT: Runtime> Runner for RustPytonRunner<SE, RT> {
         )?;
         if !selected_tests.is_empty() {
             self.runtime
-                .run_tests(selected_tests, self.config.verbose, self.config.debug)
+                .run_tests(selected_tests, self.config.verbose, &self.config.runtime_args.as_slice())
         } else {
             Ok(())
         }

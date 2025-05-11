@@ -6,13 +6,13 @@ use crate::{errors::FztError, runtime::Runtime};
 pub struct PytestRuntime {}
 
 impl Runtime for PytestRuntime {
-    fn run_tests(&self, tests: Vec<String>, verbose: bool, debug: bool) -> Result<(), FztError> {
+    fn run_tests(&self, tests: Vec<String>, verbose: bool, runtime_ags: &[String]) -> Result<(), FztError> {
         let mut command = Command::new("python");
         command.arg("-m");
         command.arg("pytest");
-        if debug {
-            command.arg("--pdb");
-        }
+        runtime_ags.iter().for_each(|arg| {
+            command.arg(arg);
+        });
         tests.into_iter().for_each(|test| {
             command.arg(test);
         });
