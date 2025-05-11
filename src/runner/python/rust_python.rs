@@ -71,6 +71,7 @@ impl<SE: SearchEngine, RT: Runtime> Runner for RustPytonRunner<SE, RT> {
             &self.cache_manager,
             &self.search_engine,
             tests,
+            self.config.all,
         )?;
         if !selected_tests.is_empty() {
             self.runtime.run_tests(
