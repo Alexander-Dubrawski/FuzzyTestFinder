@@ -119,7 +119,7 @@ impl CacheManager {
             let file = File::open(&self.history_file)?;
             let reader = BufReader::new(file);
             let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
-            Ok(content.last().map(|tests| tests.clone()).unwrap_or(vec![]))
+            Ok(content.first().map(|tests| tests.clone()).unwrap_or(vec![]))
         }
     }
 
