@@ -4,7 +4,11 @@
 [versions]
 guava = "33.4.5-jre"
 junit-jupiter = "5.12.1"
+commons-cli-version = "1.9.0"
+spoon-core-version = "11.2.0"
 
 [libraries]
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
+commons-cli = { module = "commons-cli:commons-cli", version.ref = "commons-cli-version" }
+spoon-core  = { module = "fr.inria.gforge.spoon:spoon-core", version.ref = "spoon-core-version" }
