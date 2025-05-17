@@ -1,5 +1,7 @@
 package org.parser;
 
+import java.io.IOException;
+
 import org.apache.commons.cli.*;
 
 
@@ -33,10 +35,16 @@ public class App {
                 System.exit(1);
             }
         } catch (ParseException e) {
-         System.err.println("Error parsing command line: " + e.getMessage());
-         System.exit(1);
-      }
+            System.err.println("Error parsing command line: " + e.getMessage());
+            System.exit(1);
+        }
 
-        // System.out.println(new App().getGreeting());
+        var testParser = new Parser(cache, 0);
+        try {
+            testParser.scan();
+        } catch (IOException e) {
+            System.err.println("Error parsing java tests: " + e.getMessage());
+            System.exit(1);
+        }
     }
 }

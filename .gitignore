@@ -1,12 +1,8 @@
 /target
 **/.DS_Store
 
-java/data/*
-java/**/bin/**
-java/**/*.class
-infrastructure/**/*.json
-java/**/out/
-Brewfile.lock.json
-tools/cfapi-java-*-GA/logs/
-tools/cfapi-java-*-GA/data/
-java/**/*.jar
+parsers/java/data/*
+parsers/java/**/bin/**
+parsers/java/**/*.class
+parsers/java/**/out/
+parsers/java/**/*.jar
