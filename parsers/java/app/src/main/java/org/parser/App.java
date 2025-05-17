@@ -39,7 +39,7 @@ public class App {
             System.exit(1);
         }
 
-        var testParser = new Parser(cache, 0);
+        var testParser = new Parser(path, 0);
         try {
             testParser.scan();
         } catch (IOException e) {

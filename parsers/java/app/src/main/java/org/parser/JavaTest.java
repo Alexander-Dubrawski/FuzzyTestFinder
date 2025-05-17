@@ -3,21 +3,15 @@ package org.parser;
 
 public class JavaTest {
     String classPath;
-    String test;
+    String methodName;
 
-    public String getTest() {
-        return test;
-    }
-
-    public void setTest(String test) {
-        this.test = test;
-    }
-
-    public String getClassPath() {
-        return classPath;
-    }
-
-    public void setClassPath(String classPath) {
+    public JavaTest(String classPath, String methodName) {
         this.classPath = classPath;
+        this.methodName = methodName;
+    }
+
+    @Override
+    public String toString() {
+        return "(" + classPath + ", " + methodName + ")";
     }
 }
