@@ -2,11 +2,8 @@ package org.parser;
 
 import spoon.Launcher;
 import spoon.reflect.CtModel;
-import spoon.reflect.code.CtBlock;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtType;
-import spoon.reflect.declaration.ModifierKind;
-import spoon.reflect.visitor.filter.TypeFilter;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -16,11 +13,10 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class JavaTests {
     String rootFolder;
@@ -94,6 +90,7 @@ public class JavaTests {
                 return FileVisitResult.CONTINUE;
             }
         });
+        timestamp = Instant.now().toEpochMilli();
     }    
 
     private void filterOutDeletedFiles() throws IOException {

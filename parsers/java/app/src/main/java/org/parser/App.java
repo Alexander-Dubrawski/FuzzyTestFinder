@@ -39,10 +39,10 @@ public class App {
             System.err.println("Error parsing command line: " + e.getMessage());
             System.exit(1);
         }
-
         var testParser = new Parser();
         try {
-            testParser.parse(path, cache);
+            var result = testParser.parse(path, cache);
+            System.out.println(result);
         } catch (IOException e) {
             System.err.println("Error parsing java tests: " + e.getMessage());
             System.exit(1);
