@@ -24,7 +24,8 @@ dependencies {
     // This dependency is used by the application.
     implementation libs.guava
     implementation libs.commons.cli
-    implementation libs.spoon.core 
+    implementation libs.spoon.core
+    implementation libs.jackson.databind
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
