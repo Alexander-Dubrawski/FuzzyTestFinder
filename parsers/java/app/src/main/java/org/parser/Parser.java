@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,7 +12,7 @@ import java.nio.file.Paths;
 
 public class Parser {
 
-    public void parse(String projectPath, String cachePath) throws IOException {
+    public String parse(String projectPath, String cachePath) throws IOException {
         JavaTests javaTests;
         if (cachePath == null) {
             javaTests = new JavaTests();
@@ -25,5 +26,7 @@ public class Parser {
             });
         }
         javaTests.update();
+        final ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+        return ow.writeValueAsString(javaTests);
     }
 }
