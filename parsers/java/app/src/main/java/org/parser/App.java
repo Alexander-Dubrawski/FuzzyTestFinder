@@ -1,6 +1,7 @@
 package org.parser;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import org.apache.commons.cli.*;
 
@@ -39,9 +40,9 @@ public class App {
             System.exit(1);
         }
 
-        var testParser = new Parser(path, 0);
+        var testParser = new Parser();
         try {
-            testParser.scan();
+            testParser.parse(path, cache);
         } catch (IOException e) {
             System.err.println("Error parsing java tests: " + e.getMessage());
             System.exit(1);
