@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 class ParserTest {
     @Test void parseNew() throws IOException {
@@ -45,7 +47,8 @@ class ParserTest {
     @Test void parseCache() throws IOException {
         final ObjectMapper objectMapper = new ObjectMapper();
         Parser parser = new Parser();
-        var jsonResult = parser.parse("src/test/resources/tests", "src/test/resources/tests/cache/cache_entry.json");
+        var cache = Files.readString(Paths.get("src/test/resources/tests/cache/cache_entry.json"));
+        var jsonResult = parser.parse("src/test/resources/tests", cache);
         JavaTests javaTests;
         javaTests = objectMapper.readValue(jsonResult, new TypeReference<>() {
         });

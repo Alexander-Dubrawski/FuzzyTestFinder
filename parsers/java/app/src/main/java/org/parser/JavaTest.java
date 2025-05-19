@@ -1,31 +1,30 @@
 package org.parser;
 
-
 public class JavaTest {
-    String classPath;
-    String methodName;
+    String class_path;
+    String method_name;
 
     public JavaTest() {
     }
 
     public JavaTest(String classPath, String methodName) {
-        this.classPath = classPath;
-        this.methodName = methodName;
+        this.class_path = classPath;
+        this.method_name = methodName;
     }
 
     public String getClassPath() {
-        return classPath;
+        return class_path;
     }
 
     public void setClassPath(String classPath) {
-        this.classPath = classPath;
+        this.class_path = classPath;
     }
 
     public String getMethodName() {
-        return methodName;
+        return method_name;
     }
 
     public void setMethodName(String methodName) {
-        this.methodName = methodName;
+        this.method_name = methodName;
     }
 }

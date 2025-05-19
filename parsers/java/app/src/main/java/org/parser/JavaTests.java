@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class JavaTests {
-    String rootFolder;
+    String root_folder;
     Long timestamp;
     HashMap<String, List<JavaTest>> tests;
     private static final Logger logger = Logger.getLogger(JavaTests.class.getName());
@@ -30,10 +30,10 @@ public class JavaTests {
     }
 
     public String getRootFolder() {
-        return rootFolder;
+        return root_folder;
     }
     public void setRootFolder(String rootFolder) {
-        this.rootFolder = rootFolder;
+        this.root_folder = rootFolder;
     }
 
     public Long getTimestamp() {
@@ -52,7 +52,7 @@ public class JavaTests {
 
     public void update() throws IOException {
         filterOutDeletedFiles();
-        var rootFolderPath = Paths.get(rootFolder);
+        var rootFolderPath = Paths.get(root_folder);
         Files.walkFileTree(rootFolderPath, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
