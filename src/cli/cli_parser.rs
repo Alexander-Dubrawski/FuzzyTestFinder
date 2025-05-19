@@ -5,7 +5,7 @@ use crate::{
     errors::FztError,
 };
 
-use super::Config;
+use super::{Config, JavaRuntime, JavaTestFramwork};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -66,6 +66,13 @@ enum Commands {
         #[arg(default_value_t = String::from("PyTest"), value_parser=["PyTest"])]
         runtime: String,
     },
+    Java {
+        #[arg(default_value_t = String::from("JUnit5"), value_parser=["JUnit5"])]
+        test_framework: String,
+
+        #[arg(default_value_t = String::from("gradle"), value_parser=["gradle"])]
+        runtime: String,    
+    }
 }
 
 fn parse_args(cmd: Command) -> (Cli, Vec<String>) {
@@ -150,6 +157,23 @@ pub fn parse_cli() -> Result<Config, FztError> {
                 ))),
             }?;
             Ok::<Option<Language>, FztError>(Some(Language::Python((parser, runtime))))
+        }
+        Some(Commands::Java { test_framework, runtime }) => {
+            let test_framework = match test_framework.to_lowercase().as_str() {
+                "junit5" => Ok(JavaTestFramwork::JUnit5),
+                _ => Err(FztError::UserError(format!(
+                    "Unknown parser: {} Supported are: JUnit5",
+                    test_framework.to_lowercase()
+                ))),
+            }?;
+            let runtime = match runtime.to_lowercase().as_str() {
+                "gradle" => Ok(JavaRuntime::Gradle),
+                _ => Err(FztError::UserError(format!(
+                    "Unknown runtime: {} Supported are: gradle",
+                    runtime.to_lowercase()
+                ))),
+            }?;
+            Ok::<Option<Language>, FztError>(Some(Language::Java((test_framework, runtime))))
         }
         None => Ok(None),
     }?;
