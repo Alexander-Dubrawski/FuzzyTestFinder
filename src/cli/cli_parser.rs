@@ -71,8 +71,8 @@ enum Commands {
         test_framework: String,
 
         #[arg(default_value_t = String::from("gradle"), value_parser=["gradle"])]
-        runtime: String,    
-    }
+        runtime: String,
+    },
 }
 
 fn parse_args(cmd: Command) -> (Cli, Vec<String>) {
@@ -158,7 +158,10 @@ pub fn parse_cli() -> Result<Config, FztError> {
             }?;
             Ok::<Option<Language>, FztError>(Some(Language::Python((parser, runtime))))
         }
-        Some(Commands::Java { test_framework, runtime }) => {
+        Some(Commands::Java {
+            test_framework,
+            runtime,
+        }) => {
             let test_framework = match test_framework.to_lowercase().as_str() {
                 "junit5" => Ok(JavaTestFramwork::JUnit5),
                 _ => Err(FztError::UserError(format!(

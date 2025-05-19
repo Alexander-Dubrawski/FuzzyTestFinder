@@ -1,7 +1,7 @@
 use crate::errors::FztError;
 
-pub mod python;
 pub mod java;
+pub mod python;
 
 pub trait Runtime {
     fn run_tests(

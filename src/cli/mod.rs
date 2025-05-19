@@ -5,7 +5,7 @@ pub mod cli_parser;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Language {
     Python((PythonParser, PythonRuntime)),
-    Java((JavaTestFramwork, JavaRuntime))
+    Java((JavaTestFramwork, JavaRuntime)),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

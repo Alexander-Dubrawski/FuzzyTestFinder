@@ -3,7 +3,8 @@ use crate::{
     cli::Config,
     errors::FztError,
     parser::{
-        java::{java_test::JavaTests, parser::JavaParser}, Test, Tests
+        Test, Tests,
+        java::{java_test::JavaTests, parser::JavaParser},
     },
     runner::{Runner, RunnerConfig},
     runtime::Runtime,
@@ -103,10 +104,15 @@ impl<SE: SearchEngine, RT: Runtime> Runner for JavaRunner<SE, RT> {
             self.config.all,
         )?;
         // TODO: Improve Filter for tests
-        let test_items: Vec<String> = tests.tests().into_iter().filter(|test|{
-            let search_name = test.search_item_name();
-            selected_tests.contains(&search_name)
-        }).map(|test| test.runtime_argument()).collect();
+        let test_items: Vec<String> = tests
+            .tests()
+            .into_iter()
+            .filter(|test| {
+                let search_name = test.search_item_name();
+                selected_tests.contains(&search_name)
+            })
+            .map(|test| test.runtime_argument())
+            .collect();
         if !test_items.is_empty() {
             self.runtime.run_tests(
                 test_items,

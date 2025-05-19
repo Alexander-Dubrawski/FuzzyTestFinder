@@ -2,11 +2,13 @@ use std::env;
 
 use FzT::{
     cache::helper::project_hash,
-    cli::{cli_parser::parse_cli, JavaRuntime, PythonParser},
+    cli::{JavaRuntime, PythonParser, cli_parser::parse_cli},
     errors::FztError,
     metadata::handle_metadata,
     runner::{
-        java::java::JavaRunner, python::{pytest::PytestRunner, rust_python::RustPytonRunner}, Runner
+        Runner,
+        java::java::JavaRunner,
+        python::{pytest::PytestRunner, rust_python::RustPytonRunner},
     },
     runtime::python::pytest::PytestRuntime,
     search_engine::fzf::FzfSearchEngine,
@@ -47,9 +49,10 @@ fn main() -> Result<(), FztError> {
             FzT::cli::Language::Java((JavaRuntime, JavaRuntime::Gradle)) => JavaRunner::new(
                 path_str.to_string(),
                 search_engine,
-                GradleRuntime::default(), 
+                GradleRuntime::default(),
                 config,
-            ).run()
+            )
+            .run(),
         },
         None => {
             // TODO: If more languages supported use auto language detection

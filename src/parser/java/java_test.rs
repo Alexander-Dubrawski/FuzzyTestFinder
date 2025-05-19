@@ -40,14 +40,14 @@ impl JavaTestItem {
         Self {
             path,
             class_path,
-            test
+            test,
         }
     }
 }
 
 impl Test for JavaTestItem {
     fn runtime_argument(&self) -> String {
-         format!("{}.{}", self.class_path, self.test)
+        format!("{}.{}", self.class_path, self.test)
     }
 
     fn search_item_name(&self) -> String {
@@ -64,7 +64,11 @@ impl Tests for JavaTests {
         let mut output = vec![];
         self.tests.into_iter().for_each(|(path, tests)| {
             tests.into_iter().for_each(|test| {
-                output.push(JavaTestItem::new(path.clone(), test.class_path, test.method_name));
+                output.push(JavaTestItem::new(
+                    path.clone(),
+                    test.class_path,
+                    test.method_name,
+                ));
             });
         });
         output
