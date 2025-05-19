@@ -41,7 +41,7 @@ impl SearchEngine for FzfSearchEngine {
     fn get_tests_to_run(&self, all_test: impl Tests) -> Result<Vec<String>, FztError> {
         let mut input = String::new();
         all_test.tests().into_iter().for_each(|test| {
-            input.push_str(format!("{}\n", test.runtime_argument()).as_str());
+            input.push_str(format!("{}\n", test.search_item_name()).as_str());
         });
         let output = run_fzf(input.as_str(), false)?;
         let tests: Vec<String> = str::from_utf8(output.stdout.as_slice())?

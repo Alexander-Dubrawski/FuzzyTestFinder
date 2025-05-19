@@ -6,7 +6,7 @@ use crate::parser::{Test, Tests};
 
 use super::parser::JavaParser;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JavaTests {
     pub root_folder: String,
     pub timestamp: u128,
@@ -23,7 +23,7 @@ impl JavaTests {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JavaTest {
     pub class_path: String,
     pub method_name: String,

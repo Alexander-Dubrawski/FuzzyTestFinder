@@ -3,14 +3,43 @@ use crate::{
     cli::Config,
     errors::FztError,
     parser::{
-        java::{java_test::JavaTests, parser::JavaParser}, Tests
+        java::{java_test::JavaTests, parser::JavaParser}, Test, Tests
     },
     runner::{Runner, RunnerConfig},
     runtime::Runtime,
     search_engine::SearchEngine,
 };
 
-use super::history::get_tests;
+// TODO: Make generic
+pub fn get_tests<SE: SearchEngine>(
+    history: bool,
+    last: bool,
+    cache_manager: &CacheManager,
+    search_engine: &SE,
+    tests: JavaTests,
+    all: bool,
+) -> Result<Vec<String>, FztError> {
+    if all {
+        Ok(tests
+            .tests()
+            .into_iter()
+            .map(|test| test.search_item_name())
+            .collect())
+    } else if last {
+        cache_manager.recent_history_command()
+    } else if history {
+        let history = cache_manager.history()?;
+        let selected_tests = search_engine.get_from_history(history)?;
+        if selected_tests.len() > 0 {
+            cache_manager.update_history(selected_tests.iter().as_ref())?;
+        }
+        Ok(selected_tests)
+    } else {
+        let selected_tests = search_engine.get_tests_to_run(tests)?;
+        cache_manager.update_history(selected_tests.iter().as_ref())?;
+        Ok(selected_tests)
+    }
+}
 
 pub struct JavaRunner<SE: SearchEngine, RT: Runtime> {
     parser: JavaParser,
@@ -69,13 +98,18 @@ impl<SE: SearchEngine, RT: Runtime> Runner for JavaRunner<SE, RT> {
             self.config.last,
             &self.cache_manager,
             &self.search_engine,
-            tests,
+            // TODO: ref instead of clone
+            tests.clone(),
             self.config.all,
         )?;
-        // TODO: Filter for tests
-        if !selected_tests.is_empty() {
+        // TODO: Improve Filter for tests
+        let test_items: Vec<String> = tests.tests().into_iter().filter(|test|{
+            let search_name = test.search_item_name();
+            selected_tests.contains(&search_name)
+        }).map(|test| test.runtime_argument()).collect();
+        if !test_items.is_empty() {
             self.runtime.run_tests(
-                selected_tests,
+                test_items,
                 self.config.verbose,
                 &self.config.runtime_args.as_slice(),
             )
