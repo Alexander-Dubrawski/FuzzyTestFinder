@@ -69,6 +69,5 @@ class ParserTest {
         assertEquals(testThree.size(), 1);
         assertEquals(testThree.get(0).getClassPath(), "tests.java.b.TestThree");
         assertEquals(testThree.get(0).getMethodName(), "three");
-
     }
 }

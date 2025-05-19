@@ -18,10 +18,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
 public class JavaTests {
     String rootFolder;
     Long timestamp;
     HashMap<String, List<JavaTest>> tests;
+    private static final Logger logger = Logger.getLogger(JavaTests.class.getName());
 
     public JavaTests() {
     }
@@ -73,7 +77,7 @@ public class JavaTests {
                         } else {
                             tests.put(file.toString(), newTests);
                         }
-                        System.out.println("Tests updated: " + file.toString() + " : " + newTests);
+                        logger.info("Tests updated: " + file.toString() + " : " + newTests);
                         return FileVisitResult.CONTINUE;
                     }
 
@@ -82,7 +86,7 @@ public class JavaTests {
                         var newTests = getTestMethodsWithClassPaths(file);
                         if (!newTests.isEmpty()) {
                             tests.put(file.toString(), newTests);
-                            System.out.println("Test created" + file.toString()+ " : " + newTests);
+                            logger.info("Test created" + file.toString()+ " : " + newTests);
                         }
                         return FileVisitResult.CONTINUE;
                     }
@@ -104,7 +108,7 @@ public class JavaTests {
             }
         }
         for (String path : testToFilterOut) {
-            System.out.println("Remove test: " + path);
+            logger.info("Remove test: " + path);
             tests.remove(path);
         }
     }
