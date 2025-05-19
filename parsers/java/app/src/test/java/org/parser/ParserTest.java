@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 
 class ParserTest {
     @Test void parseNew() throws IOException {
