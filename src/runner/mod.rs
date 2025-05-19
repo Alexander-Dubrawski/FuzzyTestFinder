@@ -1,6 +1,7 @@
 use crate::{cli::Config, errors::FztError};
 
 pub mod python;
+pub mod java;
 
 pub trait Runner {
     fn run(&self) -> Result<(), FztError>;

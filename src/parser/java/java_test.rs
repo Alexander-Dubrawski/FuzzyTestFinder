@@ -13,6 +13,16 @@ pub struct JavaTests {
     pub tests: HashMap<String, Vec<JavaTest>>,
 }
 
+impl JavaTests {
+    pub fn new_empty(root_folder: String) -> Self {
+        Self {
+            root_folder,
+            timestamp: 0,
+            tests: HashMap::new(),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JavaTest {
     pub class_path: String,
