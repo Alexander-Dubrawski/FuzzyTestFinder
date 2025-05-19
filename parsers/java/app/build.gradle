@@ -35,6 +35,7 @@ java {
     }
 }
 
+
 application {
     // Define the main class for the application.
     mainClass = 'org.parser.App'
@@ -43,4 +44,8 @@ application {
 tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+}
+
+test {
+    exclude 'src/test/resources/tests/*'
 }

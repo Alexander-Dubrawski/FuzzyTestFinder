@@ -5,6 +5,14 @@ public class JavaTest {
     String classPath;
     String methodName;
 
+    public JavaTest() {
+    }
+
+    public JavaTest(String classPath, String methodName) {
+        this.classPath = classPath;
+        this.methodName = methodName;
+    }
+
     public String getClassPath() {
         return classPath;
     }
@@ -18,11 +26,6 @@ public class JavaTest {
     }
 
     public void setMethodName(String methodName) {
-        this.methodName = methodName;
-    }
-
-    public JavaTest(String classPath, String methodName) {
-        this.classPath = classPath;
         this.methodName = methodName;
     }
 }

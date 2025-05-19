@@ -23,6 +23,9 @@ public class JavaTests {
     Long timestamp;
     HashMap<String, List<JavaTest>> tests;
 
+    public JavaTests() {
+    }
+
     public String getRootFolder() {
         return rootFolder;
     }
@@ -47,7 +50,6 @@ public class JavaTests {
     public void update() throws IOException {
         filterOutDeletedFiles();
         var rootFolderPath = Paths.get(rootFolder);
-
         Files.walkFileTree(rootFolderPath, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
@@ -108,8 +110,9 @@ public class JavaTests {
     }
 
     private static List<JavaTest> getTestMethodsWithClassPaths(Path javaFilePath) throws IOException {
+        var absPath = javaFilePath.toAbsolutePath();
         Launcher launcher = new Launcher();
-        launcher.addInputResource(javaFilePath.toString());
+        launcher.addInputResource(absPath.toString());
         launcher.buildModel();
 
         CtModel model = launcher.getModel();
@@ -119,7 +122,7 @@ public class JavaTests {
         for (CtType<?> type : model.getAllTypes()) {
             // Check this type is defined in the target file
             if (type.getPosition().isValidPosition() &&
-                type.getPosition().getFile().toPath().equals(javaFilePath)) {
+                type.getPosition().getFile().toPath().equals(absPath)) {
 
                 String classPath = type.getQualifiedName();
 

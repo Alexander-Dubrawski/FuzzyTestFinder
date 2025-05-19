@@ -1,7 +1,6 @@
 package org.parser;
 
 import java.io.IOException;
-import java.util.HashMap;
 
 import org.apache.commons.cli.*;
 
