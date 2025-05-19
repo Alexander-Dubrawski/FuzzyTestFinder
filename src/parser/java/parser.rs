@@ -31,11 +31,13 @@ impl JavaParser {
     }
 
 
-    pub fn parse_tests(&self, tests: &mut JavaTests) -> Result<bool, FztError> {
+    pub fn parse_tests(&self, tests: &mut JavaTests, only_check_for_update: bool) -> Result<bool, FztError> {
         let test_json = serde_json::to_string(&tests)?;
         let updated_test_json = self.get_tests(test_json.as_str())?;
         let updated = test_json != updated_test_json;
-        *tests = serde_json::from_str(updated_test_json.as_str())?;
+        if !only_check_for_update {
+            *tests = serde_json::from_str(updated_test_json.as_str())?;
+        }
         Ok(updated)
     }
 }
