@@ -1,14 +1,14 @@
 {
-  "rootFolder" : "src/test/resources/tests",
+  "root_folder" : "src/test/resources/tests",
   "timestamp" : 0,
   "tests" : {
     "src/test/resources/tests/java/b/testThree.java" : [ {
-      "classPath" : "tests.java.b.TestThree",
-      "methodName" : "three"
+      "class_path" : "tests.java.b.TestThree",
+      "method_name" : "three"
     } ],
     "src/test/resources/tests/java/a/testTwo.java" : [ {
-      "classPath" : "tests.java.a.TestTwo",
-      "methodName" : "two"
+      "class_path" : "tests.java.a.TestTwo",
+      "method_name" : "two"
     }]
   }
 }

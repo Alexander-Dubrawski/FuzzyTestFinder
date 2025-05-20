@@ -54,7 +54,7 @@ pub struct JavaRunner<SE: SearchEngine, RT: Runtime> {
 impl<SE: SearchEngine, RT: Runtime> JavaRunner<SE, RT> {
     pub fn new(root_dir: String, search_engine: SE, runtime: RT, config: Config) -> Self {
         let project_id = format!("{}-java-junit5", project_hash(root_dir.clone()));
-        let parser = JavaParser::default();
+        let parser = JavaParser::new(root_dir.clone());
         let cache_manager = CacheManager::new(project_id);
 
         Self {

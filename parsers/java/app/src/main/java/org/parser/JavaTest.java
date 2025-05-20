@@ -1,30 +1,34 @@
 package org.parser;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class JavaTest {
-    String class_path;
-    String method_name;
+    @JsonProperty("class_path")
+    String classPath;
+    @JsonProperty("method_name")
+    String methodName;
 
     public JavaTest() {
     }
 
     public JavaTest(String classPath, String methodName) {
-        this.class_path = classPath;
-        this.method_name = methodName;
+        this.classPath = classPath;
+        this.methodName = methodName;
     }
 
     public String getClassPath() {
-        return class_path;
+        return classPath;
     }
 
     public void setClassPath(String classPath) {
-        this.class_path = classPath;
+        this.classPath = classPath;
     }
 
     public String getMethodName() {
-        return method_name;
+        return methodName;
     }
 
     public void setMethodName(String methodName) {
-        this.method_name = methodName;
+        this.methodName = methodName;
     }
 }

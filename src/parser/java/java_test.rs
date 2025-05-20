@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::parser::{Test, Tests};
+use crate::{errors::FztError, parser::{Test, Tests}};
 
 use super::parser::JavaParser;
 
@@ -56,8 +56,8 @@ impl Test for JavaTestItem {
 }
 
 impl Tests for JavaTests {
-    fn to_json(&self) -> Result<String, crate::errors::FztError> {
-        todo!()
+    fn to_json(&self) -> Result<String, FztError> {
+        serde_json::to_string(&self).map_err(FztError::from)
     }
 
     fn tests(self) -> Vec<impl Test> {

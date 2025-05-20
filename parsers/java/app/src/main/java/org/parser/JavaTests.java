@@ -20,8 +20,11 @@ import java.util.List;
 
 import java.util.logging.Logger;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class JavaTests {
-    String root_folder;
+    @JsonProperty("root_folder")
+    String rootFolder;
     Long timestamp;
     HashMap<String, List<JavaTest>> tests;
     private static final Logger logger = Logger.getLogger(JavaTests.class.getName());
@@ -30,10 +33,10 @@ public class JavaTests {
     }
 
     public String getRootFolder() {
-        return root_folder;
+        return rootFolder;
     }
     public void setRootFolder(String rootFolder) {
-        this.root_folder = rootFolder;
+        this.rootFolder = rootFolder;
     }
 
     public Long getTimestamp() {
@@ -52,7 +55,7 @@ public class JavaTests {
 
     public void update() throws IOException {
         filterOutDeletedFiles();
-        var rootFolderPath = Paths.get(root_folder);
+        var rootFolderPath = Paths.get(rootFolder);
         Files.walkFileTree(rootFolderPath, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {

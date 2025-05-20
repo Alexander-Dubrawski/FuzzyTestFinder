@@ -60,7 +60,7 @@ impl PythonTest {
 }
 
 impl Test for PythonTest {
-    fn runtime_argument(self) -> String {
+    fn runtime_argument(&self) -> String {
         format!("{}::{}", self.path, self.test)
     }
 
