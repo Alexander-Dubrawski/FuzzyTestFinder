@@ -43,7 +43,6 @@ impl JavaParser {
     ) -> Result<bool, FztError> {
         let test_json = serde_json::to_string(&tests)?;
         let updated_test_json = self.get_tests(test_json.as_str())?;
-        println!("{:?}", updated_test_json);
         let updated = test_json != updated_test_json;
         if !only_check_for_update {
             *tests = serde_json::from_str(updated_test_json.as_str())?;

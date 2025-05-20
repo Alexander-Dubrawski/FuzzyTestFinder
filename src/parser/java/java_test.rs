@@ -51,7 +51,7 @@ impl Test for JavaTestItem {
     }
 
     fn search_item_name(&self) -> String {
-        format!("{}->{}", self.path, self.test)
+        format!("{}::{}", self.path, self.test)
     }
 }
 
