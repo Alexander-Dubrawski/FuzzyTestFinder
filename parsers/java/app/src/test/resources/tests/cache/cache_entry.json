@@ -2,11 +2,11 @@
   "root_folder" : "src/test/resources/tests",
   "timestamp" : 0,
   "tests" : {
-    "src/test/resources/tests/java/b/testThree.java" : [ {
+    "java/b/testThree.java" : [ {
       "class_path" : "tests.java.b.TestThree",
       "method_name" : "three"
     } ],
-    "src/test/resources/tests/java/a/testTwo.java" : [ {
+    "java/a/testTwo.java" : [ {
       "class_path" : "tests.java.a.TestTwo",
       "method_name" : "two"
     }]
