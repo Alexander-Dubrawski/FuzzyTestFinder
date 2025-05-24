@@ -1,5 +1,6 @@
 use crate::{cli::Config, errors::FztError};
 
+pub mod java;
 pub mod python;
 
 pub trait Runner {

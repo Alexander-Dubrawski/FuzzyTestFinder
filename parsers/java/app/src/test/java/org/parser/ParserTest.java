@@ -11,32 +11,35 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 class ParserTest {
     @Test void parseNew() throws IOException {
         final ObjectMapper objectMapper = new ObjectMapper();
         Parser parser = new Parser();
-        var jsonResult = parser.parse("src/test/resources/tests", null);
-
+        var rootDir = System.getProperty("user.dir") + "/src/test/resources/tests";
+        var jsonResult = parser.parse(rootDir, null);
         JavaTests javaTests;
         javaTests = objectMapper.readValue(jsonResult, new TypeReference<>() {
         });
-        assertEquals(javaTests.getRootFolder(), "src/test/resources/tests");
+
+        assertEquals(javaTests.getRootFolder(), rootDir);
         assertEquals(javaTests.getTests().size(), 3);
 
-        var testOne = javaTests.getTests().get("src/test/resources/tests/java/a/testOne.java");
+        var testOne = javaTests.getTests().get("java/a/testOne.java");
         assertEquals(testOne.size(), 1);
         assertEquals(testOne.getFirst().getClassPath(), "tests.java.a.TestOne");
         assertEquals(testOne.getFirst().getMethodName(), "one");
 
-        var testTwo = javaTests.getTests().get("src/test/resources/tests/java/a/testTwo.java");
+        var testTwo = javaTests.getTests().get("java/a/testTwo.java");
         assertEquals(testTwo.size(), 2);
         assertEquals(testTwo.get(0).getClassPath(), "tests.java.a.TestTwo");
         assertEquals(testTwo.get(0).getMethodName(), "two");
         assertEquals(testTwo.get(1).getClassPath(), "tests.java.a.TestTwo");
         assertEquals(testTwo.get(1).getMethodName(), "twoOne");
 
-        var testThree = javaTests.getTests().get("src/test/resources/tests/java/b/testThree.java");
+        var testThree = javaTests.getTests().get("java/b/testThree.java");
         assertEquals(testThree.size(), 1);
         assertEquals(testThree.get(0).getClassPath(), "tests.java.b.TestThree");
         assertEquals(testThree.get(0).getMethodName(), "three");
@@ -45,26 +48,58 @@ class ParserTest {
     @Test void parseCache() throws IOException {
         final ObjectMapper objectMapper = new ObjectMapper();
         Parser parser = new Parser();
-        var jsonResult = parser.parse("src/test/resources/tests", "src/test/resources/tests/cache/cache_entry.json");
+        var cache = Files.readString(Paths.get("src/test/resources/tests/cache/cache_entry.json"));
+        var rootDir = System.getProperty("user.dir") + "/src/test/resources/tests";
+        var jsonResult = parser.parse(rootDir, cache);
         JavaTests javaTests;
         javaTests = objectMapper.readValue(jsonResult, new TypeReference<>() {
         });
-        assertEquals(javaTests.getRootFolder(), "src/test/resources/tests");
+        assertEquals(javaTests.getRootFolder(), rootDir);
         assertEquals(javaTests.getTests().size(), 3);
 
-        var testOne = javaTests.getTests().get("src/test/resources/tests/java/a/testOne.java");
+        var testOne = javaTests.getTests().get("java/a/testOne.java");
         assertEquals(testOne.size(), 1);
         assertEquals(testOne.getFirst().getClassPath(), "tests.java.a.TestOne");
         assertEquals(testOne.getFirst().getMethodName(), "one");
 
-        var testTwo = javaTests.getTests().get("src/test/resources/tests/java/a/testTwo.java");
+        var testTwo = javaTests.getTests().get("java/a/testTwo.java");
         assertEquals(testTwo.size(), 2);
         assertEquals(testTwo.get(0).getClassPath(), "tests.java.a.TestTwo");
         assertEquals(testTwo.get(0).getMethodName(), "two");
         assertEquals(testTwo.get(1).getClassPath(), "tests.java.a.TestTwo");
         assertEquals(testTwo.get(1).getMethodName(), "twoOne");
 
-        var testThree = javaTests.getTests().get("src/test/resources/tests/java/b/testThree.java");
+        var testThree = javaTests.getTests().get("java/b/testThree.java");
+        assertEquals(testThree.size(), 1);
+        assertEquals(testThree.get(0).getClassPath(), "tests.java.b.TestThree");
+        assertEquals(testThree.get(0).getMethodName(), "three");
+    }
+
+    @Test void parseEmptyCache() throws IOException {
+        final ObjectMapper objectMapper = new ObjectMapper();
+        Parser parser = new Parser();
+        var cache = Files.readString(Paths.get("src/test/resources/tests/cache/empty_cache.json"));
+        var rootDir = System.getProperty("user.dir") + "/src/test/resources/tests";
+        var jsonResult = parser.parse(rootDir, cache);
+        JavaTests javaTests;
+        javaTests = objectMapper.readValue(jsonResult, new TypeReference<>() {
+        });
+        assertEquals(javaTests.getRootFolder(), rootDir);
+        assertEquals(javaTests.getTests().size(), 3);
+
+        var testOne = javaTests.getTests().get("java/a/testOne.java");
+        assertEquals(testOne.size(), 1);
+        assertEquals(testOne.getFirst().getClassPath(), "tests.java.a.TestOne");
+        assertEquals(testOne.getFirst().getMethodName(), "one");
+
+        var testTwo = javaTests.getTests().get("java/a/testTwo.java");
+        assertEquals(testTwo.size(), 2);
+        assertEquals(testTwo.get(0).getClassPath(), "tests.java.a.TestTwo");
+        assertEquals(testTwo.get(0).getMethodName(), "two");
+        assertEquals(testTwo.get(1).getClassPath(), "tests.java.a.TestTwo");
+        assertEquals(testTwo.get(1).getMethodName(), "twoOne");
+
+        var testThree = javaTests.getTests().get("java/b/testThree.java");
         assertEquals(testThree.size(), 1);
         assertEquals(testThree.get(0).getClassPath(), "tests.java.b.TestThree");
         assertEquals(testThree.get(0).getMethodName(), "three");

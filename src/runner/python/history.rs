@@ -16,7 +16,7 @@ pub fn get_tests<SE: SearchEngine>(
     if all {
         Ok(tests
             .tests()
-            .into_iter()
+            .iter()
             .map(|test| test.runtime_argument())
             .collect())
     } else if last {

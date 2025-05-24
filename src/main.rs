@@ -2,14 +2,13 @@ use std::env;
 
 use FzT::{
     cache::helper::project_hash,
-    cli::{PythonParser, cli_parser::parse_cli},
+    cli::{cli_parser::parse_cli, JavaRuntime, PythonParser},
     errors::FztError,
     metadata::handle_metadata,
     runner::{
-        Runner,
-        python::{pytest::PytestRunner, rust_python::RustPytonRunner},
+        java::java::JavaRunner, python::{pytest::PytestRunner, rust_python::RustPytonRunner}, Runner
     },
-    runtime::python::pytest::PytestRuntime,
+    runtime::{java::gradle::GradleRuntime, python::pytest::PytestRuntime},
     search_engine::fzf::FzfSearchEngine,
 };
 
@@ -42,6 +41,13 @@ fn main() -> Result<(), FztError> {
                 path_str.to_string(),
                 search_engine,
                 PytestRuntime::default(),
+                config,
+            )
+            .run(),
+            FzT::cli::Language::Java((_, _)) => JavaRunner::new(
+                path_str.to_string(),
+                search_engine,
+                GradleRuntime::default(),
                 config,
             )
             .run(),

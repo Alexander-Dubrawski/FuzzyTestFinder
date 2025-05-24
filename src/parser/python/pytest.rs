@@ -26,7 +26,6 @@ fn get_pytests() -> Result<String, FztError> {
 
 #[derive(Default)]
 pub struct PyTestParser {
-    // absolute path
     root_dir: String,
 }
 

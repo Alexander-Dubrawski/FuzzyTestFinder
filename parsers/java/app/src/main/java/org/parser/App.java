@@ -11,7 +11,7 @@ public class App {
     public static void main(String[] args) {
         Options options = new Options();
         options.addOption("p", "path", true, "Path to JAVA project");
-        options.addOption("c", "cache", true, "Path to FzT JAVA project cache file");
+        options.addOption("c", "cache", true, "Cached test state in JSON");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
@@ -27,8 +27,6 @@ public class App {
              }
              if (cmd.hasOption("cache")) {
                 cache = cmd.getOptionValue("cache");
-             } else {
-                cache = System.getenv("JAVA_PROJECT_FZT_CACHE_PATH");
              }
             if (path == null) {
                 System.err.println("Missing --path option or JAVA_PROJECT_PATH env variable.");

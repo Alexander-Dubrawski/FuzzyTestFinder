@@ -20,7 +20,10 @@ import java.util.List;
 
 import java.util.logging.Logger;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class JavaTests {
+    @JsonProperty("root_folder")
     String rootFolder;
     Long timestamp;
     HashMap<String, List<JavaTest>> tests;
@@ -50,6 +53,23 @@ public class JavaTests {
         this.tests = tests;
     }
 
+
+    private Path getRelativePath(Path fullPath) throws Exception {
+        try {
+            Path relative = Paths.get(rootFolder).relativize(fullPath);
+
+            // Remove leading "/" if present (similar to .strip_prefix("/"))
+            String normalized = relative.toString();
+            if (normalized.startsWith("/")) {
+                normalized = normalized.substring(1);
+            }
+
+            return Paths.get(normalized);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new Exception("File path could not be parsed: " + fullPath);
+        }
+    }
+
     public void update() throws IOException {
         filterOutDeletedFiles();
         var rootFolderPath = Paths.get(rootFolder);
@@ -65,27 +85,28 @@ public class JavaTests {
                     if (!"java".equalsIgnoreCase(extension)) {
                         return FileVisitResult.CONTINUE;
                     }
+                    var relativePath = getRelativePath(file);
                     long modifiedTime = attrs.lastModifiedTime().toInstant().toEpochMilli();
                     if (modifiedTime > timestamp) {
                         var newTests = getTestMethodsWithClassPaths(file);
                         if (newTests.isEmpty()) {
                              return FileVisitResult.CONTINUE;
                         }
-                        if (!tests.containsKey(file.toString())) {
-                            tests.put(file.toString(), newTests);
+                        if (!tests.containsKey(relativePath.toString())) {
+                            tests.put(relativePath.toString(), newTests);
                         } else {
-                            tests.put(file.toString(), newTests);
+                            tests.put(relativePath.toString(), newTests);
                         }
-                        logger.info("Tests updated: " + file.toString() + " : " + newTests);
+                        logger.info("Tests updated: " + relativePath.toString() + " : " + newTests);
                         return FileVisitResult.CONTINUE;
                     }
 
                     FileTime createdTime = attrs.creationTime();
                     if (createdTime.toInstant().toEpochMilli() > timestamp) {
-                        var newTests = getTestMethodsWithClassPaths(file);
+                        var newTests = getTestMethodsWithClassPaths(relativePath);
                         if (!newTests.isEmpty()) {
-                            tests.put(file.toString(), newTests);
-                            logger.info("Test created" + file.toString()+ " : " + newTests);
+                            tests.put(relativePath.toString(), newTests);
+                            logger.info("Test created" + relativePath.toString()+ " : " + newTests);
                         }
                         return FileVisitResult.CONTINUE;
                     }

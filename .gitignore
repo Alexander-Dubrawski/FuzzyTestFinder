@@ -6,4 +6,3 @@ parsers/java/**/bin/**
 parsers/java/**/*.class
 parsers/java/**/out/
 parsers/java/**/*.jar
-parsers/java/app/bin/**/*.class

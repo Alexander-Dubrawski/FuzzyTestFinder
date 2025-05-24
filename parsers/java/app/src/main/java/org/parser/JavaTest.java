@@ -1,8 +1,11 @@
 package org.parser;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class JavaTest {
+    @JsonProperty("class_path")
     String classPath;
+    @JsonProperty("method_name")
     String methodName;
 
     public JavaTest() {
