@@ -27,6 +27,10 @@ pub fn get_java_runner<SE: SearchEngine + 'static>(
             config,
             project_hash()?,
         ))),
-        _ => todo!(),
+        _ => {
+            return Err(FztError::GeneralParsingError(format!(
+                "Combination unknown: {test_framework} {runtime}"
+            )));
+        }
     }
 }

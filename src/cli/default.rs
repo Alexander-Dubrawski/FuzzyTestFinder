@@ -11,7 +11,11 @@ pub fn get_default(project_id: &str, config: RunnerConfig) -> Result<Box<dyn Run
     let reader = CacheManager::get_meta(project_id)?;
     let meta_data: MetaData = match reader {
         Some(reader) => serde_json::from_reader(reader)?,
-        None => todo!(),
+        None => {
+            return Err(FztError::GeneralParsingError(
+                "Metadata not found".to_string(),
+            ));
+        }
     };
 
     match meta_data.runner_name {

@@ -37,6 +37,10 @@ pub fn get_python_runner<SE: SearchEngine + 'static>(
             config,
             project_hash()?,
         ))),
-        _ => todo!(),
+        _ => {
+            return Err(FztError::GeneralParsingError(format!(
+                "Combination unknown: {parser} {runtime}"
+            )));
+        }
     }
 }
