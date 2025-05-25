@@ -1,14 +1,13 @@
 use crate::{
     cache::{helper::project_hash, manager::CacheManager},
-    cli::Config,
     errors::FztError,
-    parser::{
+    runner::{MetaData, Runner, RunnerConfig, RunnerName},
+    runtime::Runtime,
+    search_engine::SearchEngine,
+    tests::{
         Test, Tests,
         java::{java_test::JavaTests, parser::JavaParser},
     },
-    runner::{Runner, RunnerConfig},
-    runtime::Runtime,
-    search_engine::SearchEngine,
 };
 
 // TODO: Make generic
@@ -42,7 +41,7 @@ pub fn get_tests<SE: SearchEngine>(
     }
 }
 
-pub struct JavaRunner<SE: SearchEngine, RT: Runtime> {
+pub struct JavaJunit5Runner<SE: SearchEngine, RT: Runtime> {
     parser: JavaParser,
     cache_manager: CacheManager,
     search_engine: SE,
@@ -51,8 +50,8 @@ pub struct JavaRunner<SE: SearchEngine, RT: Runtime> {
     config: RunnerConfig,
 }
 
-impl<SE: SearchEngine, RT: Runtime> JavaRunner<SE, RT> {
-    pub fn new(root_dir: String, search_engine: SE, runtime: RT, config: Config) -> Self {
+impl<SE: SearchEngine, RT: Runtime> JavaJunit5Runner<SE, RT> {
+    pub fn new(root_dir: String, search_engine: SE, runtime: RT, config: RunnerConfig) -> Self {
         let project_id = format!("{}-java-junit5", project_hash(root_dir.clone()));
         let parser = JavaParser::new(root_dir.clone());
         let cache_manager = CacheManager::new(project_id);
@@ -63,12 +62,12 @@ impl<SE: SearchEngine, RT: Runtime> JavaRunner<SE, RT> {
             search_engine,
             runtime,
             root_dir,
-            config: RunnerConfig::from(config),
+            config,
         }
     }
 }
 
-impl<SE: SearchEngine, RT: Runtime> Runner for JavaRunner<SE, RT> {
+impl<SE: SearchEngine, RT: Runtime> Runner for JavaJunit5Runner<SE, RT> {
     fn run(&self) -> Result<(), FztError> {
         if self.config.clear_cache || self.config.clear_history {
             if self.config.clear_cache {
@@ -122,5 +121,14 @@ impl<SE: SearchEngine, RT: Runtime> Runner for JavaRunner<SE, RT> {
         } else {
             Ok(())
         }
+    }
+    fn meta_data(&self) -> Result<String, FztError> {
+        let meta_data = MetaData {
+            runner_name: RunnerName::JavaJunit5Runner,
+            search_engine: self.search_engine.name(),
+            runtime: self.runtime.name(),
+        };
+        let json = serde_json::to_string(&meta_data)?;
+        Ok(json)
     }
 }

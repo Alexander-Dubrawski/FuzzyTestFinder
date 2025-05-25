@@ -12,7 +12,7 @@ use walkdir::{DirEntry, WalkDir};
 
 use crate::{
     errors::FztError,
-    parser::{Test, Tests},
+    tests::{Test, Tests},
 };
 
 fn is_hidden(entry: &DirEntry) -> bool {

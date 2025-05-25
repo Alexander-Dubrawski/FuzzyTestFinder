@@ -7,8 +7,7 @@ use std::{
 };
 
 use crate::errors::FztError;
-
-use super::types::MetaData;
+use crate::runner::MetaData;
 
 const HISTORY_SIZE: usize = 200;
 
@@ -29,13 +28,13 @@ impl CacheManager {
         }
     }
 
-    pub fn save_meta(project_id: &str, meta_data: MetaData) -> Result<(), FztError> {
+    pub fn save_meta(project_id: &str, meta_data: &str) -> Result<(), FztError> {
         let mut meta_location = home_dir().expect("Could not find home directory");
         meta_location.push(".fzt");
         let path = meta_location.join(format!("{}-metadata.json", project_id));
         let file = File::create(&path)?;
         let mut writer = BufWriter::new(file);
-        serde_json::to_writer(&mut writer, &meta_data)?;
+        writer.write(meta_data.as_bytes())?;
         Ok(())
     }
 

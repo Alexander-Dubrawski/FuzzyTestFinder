@@ -32,4 +32,8 @@ impl Runtime for GradleRuntime {
         command.status()?;
         Ok(())
     }
+
+    fn name(&self) -> String {
+        String::from("gradle")
+    }
 }

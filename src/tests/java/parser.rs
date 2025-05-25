@@ -19,7 +19,9 @@ impl JavaParser {
     fn get_tests(&self, test_json: &str) -> Result<String, FztError> {
         let home_dir = env::var("HOME").unwrap();
         let jar_path = PathBuf::from(home_dir).join(".fzt/fzt-java-parser.jar");
-        let output =  Command::new("java").arg("-jar").arg(jar_path)
+        let output = Command::new("java")
+            .arg("-jar")
+            .arg(jar_path)
             .arg("-p")
             .arg(self.root_dir.as_str())
             .arg("-c")

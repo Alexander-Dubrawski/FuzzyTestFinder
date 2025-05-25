@@ -3,7 +3,7 @@ use std::process::{Command, Output, Stdio};
 use std::str;
 
 use crate::errors::FztError;
-use crate::parser::{Test, Tests};
+use crate::tests::{Test, Tests};
 
 use super::SearchEngine;
 
@@ -71,5 +71,9 @@ impl SearchEngine for FzfSearchEngine {
             .lines()
             .map(|line| line.to_string())
             .collect())
+    }
+
+    fn name(&self) -> String {
+        String::from("fzf")
     }
 }

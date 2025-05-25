@@ -1,19 +1,18 @@
 use crate::{
     cache::{helper::project_hash, manager::CacheManager},
-    cli::Config,
     errors::FztError,
-    parser::{
+    runner::{MetaData, Runner, RunnerConfig, RunnerName},
+    runtime::Runtime,
+    search_engine::SearchEngine,
+    tests::{
         Tests,
         python::{python_tests::PythonTests, rust_python::RustPytonParser},
     },
-    runner::{Runner, RunnerConfig},
-    runtime::Runtime,
-    search_engine::SearchEngine,
 };
 
 use super::history::get_tests;
 
-pub struct RustPytonRunner<SE: SearchEngine, RT: Runtime> {
+pub struct RustPythonRunner<SE: SearchEngine, RT: Runtime> {
     parser: RustPytonParser,
     cache_manager: CacheManager,
     search_engine: SE,
@@ -22,8 +21,8 @@ pub struct RustPytonRunner<SE: SearchEngine, RT: Runtime> {
     config: RunnerConfig,
 }
 
-impl<SE: SearchEngine, RT: Runtime> RustPytonRunner<SE, RT> {
-    pub fn new(root_dir: String, search_engine: SE, runtime: RT, config: Config) -> Self {
+impl<SE: SearchEngine, RT: Runtime> RustPythonRunner<SE, RT> {
+    pub fn new(root_dir: String, search_engine: SE, runtime: RT, config: RunnerConfig) -> Self {
         let project_id = format!("{}-rust-python", project_hash(root_dir.clone()));
         let parser = RustPytonParser::default();
         let cache_manager = CacheManager::new(project_id);
@@ -34,12 +33,12 @@ impl<SE: SearchEngine, RT: Runtime> RustPytonRunner<SE, RT> {
             search_engine,
             runtime,
             root_dir,
-            config: RunnerConfig::from(config),
+            config,
         }
     }
 }
 
-impl<SE: SearchEngine, RT: Runtime> Runner for RustPytonRunner<SE, RT> {
+impl<SE: SearchEngine, RT: Runtime> Runner for RustPythonRunner<SE, RT> {
     fn run(&self) -> Result<(), FztError> {
         if self.config.clear_cache || self.config.clear_history {
             if self.config.clear_cache {
@@ -82,5 +81,14 @@ impl<SE: SearchEngine, RT: Runtime> Runner for RustPytonRunner<SE, RT> {
         } else {
             Ok(())
         }
+    }
+    fn meta_data(&self) -> Result<String, FztError> {
+        let meta_data = MetaData {
+            runner_name: RunnerName::RustPythonRunner,
+            search_engine: self.search_engine.name(),
+            runtime: self.runtime.name(),
+        };
+        let json = serde_json::to_string(&meta_data)?;
+        Ok(json)
     }
 }

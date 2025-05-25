@@ -32,4 +32,8 @@ impl Runtime for PytestRuntime {
         command.status()?;
         Ok(())
     }
+
+    fn name(&self) -> String {
+        String::from("pytest")
+    }
 }

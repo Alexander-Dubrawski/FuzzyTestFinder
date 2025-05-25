@@ -1,8 +1,8 @@
 use crate::{
     cache::manager::CacheManager,
     errors::FztError,
-    parser::{Test, Tests, python::python_tests::PythonTests},
     search_engine::SearchEngine,
+    tests::{Test, Tests, python::python_tests::PythonTests},
 };
 
 pub fn get_tests<SE: SearchEngine>(

@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::errors::FztError;
-use crate::parser::Tests;
+use crate::tests::Tests;
 
 use super::python_tests::PythonTests;
 

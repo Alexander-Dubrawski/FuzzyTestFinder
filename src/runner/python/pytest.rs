@@ -1,14 +1,13 @@
 use crate::{
     cache::{helper::project_hash, manager::CacheManager},
-    cli::Config,
     errors::FztError,
-    parser::{
+    runner::{MetaData, Runner, RunnerConfig, RunnerName},
+    runtime::Runtime,
+    search_engine::SearchEngine,
+    tests::{
         Tests,
         python::{pytest::PyTestParser, python_tests::PythonTests},
     },
-    runner::{Runner, RunnerConfig},
-    runtime::Runtime,
-    search_engine::SearchEngine,
 };
 
 use super::history::get_tests;
@@ -23,7 +22,7 @@ pub struct PytestRunner<SE: SearchEngine, RT: Runtime> {
 }
 
 impl<SE: SearchEngine, RT: Runtime> PytestRunner<SE, RT> {
-    pub fn new(root_dir: String, search_engine: SE, runtime: RT, config: Config) -> Self {
+    pub fn new(root_dir: String, search_engine: SE, runtime: RT, config: RunnerConfig) -> Self {
         let project_id = format!("{}-pytest", project_hash(root_dir.clone()));
 
         let parser = PyTestParser::new(root_dir.clone());
@@ -35,7 +34,7 @@ impl<SE: SearchEngine, RT: Runtime> PytestRunner<SE, RT> {
             search_engine,
             runtime,
             root_dir,
-            config: RunnerConfig::from(config),
+            config,
         }
     }
 }
@@ -83,5 +82,15 @@ impl<SE: SearchEngine, RT: Runtime> Runner for PytestRunner<SE, RT> {
         } else {
             Ok(())
         }
+    }
+
+    fn meta_data(&self) -> Result<String, FztError> {
+        let meta_data = MetaData {
+            runner_name: RunnerName::PytestRunner,
+            search_engine: self.search_engine.name(),
+            runtime: self.runtime.name(),
+        };
+        let json = serde_json::to_string(&meta_data)?;
+        Ok(json)
     }
 }

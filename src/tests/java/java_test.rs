@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::FztError, parser::{Test, Tests}};
+use crate::{
+    errors::FztError,
+    tests::{Test, Tests},
+};
 
 use super::parser::JavaParser;
 
