@@ -1,7 +1,7 @@
 use crate::{
     cache::manager::CacheManager,
     errors::FztError,
-    runner::{MetaData, Runner, RunnerConfig},
+    runner::{MetaData, Runner, RunnerConfig, RunnerName},
     search_engine::fzf::FzfSearchEngine,
 };
 
@@ -19,19 +19,19 @@ pub fn get_default(project_id: &str, config: RunnerConfig) -> Result<Box<dyn Run
     };
 
     match meta_data.runner_name {
-        crate::runner::RunnerName::RustPythonRunner => get_python_runner(
+        RunnerName::RustPythonRunner => get_python_runner(
             "rustpython",
             meta_data.runtime.as_str(),
             config,
             FzfSearchEngine::default(),
         ),
-        crate::runner::RunnerName::PytestRunner => get_python_runner(
+        RunnerName::PytestRunner => get_python_runner(
             "pytest",
             meta_data.runtime.as_str(),
             config,
             FzfSearchEngine::default(),
         ),
-        crate::runner::RunnerName::JavaJunit5Runner => get_java_runner(
+        RunnerName::JavaJunit5Runner => get_java_runner(
             "junit5",
             meta_data.runtime.as_str(),
             config,
