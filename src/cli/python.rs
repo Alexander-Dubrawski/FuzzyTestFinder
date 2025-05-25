@@ -1,6 +1,7 @@
 use std::env;
 
 use crate::{
+    cache::helper::project_hash,
     errors::FztError,
     runner::{
         Runner, RunnerConfig,
@@ -27,12 +28,14 @@ pub fn get_python_runner<SE: SearchEngine + 'static>(
             search_engine,
             PytestRuntime::default(),
             config,
+            project_hash()?,
         ))),
         ("pytest", "pytest") => Ok(Box::new(PytestRunner::new(
             path_str.to_string(),
             search_engine,
             PytestRuntime::default(),
             config,
+            project_hash()?,
         ))),
         _ => todo!(),
     }

@@ -1,5 +1,5 @@
 use crate::{
-    cache::{helper::project_hash, manager::CacheManager},
+    cache::manager::CacheManager,
     errors::FztError,
     runner::{MetaData, Runner, RunnerConfig, RunnerName},
     runtime::Runtime,
@@ -22,8 +22,14 @@ pub struct PytestRunner<SE: SearchEngine, RT: Runtime> {
 }
 
 impl<SE: SearchEngine, RT: Runtime> PytestRunner<SE, RT> {
-    pub fn new(root_dir: String, search_engine: SE, runtime: RT, config: RunnerConfig) -> Self {
-        let project_id = format!("{}-pytest", project_hash(root_dir.clone()));
+    pub fn new(
+        root_dir: String,
+        search_engine: SE,
+        runtime: RT,
+        config: RunnerConfig,
+        project_hash: String,
+    ) -> Self {
+        let project_id = format!("{}-pytest", project_hash);
 
         let parser = PyTestParser::new(root_dir.clone());
         let cache_manager = CacheManager::new(project_id);

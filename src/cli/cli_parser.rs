@@ -1,5 +1,3 @@
-use std::env;
-
 use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 
 use crate::{
@@ -133,9 +131,6 @@ fn configure_commands() -> Command {
 
 pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
     let cmd = configure_commands();
-    let path = env::current_dir()?;
-    let path_str = path.to_string_lossy().to_string();
-    let project_hash = project_hash(path_str);
     let (cli, runtime_args) = parse_args(cmd);
 
     let runner_config = RunnerConfig::new(
@@ -161,10 +156,10 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
             runner_config,
             FzfSearchEngine::default(),
         ),
-        None => get_default(project_hash.as_str(), runner_config),
+        None => get_default(project_hash()?.as_str(), runner_config),
     }?;
     if cli.default {
-        set_default(project_hash.as_str(), runner.meta_data()?.as_str())?;
+        set_default(project_hash()?.as_str(), runner.meta_data()?.as_str())?;
     }
     Ok(runner)
 }

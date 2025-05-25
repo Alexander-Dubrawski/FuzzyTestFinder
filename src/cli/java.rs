@@ -1,6 +1,7 @@
 use std::env;
 
 use crate::{
+    cache::helper::project_hash,
     errors::FztError,
     runner::{Runner, RunnerConfig, java::java::JavaJunit5Runner},
     runtime::java::gradle::GradleRuntime,
@@ -24,6 +25,7 @@ pub fn get_java_runner<SE: SearchEngine + 'static>(
             search_engine,
             GradleRuntime::default(),
             config,
+            project_hash()?,
         ))),
         _ => todo!(),
     }
