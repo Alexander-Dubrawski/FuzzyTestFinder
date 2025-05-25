@@ -7,7 +7,6 @@ use std::{
 };
 
 use crate::errors::FztError;
-use crate::runner::MetaData;
 
 const HISTORY_SIZE: usize = 200;
 
@@ -38,7 +37,7 @@ impl CacheManager {
         Ok(())
     }
 
-    pub fn get_meta(project_id: &str) -> Result<Option<MetaData>, FztError> {
+    pub fn get_meta(project_id: &str) -> Result<Option<BufReader<File>>, FztError> {
         let mut meta_location = home_dir().expect("Could not find home directory");
         meta_location.push(".fzt");
         let path = meta_location.join(format!("{}-metadata.json", project_id));
@@ -48,7 +47,7 @@ impl CacheManager {
         } else {
             let entry = File::open(&path)?;
             let reader = BufReader::new(entry);
-            Ok(serde_json::from_reader(reader)?)
+            Ok(Some(reader))
         }
     }
 
