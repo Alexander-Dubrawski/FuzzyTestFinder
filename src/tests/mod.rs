@@ -5,7 +5,7 @@ pub mod python;
 
 pub trait Test {
     fn runtime_argument(&self) -> String;
-    fn search_item_name(&self) -> String;
+    fn name(&self) -> String;
 }
 
 pub trait Tests {

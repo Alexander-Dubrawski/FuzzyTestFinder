@@ -23,7 +23,7 @@ pub fn get_tests<SE: SearchEngine>(
         Ok(tests
             .tests()
             .into_iter()
-            .map(|test| test.search_item_name())
+            .map(|test| test.name())
             .collect())
     } else if last {
         cache_manager.recent_history_command()
@@ -113,7 +113,7 @@ impl<SE: SearchEngine, RT: Runtime> Runner for JavaJunit5Runner<SE, RT> {
             .tests()
             .into_iter()
             .filter(|test| {
-                let search_name = test.search_item_name();
+                let search_name = test.name();
                 selected_tests.contains(&search_name)
             })
             .map(|test| test.runtime_argument())

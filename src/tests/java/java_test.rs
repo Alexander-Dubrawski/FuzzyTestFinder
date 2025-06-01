@@ -53,7 +53,7 @@ impl Test for JavaTestItem {
         format!("{}.{}", self.class_path, self.test)
     }
 
-    fn search_item_name(&self) -> String {
+    fn name(&self) -> String {
         format!("{}::{}", self.path, self.test)
     }
 }

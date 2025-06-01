@@ -26,7 +26,7 @@ struct Cli {
     )]
     clear_cache: bool,
 
-    #[arg(long, default_value_t = false)]
+    #[arg(long, short, default_value_t = false)]
     default: bool,
 
     #[arg(

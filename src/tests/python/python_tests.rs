@@ -64,7 +64,7 @@ impl Test for PythonTest {
         format!("{}::{}", self.path, self.test)
     }
 
-    fn search_item_name(&self) -> String {
+    fn name(&self) -> String {
         format!("{}::{}", self.path, self.test)
     }
 }

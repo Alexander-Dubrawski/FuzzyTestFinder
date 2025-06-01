@@ -4,6 +4,7 @@ use crate::errors::FztError;
 
 pub mod java;
 pub mod python;
+pub mod general_runner;
 
 pub trait Runner {
     fn run(&self) -> Result<(), FztError>;
