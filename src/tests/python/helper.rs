@@ -1,7 +1,12 @@
-use std::{collections::{HashMap, HashSet}, ffi::OsStr, path::Path, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    collections::{HashMap, HashSet},
+    ffi::OsStr,
+    path::Path,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use regex::Regex;
-use rustpython_parser::{lexer::lex, parse_tokens, Mode};
+use rustpython_parser::{Mode, lexer::lex, parse_tokens};
 use walkdir::{DirEntry, WalkDir};
 
 use crate::errors::FztError;
@@ -53,7 +58,12 @@ pub fn filter_out_deleted_files(tests: &mut HashMap<String, HashSet<String>>) ->
     updated
 }
 
-pub fn update_tests(root_folder: &str, timestamp: &mut u128, tests: &mut HashMap<String, HashSet<String>>, only_check_for_change: bool) -> Result<bool, FztError> {
+pub fn update_tests(
+    root_folder: &str,
+    timestamp: &mut u128,
+    tests: &mut HashMap<String, HashSet<String>>,
+    only_check_for_change: bool,
+) -> Result<bool, FztError> {
     let mut updated = false;
     for entry in WalkDir::new(root_folder)
         .into_iter()
@@ -139,4 +149,3 @@ pub fn update_tests(root_folder: &str, timestamp: &mut u128, tests: &mut HashMap
     }
     Ok(updated)
 }
-

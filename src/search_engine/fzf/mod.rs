@@ -38,7 +38,7 @@ fn run_fzf(input: &str, read_null: bool) -> Result<Output, FztError> {
 pub struct FzfSearchEngine {}
 
 impl SearchEngine for FzfSearchEngine {
-    fn get_tests_to_run(&self, all_test: impl Tests) -> Result<Vec<String>, FztError> {
+    fn get_tests_to_run(&self, all_test: &impl Tests) -> Result<Vec<String>, FztError> {
         let mut input = String::new();
         all_test.tests().into_iter().for_each(|test| {
             input.push_str(format!("{}\n", test.name()).as_str());

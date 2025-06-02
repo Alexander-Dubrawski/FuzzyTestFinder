@@ -3,12 +3,10 @@ use std::env;
 use crate::{
     cache::helper::project_hash,
     errors::FztError,
-    runner::{
-        Runner, RunnerConfig,
-        python::{pytest::PytestRunner, rust_python::RustPythonRunner},
-    },
+    runner::{Runner, RunnerConfig, RunnerName, general_runner::GeneralCacheRunner},
     runtime::python::pytest::PytestRuntime,
     search_engine::SearchEngine,
+    tests::python::{pytest::tests::PytestTests, rust_python::tests::RustPytonTests},
 };
 
 pub fn get_python_runner<SE: SearchEngine + 'static>(
@@ -23,19 +21,21 @@ pub fn get_python_runner<SE: SearchEngine + 'static>(
         parser.to_lowercase().as_str(),
         runtime.to_lowercase().as_str(),
     ) {
-        ("rustpython", "pytest") => Ok(Box::new(RustPythonRunner::new(
-            path_str.to_string(),
+        ("rustpython", "pytest") => Ok(Box::new(GeneralCacheRunner::new(
             search_engine,
             PytestRuntime::default(),
             config,
-            project_hash()?,
+            RustPytonTests::new_empty(path_str.to_string()),
+            format!("{}-rust-python", project_hash()?),
+            RunnerName::RustPythonRunner,
         ))),
-        ("pytest", "pytest") => Ok(Box::new(PytestRunner::new(
-            path_str.to_string(),
+        ("pytest", "pytest") => Ok(Box::new(GeneralCacheRunner::new(
             search_engine,
             PytestRuntime::default(),
             config,
-            project_hash()?,
+            PytestTests::new_empty(path_str.to_string()),
+            format!("{}-pytest", project_hash()?),
+            RunnerName::PytestRunner,
         ))),
         _ => {
             return Err(FztError::GeneralParsingError(format!(

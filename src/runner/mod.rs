@@ -2,12 +2,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::errors::FztError;
 
-pub mod java;
-pub mod python;
 pub mod general_runner;
 
 pub trait Runner {
-    fn run(&self) -> Result<(), FztError>;
+    fn run(&mut self) -> Result<(), FztError>;
     fn meta_data(&self) -> Result<String, FztError>;
 }
 

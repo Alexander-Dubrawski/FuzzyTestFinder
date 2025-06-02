@@ -37,7 +37,6 @@ impl JavaParser {
             .map(|out| out.to_string())
             .map_err(FztError::from)
     }
-
     pub fn parse_tests(
         &self,
         tests: &mut JavaTests,

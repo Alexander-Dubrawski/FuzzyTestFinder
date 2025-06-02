@@ -1,9 +1,22 @@
-use std::{collections::{HashMap, HashSet}, process::Command, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    collections::{HashMap, HashSet},
+    process::Command,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
+use crate::{
+    errors::FztError,
+    tests::{
+        Test, Tests,
+        python::{
+            helper::{filter_out_deleted_files, update_tests},
+            python_test::PythonTest,
+        },
+    },
+};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::str;
-use crate::{errors::FztError, tests::{python::{helper::{filter_out_deleted_files, update_tests}, python_tests::PythonTest}, Test, Tests}};
 
 fn get_pytests() -> Result<String, FztError> {
     let binding = Command::new("python")
@@ -46,7 +59,7 @@ impl PytestTests {
         }
     }
 
-    fn parse_python_tests(&mut self, pytest_output: &str) -> Result<(),FztError> {
+    fn parse_python_tests(&mut self, pytest_output: &str) -> Result<(), FztError> {
         let mut py_tests: HashMap<String, HashSet<String>> = HashMap::new();
         for line in pytest_output.lines() {
             if line.is_empty() {
@@ -86,20 +99,24 @@ impl Tests for PytestTests {
         serde_json::to_string(&self).map_err(FztError::from)
     }
 
-    fn tests(self) -> Vec<impl Test> {
+    fn tests(&self) -> Vec<impl Test> {
         let mut output = vec![];
-        self.tests.into_iter().for_each(|(path, tests)| {
-            tests.into_iter().for_each(|test| {
-                // TODO: Move python test to mod
-                output.push(PythonTest::new(path.clone(), test));
+        self.tests.iter().for_each(|(path, tests)| {
+            tests.iter().for_each(|test| {
+                output.push(PythonTest::new(path.clone(), test.clone()));
             });
         });
         output
     }
 
     fn update(&mut self) -> Result<bool, FztError> {
-        filter_out_deleted_files( &mut self.tests);
-        let updated = update_tests(self.root_folder.as_str(), &mut self.timestamp, &mut self.tests, true)?;
+        filter_out_deleted_files(&mut self.tests);
+        let updated = update_tests(
+            self.root_folder.as_str(),
+            &mut self.timestamp,
+            &mut self.tests,
+            true,
+        )?;
         if updated {
             self.parse_python_tests(get_pytests()?.as_str())?;
         }

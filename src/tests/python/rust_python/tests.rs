@@ -2,9 +2,16 @@ use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::FztError, tests::{python::{helper::{filter_out_deleted_files, update_tests}, python_tests::PythonTest}, Test, Tests}};
-
-
+use crate::{
+    errors::FztError,
+    tests::{
+        Test, Tests,
+        python::{
+            helper::{filter_out_deleted_files, update_tests},
+            python_test::PythonTest,
+        },
+    },
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RustPytonTests {
@@ -14,7 +21,7 @@ pub struct RustPytonTests {
 }
 
 impl RustPytonTests {
-        pub fn new(
+    pub fn new(
         root_folder: String,
         timestamp: u128,
         tests: HashMap<String, HashSet<String>>,
@@ -40,20 +47,24 @@ impl Tests for RustPytonTests {
         serde_json::to_string(&self).map_err(FztError::from)
     }
 
-    fn tests(self) -> Vec<impl Test> {
+    fn tests(&self) -> Vec<impl Test> {
         let mut output = vec![];
-        self.tests.into_iter().for_each(|(path, tests)| {
-            tests.into_iter().for_each(|test| {
-                // TODO: Move python test to mod
-                output.push(PythonTest::new(path.clone(), test));
+        self.tests.iter().for_each(|(path, tests)| {
+            tests.iter().for_each(|test| {
+                output.push(PythonTest::new(path.clone(), test.clone()));
             });
         });
         output
     }
 
     fn update(&mut self) -> Result<bool, FztError> {
-        filter_out_deleted_files( &mut self.tests);
-        let updated = update_tests(self.root_folder.as_str(), &mut self.timestamp, &mut self.tests, false)?;
+        filter_out_deleted_files(&mut self.tests);
+        let updated = update_tests(
+            self.root_folder.as_str(),
+            &mut self.timestamp,
+            &mut self.tests,
+            false,
+        )?;
         Ok(updated)
     }
 }

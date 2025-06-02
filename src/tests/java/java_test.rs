@@ -63,23 +63,23 @@ impl Tests for JavaTests {
         serde_json::to_string(&self).map_err(FztError::from)
     }
 
-    fn tests(self) -> Vec<impl Test> {
+    fn tests(&self) -> Vec<impl Test> {
         let mut output = vec![];
-        self.tests.into_iter().for_each(|(path, tests)| {
-            tests.into_iter().for_each(|test| {
+        self.tests.iter().for_each(|(path, tests)| {
+            tests.iter().for_each(|test| {
                 output.push(JavaTestItem::new(
                     path.clone(),
-                    test.class_path,
-                    test.method_name,
+                    test.class_path.clone(),
+                    test.method_name.clone(),
                 ));
             });
         });
         output
     }
 
-    fn update(&mut self, only_check_for_update: bool) -> Result<bool, crate::errors::FztError> {
+    fn update(&mut self) -> Result<bool, crate::errors::FztError> {
         let parser = JavaParser::new(self.root_folder.clone());
-        let updated = parser.parse_tests(self, only_check_for_update)?;
+        let updated = parser.parse_tests(self, false)?;
         Ok(updated)
     }
 }
