@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::de::DeserializeOwned;
 
 use crate::{
@@ -8,36 +10,6 @@ use crate::{
     search_engine::SearchEngine,
     tests::{Test, Tests},
 };
-
-pub fn get_tests<SE: SearchEngine, T: Tests>(
-    history: bool,
-    last: bool,
-    cache_manager: &CacheManager,
-    search_engine: &SE,
-    tests: &T,
-    all: bool,
-) -> Result<Vec<String>, FztError> {
-    if all {
-        Ok(tests
-            .tests()
-            .iter()
-            .map(|test| test.runtime_argument())
-            .collect())
-    } else if last {
-        cache_manager.recent_history_command()
-    } else if history {
-        let history = cache_manager.history()?;
-        let selected_tests = search_engine.get_from_history(history)?;
-        if selected_tests.len() > 0 {
-            cache_manager.update_history(selected_tests.iter().as_ref())?;
-        }
-        Ok(selected_tests)
-    } else {
-        let selected_tests = search_engine.get_tests_to_run(tests)?;
-        cache_manager.update_history(selected_tests.iter().as_ref())?;
-        Ok(selected_tests)
-    }
-}
 
 pub struct GeneralCacheRunner<SE: SearchEngine, RT: Runtime, T: Tests> {
     tests: T,
@@ -90,28 +62,42 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
                     .add_entry(self.tests.to_json()?.as_str())?;
             }
         }
-        let selected_tests = get_tests(
-            self.config.history,
-            self.config.last,
-            &self.cache_manager,
-            &self.search_engine,
-            &self.tests,
-            self.config.all,
-        )?;
-        // TODO: Improve Filter for tests
-        let test_items: Vec<String> = self
-            .tests
-            .tests()
-            .into_iter()
-            .filter(|test| {
-                let search_name = test.name();
-                selected_tests.contains(&search_name)
-            })
-            .map(|test| test.runtime_argument())
-            .collect();
-        if !test_items.is_empty() {
+
+        let tests_to_run: Vec<String> = if self.config.all {
+            self.tests
+                .tests()
+                .iter()
+                .map(|test| test.runtime_argument())
+                .collect()
+        } else if self.config.last {
+            self.cache_manager.recent_history_command()?
+        } else if self.config.history {
+            let history = self.cache_manager.history()?;
+            let selected_tests = self.search_engine.get_from_history(history.as_slice())?;
+            if selected_tests.len() > 0 {
+                self.cache_manager
+                    .update_history(selected_tests.iter().as_ref())?;
+            }
+            selected_tests
+        } else {
+            let selection: HashMap<String, String> = HashMap::from_iter(
+                self.tests
+                    .tests()
+                    .iter()
+                    .map(|test| (test.name(), test.runtime_argument())),
+            );
+            let names: Vec<&str> = selection.keys().map(|name| name.as_str()).collect();
+            let selected_tests = self.search_engine.get_tests_to_run(names.as_slice())?;
+            self.cache_manager
+                .update_history(selected_tests.iter().as_ref())?;
+            selected_tests
+                .into_iter()
+                .map(|name| selection[&name].clone())
+                .collect()
+        };
+        if !tests_to_run.is_empty() {
             self.runtime.run_tests(
-                test_items,
+                tests_to_run,
                 self.config.verbose,
                 &self.config.runtime_args.as_slice(),
             )
