@@ -23,34 +23,35 @@ pub struct MetaData {
     pub runtime: String,
 }
 
+pub enum RunnerMode {
+    All,
+    Last,
+    History,
+    Select,
+}
+
 pub struct RunnerConfig {
     pub clear_cache: bool,
-    pub history: bool,
-    pub last: bool,
     pub verbose: bool,
     pub clear_history: bool,
     pub runtime_args: Vec<String>,
-    pub all: bool,
+    pub mode: RunnerMode,
 }
 
 impl RunnerConfig {
     pub fn new(
         clear_cache: bool,
-        history: bool,
-        last: bool,
         verbose: bool,
         clear_history: bool,
         runtime_args: Vec<String>,
-        all: bool,
+        mode: RunnerMode,
     ) -> Self {
         Self {
             clear_cache,
-            history,
-            last,
             verbose,
             clear_history,
             runtime_args,
-            all,
+            mode,
         }
     }
 }

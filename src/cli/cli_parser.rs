@@ -3,7 +3,7 @@ use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 use crate::{
     cache::helper::project_hash,
     errors::FztError,
-    runner::{Runner, RunnerConfig},
+    runner::{Runner, RunnerConfig, RunnerMode},
     search_engine::fzf::FzfSearchEngine,
 };
 
@@ -133,14 +133,22 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
     let cmd = configure_commands();
     let (cli, runtime_args) = parse_args(cmd);
 
+    let mode = if cli.all {
+        RunnerMode::All
+    } else if cli.last {
+        RunnerMode::Last
+    } else if cli.history {
+        RunnerMode::History
+    } else {
+        RunnerMode::Select
+    };
+
     let runner_config = RunnerConfig::new(
         cli.clear_cache,
-        cli.history,
-        cli.last,
         cli.verbose,
         cli.clear_history,
         runtime_args,
-        cli.all,
+        mode,
     );
 
     let runner = match &cli.command {

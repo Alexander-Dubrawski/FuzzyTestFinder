@@ -61,39 +61,43 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
                 self.cache_manager
                     .add_entry(self.tests.to_json()?.as_str())?;
             }
+        } else {
+            self.tests.update()?;
         }
 
-        let tests_to_run: Vec<String> = if self.config.all {
-            self.tests
+        let tests_to_run: Vec<String> = match self.config.mode {
+            super::RunnerMode::All => self
+                .tests
                 .tests()
                 .iter()
                 .map(|test| test.runtime_argument())
-                .collect()
-        } else if self.config.last {
-            self.cache_manager.recent_history_command()?
-        } else if self.config.history {
-            let history = self.cache_manager.history()?;
-            let selected_tests = self.search_engine.get_from_history(history.as_slice())?;
-            if selected_tests.len() > 0 {
+                .collect(),
+            super::RunnerMode::Last => self.cache_manager.recent_history_command()?,
+            super::RunnerMode::History => {
+                let history = self.cache_manager.history()?;
+                let selected_tests = self.search_engine.get_from_history(history.as_slice())?;
+                if selected_tests.len() > 0 {
+                    self.cache_manager
+                        .update_history(selected_tests.iter().as_ref())?;
+                }
+                selected_tests
+            }
+            super::RunnerMode::Select => {
+                let selection: HashMap<String, String> = HashMap::from_iter(
+                    self.tests
+                        .tests()
+                        .iter()
+                        .map(|test| (test.name(), test.runtime_argument())),
+                );
+                let names: Vec<&str> = selection.keys().map(|name| name.as_str()).collect();
+                let selected_tests = self.search_engine.get_tests_to_run(names.as_slice())?;
                 self.cache_manager
                     .update_history(selected_tests.iter().as_ref())?;
+                selected_tests
+                    .into_iter()
+                    .map(|name| selection[&name].clone())
+                    .collect()
             }
-            selected_tests
-        } else {
-            let selection: HashMap<String, String> = HashMap::from_iter(
-                self.tests
-                    .tests()
-                    .iter()
-                    .map(|test| (test.name(), test.runtime_argument())),
-            );
-            let names: Vec<&str> = selection.keys().map(|name| name.as_str()).collect();
-            let selected_tests = self.search_engine.get_tests_to_run(names.as_slice())?;
-            self.cache_manager
-                .update_history(selected_tests.iter().as_ref())?;
-            selected_tests
-                .into_iter()
-                .map(|name| selection[&name].clone())
-                .collect()
         };
         if !tests_to_run.is_empty() {
             self.runtime.run_tests(
