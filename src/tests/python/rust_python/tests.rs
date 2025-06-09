@@ -68,3 +68,77 @@ impl Tests for RustPytonTests {
         Ok(updated)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::utils::test_utils::copy_dict;
+
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn collect_tests() {
+        let mut path = std::env::current_dir().unwrap();
+        path.push("src/tests/python/test_data");
+        let (_temp_dir, dir_path) = copy_dict(path.as_path()).unwrap();
+        let test_path = dir_path.as_path().to_str().unwrap();
+        let mut rust_pyton_tests = RustPytonTests::new_empty(test_path.to_string());
+        let mut expected = vec![
+            PythonTest::new(
+                "berlin/berlin_test.py".to_string(),
+                "test_berlin".to_string(),
+            ),
+            PythonTest::new(
+                "berlin/hamburg/test_hamburg.py".to_string(),
+                "test_hamburg".to_string(),
+            ),
+            PythonTest::new(
+                "berlin/hamburg/test_hamburg.py".to_string(),
+                "test_hamburg_harburg".to_string(),
+            ),
+            PythonTest::new(
+                "berlin/potsdam/potsdam_test.py".to_string(),
+                "test_potsdam".to_string(),
+            ),
+        ];
+        expected.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
+        rust_pyton_tests.update().unwrap();
+        let mut results = rust_pyton_tests.tests();
+        results.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
+        assert_eq!(results.len(), expected.len());
+
+        for (res, exp) in results.iter().zip(expected.iter()) {
+            assert_eq!(res.runtime_argument(), exp.runtime_argument());
+            assert_eq!(res.name(), exp.name());
+        }
+
+        drop(results);
+
+        // Remove test
+        std::fs::remove_file(format!("{test_path}/berlin/potsdam/potsdam_test.py")).unwrap();
+        expected = vec![
+            PythonTest::new(
+                "berlin/berlin_test.py".to_string(),
+                "test_berlin".to_string(),
+            ),
+            PythonTest::new(
+                "berlin/hamburg/test_hamburg.py".to_string(),
+                "test_hamburg".to_string(),
+            ),
+            PythonTest::new(
+                "berlin/hamburg/test_hamburg.py".to_string(),
+                "test_hamburg_harburg".to_string(),
+            ),
+        ];
+        expected.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
+        rust_pyton_tests.update().unwrap();
+        let mut results = rust_pyton_tests.tests();
+        results.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
+        assert_eq!(results.len(), expected.len());
+
+        for (res, exp) in results.iter().zip(expected.iter()) {
+            assert_eq!(res.runtime_argument(), exp.runtime_argument());
+            assert_eq!(res.name(), exp.name());
+        }
+    }
+}
