@@ -58,14 +58,14 @@ impl Tests for RustPytonTests {
     }
 
     fn update(&mut self) -> Result<bool, FztError> {
-        filter_out_deleted_files(&self.root_folder, &mut self.tests);
+        let files_filtered_out = filter_out_deleted_files(&self.root_folder, &mut self.tests);
         let updated = update_tests(
             self.root_folder.as_str(),
             &mut self.timestamp,
             &mut self.tests,
             false,
         )?;
-        Ok(updated)
+        Ok(updated || files_filtered_out)
     }
 }
 
@@ -102,7 +102,7 @@ mod tests {
             ),
         ];
         expected.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
-        rust_pyton_tests.update().unwrap();
+        assert!(rust_pyton_tests.update().unwrap());
         let mut results = rust_pyton_tests.tests();
         results.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
         assert_eq!(results.len(), expected.len());
@@ -131,7 +131,7 @@ mod tests {
             ),
         ];
         expected.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
-        rust_pyton_tests.update().unwrap();
+        assert!(rust_pyton_tests.update().unwrap());
         let mut results = rust_pyton_tests.tests();
         results.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
         assert_eq!(results.len(), expected.len());

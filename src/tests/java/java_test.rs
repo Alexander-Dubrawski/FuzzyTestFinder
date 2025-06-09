@@ -83,3 +83,87 @@ impl Tests for JavaTests {
         Ok(updated)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::utils::test_utils::copy_dict;
+
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn collect_tests() {
+        let mut path = std::env::current_dir().unwrap();
+        path.push("parsers/java/app/src/test/resources/tests");
+        let (_temp_dir, dir_path) = copy_dict(path.as_path()).unwrap();
+        //TODO: outside programms can not access temp dir 
+        let test_path = dir_path.as_path().to_str().unwrap();
+        // let mut java_tests = JavaTests::new_empty("parsers/java/app/src/test/resources/tests".to_string());
+        let mut java_tests = JavaTests::new_empty(test_path.to_string());
+        let mut expected = vec![
+            JavaTestItem::new(
+                "java/a/testOne.java".to_string(),
+                "tests.java.a.TestOne".to_string(),
+                "one".to_string(),
+            ),
+            JavaTestItem::new(
+                "java/a/testTwo.java".to_string(),
+                "tests.java.a.TestTwo".to_string(),
+                "two".to_string(),
+            ),
+            JavaTestItem::new(
+                "java/a/testTwo.java".to_string(),
+                "tests.java.a.TestTwo".to_string(),
+                "twoOne".to_string(),
+            ),
+            JavaTestItem::new(
+                "java/b/testThree.java".to_string(),
+                "tests.java.b.TestThree".to_string(),
+                "three".to_string(),
+            ),
+        ];
+        expected.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
+        assert!(java_tests.update().unwrap());
+        let mut results = java_tests.tests();
+        results.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
+        assert_eq!(results.len(), expected.len());
+
+        for (res, exp) in results.iter().zip(expected.iter()) {
+            assert_eq!(res.runtime_argument(), exp.runtime_argument());
+            assert_eq!(res.name(), exp.name());
+        }
+
+        drop(results);
+
+        // // Remove test
+        // std::fs::remove_file(format!("{test_path}/java/b/testThree.java")).unwrap();
+        // expected = vec![
+        //     JavaTestItem::new(
+        //         "java/a/testOne.java".to_string(),
+        //         "tests.java.a.TestOne".to_string(),
+        //         "one".to_string(),
+        //     ),
+        //     JavaTestItem::new(
+        //         "java/a/testTwo.java".to_string(),
+        //         "tests.java.a.TestTwo".to_string(),
+        //         "two".to_string(),
+        //     ),
+        //     JavaTestItem::new(
+        //         "tests.java.a.TestTwo".to_string(),
+        //         "tests.java.a.TestTwo".to_string(),
+        //         "twoOne".to_string(),
+        //     ),
+        // ];
+        // expected.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
+        
+        // assert!(java_tests.update().unwrap());
+        // let mut results = java_tests.tests();
+        // results.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
+        // assert_eq!(results.len(), expected.len());
+        
+        // for (res, exp) in results.iter().zip(expected.iter()) {
+        //     assert_eq!(res.runtime_argument(), exp.runtime_argument());
+        //     assert_eq!(res.name(), exp.name());
+        // }
+    }
+}

@@ -110,7 +110,7 @@ impl Tests for PytestTests {
     }
 
     fn update(&mut self) -> Result<bool, FztError> {
-        filter_out_deleted_files(&self.root_folder, &mut self.tests);
+        let files_filtered_out = filter_out_deleted_files(&self.root_folder, &mut self.tests);
         let updated = update_tests(
             self.root_folder.as_str(),
             &mut self.timestamp,
@@ -120,6 +120,6 @@ impl Tests for PytestTests {
         if updated {
             self.parse_python_tests(get_pytests()?.as_str())?;
         }
-        Ok(updated)
+        Ok(updated || files_filtered_out)
     }
 }
