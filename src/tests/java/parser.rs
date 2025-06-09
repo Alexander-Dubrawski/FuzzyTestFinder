@@ -43,10 +43,7 @@ impl JavaParser {
         only_check_for_update: bool,
     ) -> Result<bool, FztError> {
         let test_json = serde_json::to_string(&tests)?;
-        println!("test_json: {}", test_json);
-        // std::thread::sleep(std::time::Duration::from_secs(40000));
         let updated_test_json = self.get_tests(test_json.as_str())?;
-        println!("updated_test_json: {}", updated_test_json);
         let updated = test_json != updated_test_json;
         if !only_check_for_update {
             *tests = serde_json::from_str(updated_test_json.as_str())?;

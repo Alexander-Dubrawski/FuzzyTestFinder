@@ -26,8 +26,8 @@ public class Parser {
             final ObjectMapper objectMapper = new ObjectMapper();
             javaTests = objectMapper.readValue(cacheJson, new TypeReference<>() {
             });
-            if (javaTests.rootFolder != projectPath) {
-                logger.warning("Root Folders are different. Cache: " + javaTests.rootFolder + " != Project path : " + projectPath + "Root folder set to project folder");
+            if (!javaTests.rootFolder.equals(projectPath)) {
+                logger.warning("Root Folders are different. Cache: " + javaTests.rootFolder + " != Project path : " + projectPath + " Root folder set to project folder");
                 javaTests.rootFolder = projectPath;
             }
         }

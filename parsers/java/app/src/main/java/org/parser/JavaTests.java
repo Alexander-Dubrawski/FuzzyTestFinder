@@ -72,7 +72,7 @@ public class JavaTests {
 
     public void update() throws IOException {
         filterOutDeletedFiles();
-        var rootFolderPath = Paths.get(rootFolder);
+        var rootFolderPath = Paths.get(rootFolder).toAbsolutePath();
         Files.walkFileTree(rootFolderPath, new SimpleFileVisitor<>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
@@ -122,7 +122,7 @@ public class JavaTests {
     private void filterOutDeletedFiles() throws IOException {
         List<String> testToFilterOut = new ArrayList<>();
         for (String strPath : tests.keySet()) {
-            var path = Paths.get(strPath);
+            var path = Paths.get(rootFolder).resolve(strPath).toAbsolutePath();
             if (!Files.exists(path)) {
                 testToFilterOut.add(strPath);
             }
