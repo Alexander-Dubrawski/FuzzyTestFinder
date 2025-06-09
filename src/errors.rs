@@ -14,6 +14,7 @@ pub enum FztError {
     Json(serde_json::Error),
     UserError(String),
     JavaParser(String),
+    PythonParser(String),
 }
 
 impl std::error::Error for FztError {}
@@ -31,6 +32,7 @@ impl Display for FztError {
             FztError::Json(error) => write!(f, "{}", error),
             FztError::UserError(error) => write!(f, "{}", error),
             FztError::JavaParser(error) => write!(f, "{}", error),
+            FztError::PythonParser(error) => write!(f, "{}", error),
         }
     }
 }

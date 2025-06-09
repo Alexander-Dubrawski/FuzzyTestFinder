@@ -39,7 +39,21 @@ fn collect_tests_from_file(path: &Path) -> Result<HashSet<String>, FztError> {
                 }
             }
         }
-        _ => todo!(),
+        rustpython_parser::ast::Mod::Interactive(_) => {
+            return Err(FztError::PythonParser(
+                "Mod::Interactive not supported".to_string(),
+            ));
+        }
+        rustpython_parser::ast::Mod::Expression(_) => {
+            return Err(FztError::PythonParser(
+                "Mod::Expression not supported".to_string(),
+            ));
+        }
+        rustpython_parser::ast::Mod::FunctionType(_) => {
+            return Err(FztError::PythonParser(
+                "Mod::FunctionType not supported".to_string(),
+            ));
+        }
     }
     Ok(tests)
 }
