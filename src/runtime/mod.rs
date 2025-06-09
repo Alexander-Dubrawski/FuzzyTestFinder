@@ -10,4 +10,5 @@ pub trait Runtime {
         verbose: bool,
         runtime_ags: &[String],
     ) -> Result<(), FztError>;
+    fn name(&self) -> String;
 }

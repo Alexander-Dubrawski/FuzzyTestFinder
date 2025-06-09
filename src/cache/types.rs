@@ -2,8 +2,6 @@ use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::cli::{Language, SearchEngine};
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheEntry {
     pub root_folder: String,
@@ -23,10 +21,4 @@ impl CacheEntry {
             tests,
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct MetaData {
-    pub language: Option<Language>,
-    pub search_engine: Option<SearchEngine>,
 }

@@ -1,11 +1,17 @@
 use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 
 use crate::{
-    cli::{Language, PythonParser, PythonRuntime, SearchEngine},
+    cache::helper::project_hash,
     errors::FztError,
+    runner::{Runner, RunnerConfig, RunnerMode},
+    search_engine::fzf::FzfSearchEngine,
 };
 
-use super::{Config, JavaRuntime, JavaTestFramwork};
+use super::{
+    default::{get_default, set_default},
+    java::get_java_runner,
+    python::get_python_runner,
+};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -20,7 +26,7 @@ struct Cli {
     )]
     clear_cache: bool,
 
-    #[arg(long, default_value_t = false)]
+    #[arg(long, short, default_value_t = false)]
     default: bool,
 
     #[arg(
@@ -123,74 +129,45 @@ fn configure_commands() -> Command {
     cmd
 }
 
-pub fn parse_cli() -> Result<Config, FztError> {
+pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
     let cmd = configure_commands();
     let (cli, runtime_args) = parse_args(cmd);
 
-    let search_engine = if let Some(search_engine) = cli.search_engine {
-        match search_engine.to_lowercase().as_str() {
-            "fzf" => Ok(Some(SearchEngine::FzF)),
-            _ => Err(FztError::UserError(format!(
-                "Unknown search engine: {} Supported are: fzf",
-                search_engine.to_lowercase()
-            ))),
-        }?
+    let mode = if cli.all {
+        RunnerMode::All
+    } else if cli.last {
+        RunnerMode::Last
+    } else if cli.history {
+        RunnerMode::History
     } else {
-        None
+        RunnerMode::Select
     };
 
-    let language = match &cli.command {
+    let runner_config = RunnerConfig::new(
+        cli.clear_cache,
+        cli.verbose,
+        cli.clear_history,
+        runtime_args,
+        mode,
+    );
+
+    let runner = match &cli.command {
         Some(Commands::Python { parser, runtime }) => {
-            let parser = match parser.to_lowercase().as_str() {
-                "pytest" => Ok(PythonParser::Pytest),
-                "rustpython" => Ok(PythonParser::RustPython),
-                _ => Err(FztError::UserError(format!(
-                    "Unknown parser: {} Supported are: pytest, rustpython",
-                    parser.to_lowercase()
-                ))),
-            }?;
-            let runtime = match runtime.to_lowercase().as_str() {
-                "pytest" => Ok(PythonRuntime::Pytest),
-                _ => Err(FztError::UserError(format!(
-                    "Unknown runtime: {} Supported are: pytest",
-                    runtime.to_lowercase()
-                ))),
-            }?;
-            Ok::<Option<Language>, FztError>(Some(Language::Python((parser, runtime))))
+            get_python_runner(parser, runtime, runner_config, FzfSearchEngine::default())
         }
         Some(Commands::Java {
             test_framework,
             runtime,
-        }) => {
-            let test_framework = match test_framework.to_lowercase().as_str() {
-                "junit5" => Ok(JavaTestFramwork::JUnit5),
-                _ => Err(FztError::UserError(format!(
-                    "Unknown parser: {} Supported are: JUnit5",
-                    test_framework.to_lowercase()
-                ))),
-            }?;
-            let runtime = match runtime.to_lowercase().as_str() {
-                "gradle" => Ok(JavaRuntime::Gradle),
-                _ => Err(FztError::UserError(format!(
-                    "Unknown runtime: {} Supported are: gradle",
-                    runtime.to_lowercase()
-                ))),
-            }?;
-            Ok::<Option<Language>, FztError>(Some(Language::Java((test_framework, runtime))))
-        }
-        None => Ok(None),
+        }) => get_java_runner(
+            test_framework,
+            runtime,
+            runner_config,
+            FzfSearchEngine::default(),
+        ),
+        None => get_default(project_hash()?.as_str(), runner_config),
     }?;
-
-    Ok(Config {
-        language,
-        search_engine,
-        clear_cache: cli.clear_cache,
-        history: cli.history,
-        last: cli.last,
-        default: cli.default,
-        verbose: cli.verbose,
-        clear_history: cli.clear_history,
-        runtime_args,
-        all: cli.all,
-    })
+    if cli.default {
+        set_default(project_hash()?.as_str(), runner.meta_data()?.as_str())?;
+    }
+    Ok(runner)
 }

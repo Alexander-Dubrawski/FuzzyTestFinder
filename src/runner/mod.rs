@@ -1,32 +1,57 @@
-use crate::{cli::Config, errors::FztError};
+use serde::{Deserialize, Serialize};
 
-pub mod java;
-pub mod python;
+use crate::errors::FztError;
+
+pub mod general_runner;
 
 pub trait Runner {
-    fn run(&self) -> Result<(), FztError>;
+    fn run(&mut self) -> Result<(), FztError>;
+    fn meta_data(&self) -> Result<String, FztError>;
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum RunnerName {
+    RustPythonRunner,
+    PytestRunner,
+    JavaJunit5Runner,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MetaData {
+    pub runner_name: RunnerName,
+    pub search_engine: String,
+    pub runtime: String,
+}
+
+pub enum RunnerMode {
+    All,
+    Last,
+    History,
+    Select,
 }
 
 pub struct RunnerConfig {
     pub clear_cache: bool,
-    pub history: bool,
-    pub last: bool,
     pub verbose: bool,
     pub clear_history: bool,
     pub runtime_args: Vec<String>,
-    pub all: bool,
+    pub mode: RunnerMode,
 }
 
-impl From<Config> for RunnerConfig {
-    fn from(value: Config) -> Self {
+impl RunnerConfig {
+    pub fn new(
+        clear_cache: bool,
+        verbose: bool,
+        clear_history: bool,
+        runtime_args: Vec<String>,
+        mode: RunnerMode,
+    ) -> Self {
         Self {
-            clear_cache: value.clear_cache,
-            history: value.history,
-            last: value.last,
-            verbose: value.verbose,
-            clear_history: value.clear_history,
-            runtime_args: value.runtime_args,
-            all: value.all,
+            clear_cache,
+            verbose,
+            clear_history,
+            runtime_args,
+            mode,
         }
     }
 }

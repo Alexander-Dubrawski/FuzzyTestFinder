@@ -3,7 +3,6 @@ use std::process::{Command, Output, Stdio};
 use std::str;
 
 use crate::errors::FztError;
-use crate::parser::{Test, Tests};
 
 use super::SearchEngine;
 
@@ -38,10 +37,10 @@ fn run_fzf(input: &str, read_null: bool) -> Result<Output, FztError> {
 pub struct FzfSearchEngine {}
 
 impl SearchEngine for FzfSearchEngine {
-    fn get_tests_to_run(&self, all_test: impl Tests) -> Result<Vec<String>, FztError> {
+    fn get_tests_to_run(&self, all_test: &[&str]) -> Result<Vec<String>, FztError> {
         let mut input = String::new();
-        all_test.tests().into_iter().for_each(|test| {
-            input.push_str(format!("{}\n", test.search_item_name()).as_str());
+        all_test.iter().for_each(|test| {
+            input.push_str(format!("{}\n", test).as_str());
         });
         let output = run_fzf(input.as_str(), false)?;
         let tests: Vec<String> = str::from_utf8(output.stdout.as_slice())?
@@ -51,10 +50,10 @@ impl SearchEngine for FzfSearchEngine {
         Ok(tests)
     }
 
-    fn get_from_history(&self, history: Vec<Vec<String>>) -> Result<Vec<String>, FztError> {
+    fn get_from_history(&self, history: &[Vec<String>]) -> Result<Vec<String>, FztError> {
         let mut input = String::new();
         history
-            .into_iter()
+            .iter()
             .filter(|tests| !tests.is_empty())
             .for_each(|tests| {
                 let mut command = String::new();
@@ -71,5 +70,9 @@ impl SearchEngine for FzfSearchEngine {
             .lines()
             .map(|line| line.to_string())
             .collect())
+    }
+
+    fn name(&self) -> String {
+        String::from("fzf")
     }
 }
