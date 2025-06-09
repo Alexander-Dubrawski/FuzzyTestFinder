@@ -149,3 +149,54 @@ pub fn update_tests(
     }
     Ok(updated)
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Instant;
+
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn collect_tests() {
+        let mut path = std::env::current_dir().unwrap();
+        path.push("src/tests/python/test_data");
+        let path_str = path.to_string_lossy();
+        //let mut tests = PythonTests::new_empty(path_str.to_string());
+        let mut tests = HashMap::new();
+        let mut expected_tests: HashMap<String, HashSet<String>> = HashMap::new();
+        expected_tests.insert(
+            "berlin/berlin_test.py".to_string(),
+            HashSet::from_iter(vec!["test_berlin"].into_iter().map(|v| v.to_string())),
+        );
+        expected_tests.insert(
+            "berlin/hamburg/test_hamburg.py".to_string(),
+            HashSet::from_iter(
+                vec!["test_hamburg", "test_hamburg_harburg"]
+                    .into_iter()
+                    .map(|v| v.to_string()),
+            ),
+        );
+        expected_tests.insert(
+            "berlin/potsdam/potsdam_test.py".to_string(),
+            HashSet::from_iter(vec!["test_potsdam"].into_iter().map(|v| v.to_string())),
+        );
+
+        assert!(update_tests(path_str.to_string().as_str(), &mut 0, &mut tests, false).unwrap());
+        assert_eq!(tests, expected_tests);
+
+        let mut time_stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
+        assert!(
+            !update_tests(
+                path_str.to_string().as_str(),
+                &mut time_stamp,
+                &mut tests,
+                false
+            )
+            .unwrap()
+        );
+    }
+}
