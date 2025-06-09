@@ -26,12 +26,13 @@ impl JavaTests {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct JavaTest {
     pub class_path: String,
     pub method_name: String,
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct JavaTestItem {
     pub path: String,
     pub class_path: String,
@@ -86,10 +87,24 @@ impl Tests for JavaTests {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+
     use crate::utils::test_utils::copy_dict;
 
     use super::*;
     use pretty_assertions::assert_eq;
+
+    fn compare(java_tests: &JavaTests, mut expected: Vec<JavaTestItem>) {
+        expected.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
+        let mut results = java_tests.tests();
+        results.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
+        assert_eq!(results.len(), expected.len());
+
+        for (res, exp) in results.iter().zip(expected.iter()) {
+            assert_eq!(res.runtime_argument(), exp.runtime_argument());
+            assert_eq!(res.name(), exp.name());
+        }
+    }
 
     #[test]
     fn collect_tests() {
@@ -120,18 +135,11 @@ mod tests {
                 "three".to_string(),
             ),
         ];
-        expected.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
         assert!(java_tests.update().unwrap());
-        let mut results = java_tests.tests();
-        results.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
-        assert_eq!(results.len(), expected.len());
+        compare(&java_tests, expected.clone());
 
-        for (res, exp) in results.iter().zip(expected.iter()) {
-            assert_eq!(res.runtime_argument(), exp.runtime_argument());
-            assert_eq!(res.name(), exp.name());
-        }
-
-        drop(results);
+        assert!(!java_tests.update().unwrap());
+        compare(&java_tests, expected);
 
         // Remove test
         std::fs::remove_file(format!("{test_path}/java/b/testThree.java")).unwrap();
@@ -152,16 +160,33 @@ mod tests {
                 "twoOne".to_string(),
             ),
         ];
-        expected.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
-
         assert!(java_tests.update().unwrap());
-        let mut results = java_tests.tests();
-        results.sort_by(|a, b| a.runtime_argument().cmp(&b.runtime_argument()));
-        assert_eq!(results.len(), expected.len());
+        compare(&java_tests, expected);
 
-        for (res, exp) in results.iter().zip(expected.iter()) {
-            assert_eq!(res.runtime_argument(), exp.runtime_argument());
-            assert_eq!(res.name(), exp.name());
-        }
+        // Update test
+        std::fs::write(
+            &Path::new(test_path).join("java/a/testOne.java"),
+            "package tests.java.a; import org.junit.jupiter.api.Test; class TestOne { @Test void oneNew() {}}",
+        )
+        .unwrap();
+        expected = vec![
+            JavaTestItem::new(
+                "java/a/testOne.java".to_string(),
+                "tests.java.a.TestOne".to_string(),
+                "oneNew".to_string(),
+            ),
+            JavaTestItem::new(
+                "java/a/testTwo.java".to_string(),
+                "tests.java.a.TestTwo".to_string(),
+                "two".to_string(),
+            ),
+            JavaTestItem::new(
+                "java/a/testTwo.java".to_string(),
+                "tests.java.a.TestTwo".to_string(),
+                "twoOne".to_string(),
+            ),
+        ];
+        assert!(java_tests.update().unwrap());
+        compare(&java_tests, expected);
     }
 }
