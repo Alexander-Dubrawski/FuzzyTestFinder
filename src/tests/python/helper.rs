@@ -44,10 +44,17 @@ fn collect_tests_from_file(path: &Path) -> Result<HashSet<String>, FztError> {
     Ok(tests)
 }
 
-pub fn filter_out_deleted_files(tests: &mut HashMap<String, HashSet<String>>) -> bool {
+pub fn filter_out_deleted_files(
+    root_dir: &str,
+    tests: &mut HashMap<String, HashSet<String>>,
+) -> bool {
     let mut tests_to_remove = vec![];
     for path in tests.keys() {
-        if !Path::new(path).exists() {
+        let local_path = Path::new(root_dir).join(path);
+        if !std::path::absolute(local_path)
+            .expect("Should be valid path")
+            .exists()
+        {
             tests_to_remove.push(path.clone());
         }
     }
@@ -152,7 +159,7 @@ pub fn update_tests(
 
 #[cfg(test)]
 mod tests {
-    use std::time::Instant;
+    use crate::utils::test_utils::copy_dict;
 
     use super::*;
     use pretty_assertions::assert_eq;
@@ -161,8 +168,8 @@ mod tests {
     fn collect_tests() {
         let mut path = std::env::current_dir().unwrap();
         path.push("src/tests/python/test_data");
-        let path_str = path.to_string_lossy();
-        //let mut tests = PythonTests::new_empty(path_str.to_string());
+        let (_temp_dir, dir_path) = copy_dict(path.as_path()).unwrap();
+        let test_path = dir_path.as_path().to_str().unwrap();
         let mut tests = HashMap::new();
         let mut expected_tests: HashMap<String, HashSet<String>> = HashMap::new();
         expected_tests.insert(
@@ -181,22 +188,41 @@ mod tests {
             "berlin/potsdam/potsdam_test.py".to_string(),
             HashSet::from_iter(vec!["test_potsdam"].into_iter().map(|v| v.to_string())),
         );
-
-        assert!(update_tests(path_str.to_string().as_str(), &mut 0, &mut tests, false).unwrap());
+        assert!(update_tests(test_path, &mut 0, &mut tests, false).unwrap());
         assert_eq!(tests, expected_tests);
 
         let mut time_stamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_millis();
-        assert!(
-            !update_tests(
-                path_str.to_string().as_str(),
-                &mut time_stamp,
-                &mut tests,
-                false
-            )
+        assert!(!update_tests(test_path, &mut time_stamp, &mut tests, false).unwrap());
+
+        // Remove test
+        std::fs::remove_file(format!("{test_path}/berlin/potsdam/potsdam_test.py")).unwrap();
+        expected_tests
+            .remove(&"berlin/potsdam/potsdam_test.py".to_string())
+            .unwrap();
+        assert!(filter_out_deleted_files(test_path, &mut tests));
+
+        time_stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
             .unwrap()
+            .as_millis();
+
+        assert!(!update_tests(test_path, &mut time_stamp, &mut tests, false).unwrap());
+        assert_eq!(tests, expected_tests);
+
+        // Change test
+        std::fs::write(
+            &Path::new(test_path).join("berlin/berlin_test.py"),
+            "def test_berlin_new():\n\tfoo=42",
+        )
+        .unwrap();
+        expected_tests.insert(
+            "berlin/berlin_test.py".to_string(),
+            HashSet::from_iter(vec!["test_berlin_new"].into_iter().map(|v| v.to_string())),
         );
+        assert!(update_tests(test_path, &mut time_stamp, &mut tests, false).unwrap());
+        assert_eq!(tests, expected_tests);
     }
 }

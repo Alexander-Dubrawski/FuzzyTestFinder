@@ -58,7 +58,7 @@ impl Tests for RustPytonTests {
     }
 
     fn update(&mut self) -> Result<bool, FztError> {
-        filter_out_deleted_files(&mut self.tests);
+        filter_out_deleted_files(&self.root_folder, &mut self.tests);
         let updated = update_tests(
             self.root_folder.as_str(),
             &mut self.timestamp,

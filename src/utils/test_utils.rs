@@ -1,7 +1,12 @@
+#[cfg(test)]
 use std::fs;
+#[cfg(test)]
 use std::io;
+#[cfg(test)]
 use std::path::{Path, PathBuf};
 
+#[cfg(test)]
+use tempfile::TempDir;
 #[cfg(test)]
 use tempfile::tempdir;
 
@@ -24,12 +29,9 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> io::Result<()> {
 }
 
 #[cfg(test)]
-pub fn copy_dict(src: &Path) -> Result<String, io::Error> {
+pub fn copy_dict(src: &Path) -> Result<(TempDir, PathBuf), io::Error> {
     let temp_dir = tempdir()?;
-    let temp_data_path = temp_dir.path().join("data");
+    let temp_data_path = temp_dir.path().join("data").to_path_buf();
     copy_dir_recursive(src, &temp_data_path)?;
-    Ok(temp_data_path
-        .to_str()
-        .expect("Path should exist")
-        .to_string())
+    Ok((temp_dir, temp_data_path))
 }
