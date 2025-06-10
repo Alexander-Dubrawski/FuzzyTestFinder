@@ -8,11 +8,9 @@ use crate::{
     errors::FztError,
     tests::{
         Test, Tests,
-        python::{
-            helper::{filter_out_deleted_files, update_tests},
-            python_test::PythonTest,
-        },
+        python::{helper::update_tests, python_test::PythonTest},
     },
+    utils::file_walking::filter_out_deleted_files,
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
