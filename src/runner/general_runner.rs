@@ -63,6 +63,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
             }
         } else {
             self.tests.update()?;
+            self.cache_manager.add_entry(self.tests.to_json()?.as_str())?;
         }
 
         let tests_to_run: Vec<String> = match self.config.mode {
