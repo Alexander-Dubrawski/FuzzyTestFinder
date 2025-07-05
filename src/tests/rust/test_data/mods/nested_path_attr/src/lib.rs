@@ -7,6 +7,7 @@ mod thread {
     mod pf {
         #[path("pid.rs")]
         mod local_data;
+        mod hello;
     }
 
     mod foo {}

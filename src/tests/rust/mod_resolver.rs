@@ -7,12 +7,12 @@ use syn::{Attribute, Item, ItemMod, LitStr, Meta};
 
 use crate::errors::FztError;
 
-enum ModuleType {
-    InlineDirectory(PathBuf, Vec<String>),
-    InlineFile(PathBuf, Vec<String>),
-    Directory(PathBuf, Vec<String>),
-    File(PathBuf, Vec<String>),
-}
+// enum ModuleType {
+//     InlineDirectory(PathBuf, Vec<String>),
+//     InlineFile(PathBuf, Vec<String>),
+//     Directory(PathBuf, Vec<String>),
+//     File(PathBuf, Vec<String>),
+// }
 
 fn resolve_module(
     base_file: &PathBuf,
@@ -22,6 +22,20 @@ fn resolve_module(
     seen: &mut HashMap<Vec<String>, PathBuf>,
 ) -> Result<(), FztError> {
     let mod_name = module_item.ident.to_string();
+    if module_item.attrs.iter().len() == 0 {
+        let mut new_module_path = module_path.to_vec();
+        new_module_path.push(mod_name.clone());
+        let candidate1 = path.join(format!("{}.rs", mod_name));
+        let candidate2 = path.join(mod_name).join("mod.rs");
+        if candidate1.exists() {
+            seen.insert(new_module_path, candidate1);
+        } else if candidate2.exists() {
+            seen.insert(new_module_path, candidate2);
+        } else {
+            seen.insert(new_module_path, base_file.clone());
+        }
+        return Ok(());
+    }
     for attr in module_item.attrs.iter() {
         if attr.path().is_ident("path") {
             let mut new_module_path = module_path.to_vec();
@@ -54,26 +68,45 @@ fn resolve_module(
             if let Some((_, sub_items)) = &module_item.content {
                 if sub_items.is_empty() {
                     let mut new_module_path = module_path.to_vec();
-                    seen.insert(
-                        new_module_path,
-                        path.join(format!("{}.rs", mod_name)),
-                    );
+                    new_module_path.push(mod_name.clone());
+                    let candidate1 = path.join(format!("{}.rs", mod_name));
+                    let candidate2 = path.join(mod_name).join("mod.rs");
+                    if candidate1.exists() {
+                        seen.insert(new_module_path, candidate1);
+                    } else if candidate2.exists() {
+                        seen.insert(new_module_path, candidate2);
+                    } else {
+                        seen.insert(new_module_path, base_file.clone());
+                    }
                 } else {
                     let mut new_module_path = module_path.to_vec();
                     new_module_path.push(mod_name.clone());
                     seen.insert(new_module_path.clone(), base_file.clone());
                     for item in sub_items {
                         if let Item::Mod(submod) = item {
-                            resolve_module(base_file, &path, submod, new_module_path.as_slice(), seen)?;
+                            resolve_module(
+                                base_file,
+                                &path,
+                                submod,
+                                new_module_path.as_slice(),
+                                seen,
+                            )?;
                         }
                     }
                 }
             } else {
-                seen.insert(
-                    module_path.to_vec(),
-                    path.join(format!("{}.rs", mod_name)),
-                );
-            }            
+                let mut new_module_path = module_path.to_vec();
+                new_module_path.push(mod_name.clone());
+                let candidate1 = path.join(format!("{}.rs", mod_name));
+                let candidate2 = path.join(mod_name).join("mod.rs");
+                if candidate1.exists() {
+                    seen.insert(new_module_path, candidate1);
+                } else if candidate2.exists() {
+                    seen.insert(new_module_path, candidate2);
+                } else {
+                    seen.insert(new_module_path, base_file.clone());
+                }
+            }
         }
     }
 
@@ -96,12 +129,27 @@ mod tests {
             .items[0];
 
         let thread_key = vec!["crate".to_string(), "thread".to_string()];
-        let local_data_key = vec!["crate".to_string(), "thread".to_string(), "local_data".to_string()];
+        let local_data_key = vec![
+            "crate".to_string(),
+            "thread".to_string(),
+            "local_data".to_string(),
+        ];
         let local_pf_key = vec!["crate".to_string(), "thread".to_string(), "pf".to_string()];
-        let local_pf_local_data_key = vec!["crate".to_string(), "thread".to_string(), "pf".to_string(), "local_data".to_string()];
-        
+        let local_pf_local_data_key = vec![
+            "crate".to_string(),
+            "thread".to_string(),
+            "pf".to_string(),
+            "local_data".to_string(),
+        ];
+        let local_pf_hello_key = vec![
+            "crate".to_string(),
+            "thread".to_string(),
+            "pf".to_string(),
+            "hello".to_string(),
+        ];
+        let local_foo_key = vec!["crate".to_string(), "thread".to_string(), "foo".to_string()];
 
-         if let Item::Mod(submod) = item {
+        if let Item::Mod(submod) = item {
             resolve_module(
                 &path.to_path_buf(),
                 &path.parent().unwrap().to_path_buf(),
@@ -111,16 +159,40 @@ mod tests {
             )
             .unwrap();
 
-            assert_eq!(seen.get(&thread_key).unwrap().to_str().unwrap(), "src/tests/rust/test_data/mods/nested_path_attr/src/lib.rs");
-            assert_eq!(seen.get(&local_data_key).unwrap().to_str().unwrap(), "src/tests/rust/test_data/mods/nested_path_attr/src/thread_files/tls.rs");
-            assert_eq!(seen.get(&local_pf_key).unwrap().to_str().unwrap(), "src/tests/rust/test_data/mods/nested_path_attr/src/lib.rs");
-            assert_eq!(seen.get(&local_pf_local_data_key).unwrap().to_str().unwrap(), "src/tests/rust/test_data/mods/nested_path_attr/src/thread_files/process_files/pid.rs");
-         } else {
+            println!("{:?}", seen);
+
+            assert_eq!(
+                seen.get(&thread_key).unwrap().to_str().unwrap(),
+                "src/tests/rust/test_data/mods/nested_path_attr/src/lib.rs"
+            );
+            assert_eq!(
+                seen.get(&local_data_key).unwrap().to_str().unwrap(),
+                "src/tests/rust/test_data/mods/nested_path_attr/src/thread_files/tls.rs"
+            );
+            assert_eq!(
+                seen.get(&local_pf_key).unwrap().to_str().unwrap(),
+                "src/tests/rust/test_data/mods/nested_path_attr/src/lib.rs"
+            );
+            assert_eq!(
+                seen.get(&local_pf_local_data_key)
+                    .unwrap()
+                    .to_str()
+                    .unwrap(),
+                "src/tests/rust/test_data/mods/nested_path_attr/src/thread_files/process_files/pid.rs"
+            );
+            assert_eq!(
+                seen.get(&local_pf_hello_key).unwrap().to_str().unwrap(),
+                "src/tests/rust/test_data/mods/nested_path_attr/src/thread_files/process_files/hello/mod.rs"
+            );
+            assert_eq!(
+                seen.get(&local_foo_key).unwrap().to_str().unwrap(),
+                "src/tests/rust/test_data/mods/nested_path_attr/src/lib.rs"
+            );
+        } else {
             panic!("now mod item exists");
-         }
+        }
     }
 }
-
 
 // fn extract_modules_from_item(
 //     item: &Item,
