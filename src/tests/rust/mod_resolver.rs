@@ -21,22 +21,32 @@ fn visit_inline_mod(
     seen: &mut HashMap<Vec<String>, PathBuf>,
     item: &Item,
 ) -> Result<(), FztError> {
-    let mut next_stack = mod_stack.to_vec().clone();
-    seen.insert(next_stack.clone(), path.to_path_buf().clone());
-    
+
     if let Item::Mod(submod) = item {
+
+        // Inline: don't use parent dir, path is the parent one in this case
+        let resolved_mod_path = resolve_mod_file(&submod, path)?;
+
+
+        let mut next_stack = mod_stack.to_vec().clone();
         next_stack.push(submod.ident.to_string());
+        if let Some(mod_path) = resolved_mod_path.clone() {
+            seen.insert(next_stack.clone(), mod_path.to_path_buf().clone());
+        } else {
+            seen.insert(next_stack.clone(), path.to_path_buf().clone());
+        }
         if let Some((_, sub_items)) = &submod.content {
              for sub_item in sub_items {
-                visit_inline_mod(path, &next_stack, parent_dir, seen, sub_item)?;
+                if let Some(mod_path) = resolved_mod_path.clone() {
+                    visit_inline_mod(mod_path.as_path(), &next_stack, parent_dir, seen, &sub_item)?;
+                }  else {
+                    visit_inline_mod(path, &next_stack, parent_dir, seen, &sub_item)?;
+                }
              }
-             seen.insert(next_stack.clone(), path.to_path_buf().clone());
         } else {
             // External mod
-            if let Some(mod_path) = resolve_mod_file(&submod, parent_dir)? {
+            if let Some(mod_path) = resolved_mod_path {
                 visit_module_file(&mod_path, next_stack, mod_path.parent().unwrap_or(parent_dir), seen)?;
-            } else {
-                seen.insert(next_stack.clone(), path.to_path_buf().clone());
             }
         }
     }
@@ -53,20 +63,27 @@ fn visit_module_file(
     let file = syn::parse_file(&content)?;
 
     //let abs_path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
-    seen.insert(mod_stack.clone(), path.to_path_buf());
+    // seen.insert(mod_stack.clone(), path.to_path_buf());
 
     for item in file.items {
         if let Item::Mod(m) = item {
             let mut next_stack = mod_stack.clone();
+            
             next_stack.push(m.ident.to_string());
+
+            let resolved_mod_path = resolve_mod_file(&m, path.parent().unwrap())?;
+            seen.insert(next_stack.clone(), path.to_path_buf().clone());
 
             if let Some((_, items)) = m.content {
                 for sub_item in items {
-                    visit_inline_mod(path, &next_stack, parent_dir, seen, &sub_item)?;
+                    if let Some(mod_path) = resolved_mod_path.clone() {
+                        visit_inline_mod(mod_path.as_path(), &next_stack, parent_dir, seen, &sub_item)?;
+                    } else {
+                        visit_inline_mod(path, &next_stack, parent_dir, seen, &sub_item)?;
+                    }
                 }
             } else {
-                // External mod
-                if let Some(mod_path) = resolve_mod_file(&m, parent_dir)? {
+                if let Some(mod_path) = resolved_mod_path {
                     visit_module_file(&mod_path, next_stack, mod_path.parent().unwrap_or(parent_dir), seen)?;
                 }
             }
@@ -131,7 +148,6 @@ mod tests {
         assert_eq!(
             keys,
             vec![
-                "crate",
                 "crate::a",
                 "crate::a::b",
             ]
@@ -146,7 +162,6 @@ mod tests {
         assert_eq!(
             keys,
             vec![
-                "crate",
                 "crate::custom_mod",
             ]
         );
@@ -160,7 +175,6 @@ mod tests {
         assert_eq!(
             keys,
             vec![
-                "crate",
                 "crate::inline",
                 "crate::inline::nested",
             ]
@@ -175,7 +189,6 @@ mod tests {
         assert_eq!(
             keys,
             vec![
-                "crate",
                 "crate::nested",
                 "crate::nested::deep_mod",
             ]
@@ -183,10 +196,13 @@ mod tests {
     }
 
     #[test]
-    fn gracefully_handles_missing_file() {
-        let path = Path::new("src/tests/rust/test_data/mods/missing/src/lib.rs");
+    fn resolves_nested_path_attributes() {
+        let path = Path::new("src/tests/rust/test_data/mods/nested_path_attr/src/lib.rs");
         let map = build_module_map(path).unwrap();
-        let keys = map_keys(&map);
-        assert_eq!(keys, vec!["crate"]);
+        let thread_key = vec!["crate".to_string(), "thread".to_string()];
+        let local_data_key = vec!["crate".to_string(), "thread".to_string(), "local_data".to_string()];
+        assert_eq!(map.get(&thread_key).unwrap().to_str().unwrap(), "src/tests/rust/test_data/mods/nested_path_attr/src/lib.rs");
+        assert_eq!(map.get(&local_data_key).unwrap().to_str().unwrap(), "src/tests/rust/test_data/mods/nested_path_attr/src/thread_files/tls.rs");
+
     }
 }
