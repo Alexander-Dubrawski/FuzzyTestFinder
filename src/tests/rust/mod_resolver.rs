@@ -7,13 +7,6 @@ use syn::{Attribute, Item, ItemMod, LitStr, Meta};
 
 use crate::errors::FztError;
 
-// enum ModuleType {
-//     InlineDirectory(PathBuf, Vec<String>),
-//     InlineFile(PathBuf, Vec<String>),
-//     Directory(PathBuf, Vec<String>),
-//     File(PathBuf, Vec<String>),
-// }
-
 fn resolve_module(
     base_file: &PathBuf,
     path: &PathBuf,
@@ -28,12 +21,25 @@ fn resolve_module(
         let candidate1 = path.join(format!("{}.rs", mod_name));
         let candidate2 = path.join(mod_name).join("mod.rs");
         if candidate1.exists() {
-            seen.insert(new_module_path, candidate1);
+            seen.insert(new_module_path.clone(), candidate1);
         } else if candidate2.exists() {
-            seen.insert(new_module_path, candidate2);
+            seen.insert(new_module_path.clone(), candidate2);
         } else {
-            seen.insert(new_module_path, base_file.clone());
+            seen.insert(new_module_path.clone(), base_file.clone());
         }
+        if let Some((_, nested_items)) = &module_item.content {
+            for item in nested_items {
+                if let Item::Mod(submod) = item {
+                    resolve_module(
+                        base_file,
+                        &path,
+                        submod,
+                        new_module_path.as_slice(),
+                        seen,
+                    )?;
+                }
+            }
+        }        
         return Ok(());
     }
     for attr in module_item.attrs.iter() {
@@ -113,12 +119,37 @@ fn resolve_module(
     Ok(())
 }
 
+pub fn path_visit(path: &PathBuf, module_paths: &mut HashMap<Vec<String>, PathBuf>, module_path: &[String],) -> Result<(), FztError> {
+    let content = fs::read_to_string(path)?;
+    let file = syn::parse_file(&content)?;
+
+    for item in file.items {
+        if let Item::Mod(submod) = item {
+            let mut local_seen = HashMap::new();
+            resolve_module(path, &path.parent().unwrap().to_path_buf(), &submod, &module_path, &mut local_seen)?;
+            for (module_path, module_file_path) in local_seen.into_iter() {
+                module_paths.insert(module_path.clone(), module_file_path.clone());
+                if path != &module_file_path {
+                    path_visit(&module_file_path, module_paths, &module_path)?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn get_module_paths(root_path: &PathBuf) -> Result<HashMap<Vec<String>, PathBuf>, FztError> {
+    let mut module_paths = HashMap::new();
+    path_visit(root_path, &mut module_paths, &[])?;
+    Ok(module_paths)
+}
+
 #[cfg(test)]
 mod tests {
     use syn::Item;
 
-    use crate::tests::rust::mod_resolver::resolve_module;
-    use std::{collections::HashMap, path::Path};
+    use crate::tests::rust::mod_resolver::{get_module_paths, resolve_module};
+    use std::{collections::HashMap, path::{Path, PathBuf}};
 
     #[test]
     fn foo() {
@@ -192,6 +223,70 @@ mod tests {
             panic!("now mod item exists");
         }
     }
+
+    fn map_keys(map: &HashMap<Vec<String>, PathBuf>) -> Vec<String> {
+        let mut keys: Vec<String> = map.keys()
+            .map(|k| k.join("::"))
+            .collect();
+        keys.sort();
+        keys
+    }
+
+    #[test]
+    fn resolves_standard_mod_structure() {
+        let path = Path::new("src/tests/rust/test_data/mods/standard/src/lib.rs");
+        let map = get_module_paths(&path.to_path_buf()).unwrap();
+        let keys = map_keys(&map);
+        assert_eq!(
+            keys,
+            vec![
+                "a",
+                "a::b",
+            ]
+        );
+    }
+
+    #[test]
+    fn resolves_custom_path_attribute() {
+        let path = Path::new("src/tests/rust/test_data/mods/custom_path/src/lib.rs");
+        let map = get_module_paths(&path.to_path_buf()).unwrap();
+        let keys = map_keys(&map);
+        assert_eq!(
+            keys,
+            vec![
+                "custom_mod",
+            ]
+        );
+    }
+
+    #[test]
+    fn handles_inline_mods() {
+        let path = Path::new("src/tests/rust/test_data/mods/inline/src/lib.rs");
+        let map = get_module_paths(&path.to_path_buf()).unwrap();
+        let keys = map_keys(&map);
+        assert_eq!(
+            keys,
+            vec![
+                "inline",
+                "inline::nested",
+            ]
+        );
+    }
+
+    #[test]
+    fn resolves_nested_custom_path() {
+        let path = Path::new("src/tests/rust/test_data/mods/nested_custom/src/lib.rs");
+        let map = get_module_paths(&path.to_path_buf()).unwrap();
+        let keys = map_keys(&map);
+        assert_eq!(
+            keys,
+            vec![
+                "nested",
+                "nested::deep_mod",
+            ]
+        );
+    }
+
 }
 
 // fn extract_modules_from_item(
