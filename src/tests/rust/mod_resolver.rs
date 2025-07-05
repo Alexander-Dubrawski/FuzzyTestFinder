@@ -7,6 +7,18 @@ use syn::{Attribute, Item, ItemMod, LitStr, Meta};
 
 use crate::errors::FztError;
 
+fn resolve_module_path(base_file: &PathBuf, path: &PathBuf, mod_name: &str) -> PathBuf {
+    let candidate1 = path.join(format!("{}.rs", mod_name));
+    let candidate2 = path.join(mod_name).join("mod.rs");
+    if candidate1.exists() {
+        candidate1
+    } else if candidate2.exists() {
+        candidate2
+    } else {
+        base_file.clone()
+    }
+}
+
 fn resolve_module(
     base_file: &PathBuf,
     path: &PathBuf,
@@ -18,15 +30,10 @@ fn resolve_module(
     if module_item.attrs.iter().len() == 0 {
         let mut new_module_path = module_path.to_vec();
         new_module_path.push(mod_name.clone());
-        let candidate1 = path.join(format!("{}.rs", mod_name));
-        let candidate2 = path.join(mod_name).join("mod.rs");
-        if candidate1.exists() {
-            seen.insert(new_module_path.clone(), candidate1);
-        } else if candidate2.exists() {
-            seen.insert(new_module_path.clone(), candidate2);
-        } else {
-            seen.insert(new_module_path.clone(), base_file.clone());
-        }
+        seen.insert(
+            new_module_path.clone(),
+            resolve_module_path(base_file, path, &mod_name),
+        );
         if let Some((_, nested_items)) = &module_item.content {
             for item in nested_items {
                 if let Item::Mod(submod) = item {
@@ -69,15 +76,10 @@ fn resolve_module(
                 if sub_items.is_empty() {
                     let mut new_module_path = module_path.to_vec();
                     new_module_path.push(mod_name.clone());
-                    let candidate1 = path.join(format!("{}.rs", mod_name));
-                    let candidate2 = path.join(mod_name).join("mod.rs");
-                    if candidate1.exists() {
-                        seen.insert(new_module_path, candidate1);
-                    } else if candidate2.exists() {
-                        seen.insert(new_module_path, candidate2);
-                    } else {
-                        seen.insert(new_module_path, base_file.clone());
-                    }
+                    seen.insert(
+                        new_module_path.clone(),
+                        resolve_module_path(base_file, path, &mod_name),
+                    );
                 } else {
                     let mut new_module_path = module_path.to_vec();
                     new_module_path.push(mod_name.clone());
@@ -97,15 +99,10 @@ fn resolve_module(
             } else {
                 let mut new_module_path = module_path.to_vec();
                 new_module_path.push(mod_name.clone());
-                let candidate1 = path.join(format!("{}.rs", mod_name));
-                let candidate2 = path.join(mod_name).join("mod.rs");
-                if candidate1.exists() {
-                    seen.insert(new_module_path, candidate1);
-                } else if candidate2.exists() {
-                    seen.insert(new_module_path, candidate2);
-                } else {
-                    seen.insert(new_module_path, base_file.clone());
-                }
+                seen.insert(
+                    new_module_path.clone(),
+                    resolve_module_path(base_file, path, &mod_name),
+                );
             }
         }
     }
@@ -157,9 +154,9 @@ mod tests {
         collections::HashMap,
         path::{Path, PathBuf},
     };
-
+    
     #[test]
-    fn foo() {
+    fn parse_file() {
         let path = Path::new("src/tests/rust/test_data/mods/nested_path_attr/src/lib.rs");
         let mut seen = HashMap::new();
         let item = &syn::parse_file(&std::fs::read_to_string(path).unwrap())
