@@ -1,6 +1,10 @@
-use std::{collections::{HashMap, HashSet}, fs, path::Path};
 use proc_macro2::Span;
-use syn::{visit::Visit, Attribute, File, ItemFn};
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    path::Path,
+};
+use syn::{Attribute, File, ItemFn, visit::Visit};
 
 use crate::{errors::FztError, utils::file_walking::collect_tests};
 
@@ -16,10 +20,7 @@ impl<'ast, 'a> Visit<'ast> for TestFinder<'a> {
             let start = span.start(); // needs span-locations feature
             println!(
                 "Test found: {} in file {:?} at line {}, column {}",
-                i.sig.ident,
-                self.file_path,
-                start.line,
-                start.column,
+                i.sig.ident, self.file_path, start.line, start.column,
             );
         }
     }
@@ -29,7 +30,6 @@ fn has_test_attr(attrs: &[Attribute]) -> bool {
     attrs.iter().any(|attr| attr.path().is_ident("test"))
 }
 
-
 fn collect_tests_from_file(path: &Path) -> Result<HashSet<String>, FztError> {
     let source = std::fs::read_to_string(path)?;
     let syntax = syn::parse_file(&source)?;
@@ -37,7 +37,6 @@ fn collect_tests_from_file(path: &Path) -> Result<HashSet<String>, FztError> {
     visitor.visit_file(&syntax);
     todo!()
 }
-
 
 pub fn update_tests(
     root_folder: &str,

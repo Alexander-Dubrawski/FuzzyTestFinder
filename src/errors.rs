@@ -34,7 +34,7 @@ impl Display for FztError {
             FztError::UserError(error) => write!(f, "{}", error),
             FztError::JavaParser(error) => write!(f, "{}", error),
             FztError::PythonParser(error) => write!(f, "{}", error),
-            FztError::RustParser(syn_error) =>  write!(f, "{}", syn_error),
+            FztError::RustParser(syn_error) => write!(f, "{}", syn_error),
         }
     }
 }

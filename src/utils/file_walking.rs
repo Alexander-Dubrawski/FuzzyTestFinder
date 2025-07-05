@@ -37,7 +37,6 @@ fn is_hidden(entry: &DirEntry) -> bool {
     hidden
 }
 
-
 pub fn collect_tests<T: Eq + Hash>(
     root_folder: &str,
     timestamp: &mut u128,
