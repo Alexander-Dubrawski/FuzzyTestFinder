@@ -1,0 +1,1 @@
+#[path("alt.rs")] mod custom_mod;

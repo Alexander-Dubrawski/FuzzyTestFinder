@@ -1,0 +1,1 @@
+#[path("deep/deep_mod.rs")] mod deep_mod;

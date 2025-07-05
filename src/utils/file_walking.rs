@@ -36,6 +36,8 @@ fn is_hidden(entry: &DirEntry) -> bool {
         .unwrap_or(false);
     hidden
 }
+
+
 pub fn collect_tests<T: Eq + Hash>(
     root_folder: &str,
     timestamp: &mut u128,
@@ -79,7 +81,6 @@ pub fn collect_tests<T: Eq + Hash>(
                     continue;
                 }
             }
-            //let pattern = Regex::new(r"^(test_.*\.py|.*_test\.py)$")?;
 
             let full_path = entry.path().as_os_str().to_str().expect("Is file type");
             let relative_path = full_path
