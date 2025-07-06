@@ -15,6 +15,7 @@ pub enum FztError {
     UserError(String),
     JavaParser(String),
     PythonParser(String),
+    RustParser(syn::Error),
 }
 
 impl std::error::Error for FztError {}
@@ -33,6 +34,7 @@ impl Display for FztError {
             FztError::UserError(error) => write!(f, "{}", error),
             FztError::JavaParser(error) => write!(f, "{}", error),
             FztError::PythonParser(error) => write!(f, "{}", error),
+            FztError::RustParser(syn_error) => write!(f, "{}", syn_error),
         }
     }
 }
@@ -76,5 +78,11 @@ impl From<regex::Error> for FztError {
 impl From<serde_json::Error> for FztError {
     fn from(value: serde_json::Error) -> Self {
         Self::Json(value)
+    }
+}
+
+impl From<syn::Error> for FztError {
+    fn from(value: syn::Error) -> Self {
+        Self::RustParser(value)
     }
 }

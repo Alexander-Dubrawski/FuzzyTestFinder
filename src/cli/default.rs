@@ -5,7 +5,7 @@ use crate::{
     search_engine::fzf::FzfSearchEngine,
 };
 
-use super::{java::get_java_runner, python::get_python_runner};
+use super::{java::get_java_runner, python::get_python_runner, rust::get_rust_runner};
 
 pub fn get_default(project_id: &str, config: RunnerConfig) -> Result<Box<dyn Runner>, FztError> {
     let reader = CacheManager::get_meta(project_id)?;
@@ -37,6 +37,7 @@ pub fn get_default(project_id: &str, config: RunnerConfig) -> Result<Box<dyn Run
             config,
             FzfSearchEngine::default(),
         ),
+        RunnerName::RustCargoRunner => get_rust_runner(config, FzfSearchEngine::default()),
     }
 }
 

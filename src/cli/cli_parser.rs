@@ -11,10 +11,12 @@ use super::{
     default::{get_default, set_default},
     java::get_java_runner,
     python::get_python_runner,
+    rust::get_rust_runner,
 };
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
+#[clap(disable_help_flag = true)]
 struct Cli {
     #[arg(long, value_parser=["FzF"])]
     search_engine: Option<String>,
@@ -25,6 +27,9 @@ struct Cli {
         help = "Clear test build directory cache"
     )]
     clear_cache: bool,
+
+    #[clap(long, action = clap::ArgAction::HelpLong)]
+    help: Option<bool>,
 
     #[arg(long, short, default_value_t = false)]
     default: bool,
@@ -79,6 +84,7 @@ enum Commands {
         #[arg(default_value_t = String::from("gradle"), value_parser=["gradle"])]
         runtime: String,
     },
+    Rust,
 }
 
 fn parse_args(cmd: Command) -> (Cli, Vec<String>) {
@@ -164,6 +170,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
             runner_config,
             FzfSearchEngine::default(),
         ),
+        Some(Commands::Rust) => get_rust_runner(runner_config, FzfSearchEngine::default()),
         None => get_default(project_hash()?.as_str(), runner_config),
     }?;
     if cli.default {

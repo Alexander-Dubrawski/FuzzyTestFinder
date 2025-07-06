@@ -10,11 +10,13 @@ dependencies = [
  "home",
  "itertools 0.14.0",
  "pretty_assertions",
+ "proc-macro2",
  "regex",
  "rustpython-parser",
  "serde",
  "serde_json",
  "sha2",
+ "syn",
  "tempfile",
  "walkdir",
 ]

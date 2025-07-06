@@ -2,6 +2,7 @@ use crate::errors::FztError;
 
 pub mod java;
 pub mod python;
+pub mod rust;
 
 pub trait Test {
     fn runtime_argument(&self) -> String;
