@@ -11,6 +11,7 @@ use super::{
     default::{get_default, set_default},
     java::get_java_runner,
     python::get_python_runner,
+    rust::get_rust_runner,
 };
 
 #[derive(Parser)]
@@ -79,6 +80,7 @@ enum Commands {
         #[arg(default_value_t = String::from("gradle"), value_parser=["gradle"])]
         runtime: String,
     },
+    Rust,
 }
 
 fn parse_args(cmd: Command) -> (Cli, Vec<String>) {
@@ -164,6 +166,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
             runner_config,
             FzfSearchEngine::default(),
         ),
+        Some(Commands::Rust) => get_rust_runner(runner_config, FzfSearchEngine::default()),
         None => get_default(project_hash()?.as_str(), runner_config),
     }?;
     if cli.default {
