@@ -29,18 +29,14 @@ fn run_fzf(input: &str, read_null: bool, preview: &Option<Preview>) -> Result<Ou
                     .arg("--delimiter")
                     .arg("::")
                     .arg("--preview")
-                    .arg("bat --style=numbers --color=always {1}")
-                    .arg("--bind")
-                    .arg("enter:execute(sh -c 'nvim \"{1}\"' sh {} {1})");
+                    .arg("bat --style=numbers --color=always {1}");
             }
             Preview::Test => {
                 command
                 .arg("--delimiter")
                 .arg("::")
                 .arg("--preview")
-                .arg(" rg --color=always --line-number --no-heading '{2}' '{1}' --context 5 | bat --style=numbers --color=always")
-                .arg("--bind")
-                .arg("enter:execute(sh -c 'line=$(rg --line-number --no-heading \"$2\" \"$1\" | cut -d: -f1 | head -n1); nvim -c \"normal! ${line}G\" \"$1\"' sh {} {1} {2})");
+                .arg(" rg --color=always --line-number --no-heading '{2}' '{1}' --context 5 | bat --style=numbers --color=always");
             }
         }
     }
