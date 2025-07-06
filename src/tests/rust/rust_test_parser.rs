@@ -6,10 +6,11 @@ use crate::errors::FztError;
 
 use super::ParseRustTest;
 
+#[derive(Default)]
 pub struct RustTestParser {}
 
 impl ParseRustTest for RustTestParser {
-    fn parse_tests() -> Result<Vec<(Vec<String>, String)>, FztError> {
+    fn parse_tests(&self) -> Result<Vec<(Vec<String>, String)>, FztError> {
         let binding = Command::new("cargo")
             .arg("test")
             .arg("--")
