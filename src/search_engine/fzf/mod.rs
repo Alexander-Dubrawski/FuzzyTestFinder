@@ -7,7 +7,7 @@ use crate::runner::Preview;
 
 use super::SearchEngine;
 
-fn run_fzf(input: &str, read_null: bool, preview: Option<Preview>) -> Result<Output, FztError> {
+fn run_fzf(input: &str, read_null: bool, preview: &Option<Preview>) -> Result<Output, FztError> {
     let mut command = Command::new("fzf");
     command
         .arg("-m")
@@ -38,7 +38,7 @@ fn run_fzf(input: &str, read_null: bool, preview: Option<Preview>) -> Result<Out
                 .arg("--delimiter")
                 .arg("::")
                 .arg("--preview")
-                .arg("rg --color=always --line-number --no-heading '{2}' '{1}' --context 5 | bat --style=numbers --color=always")
+                .arg(" rg --color=always --line-number --no-heading '{2}' '{1}' --context 5 | bat --style=numbers --color=always")
                 .arg("--bind")
                 .arg("enter:execute(sh -c 'line=$(rg --line-number --no-heading \"$2\" \"$1\" | cut -d: -f1 | head -n1); nvim -c \"normal! ${line}G\" \"$1\"' sh {} {1} {2})");
             }
