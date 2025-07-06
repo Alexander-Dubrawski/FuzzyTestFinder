@@ -31,7 +31,7 @@ struct Cli {
     #[clap(long, action = clap::ArgAction::HelpLong)]
     help: Option<bool>,
 
-    #[arg(long, short, default_value_t = false)]
+    #[arg(long, short, default_value_t = false,  help = "Make this runner the default one in the project")]
     default: bool,
 
     #[arg(
@@ -53,8 +53,11 @@ struct Cli {
     #[arg(long, default_value_t = false, short, help = "Clear history")]
     clear_history: bool,
 
-    #[arg(long, default_value_t = false, short)]
+    #[arg(long, default_value_t = false, short, help = "Prints out commands passed to the runtime")]
     verbose: bool,
+
+    #[arg(long, default_value_t = false, short,  help = "Preview test function content in file")]
+    preview: bool,    
 
     #[arg(
         long,
@@ -155,6 +158,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         cli.clear_history,
         runtime_args,
         mode,
+        cli.preview
     );
 
     let runner = match &cli.command {

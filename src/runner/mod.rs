@@ -37,6 +37,7 @@ pub struct RunnerConfig {
     pub clear_history: bool,
     pub runtime_args: Vec<String>,
     pub mode: RunnerMode,
+    pub preview: bool,
 }
 
 impl RunnerConfig {
@@ -46,6 +47,7 @@ impl RunnerConfig {
         clear_history: bool,
         runtime_args: Vec<String>,
         mode: RunnerMode,
+        preview: bool,
     ) -> Self {
         Self {
             clear_cache,
@@ -53,6 +55,7 @@ impl RunnerConfig {
             clear_history,
             runtime_args,
             mode,
+            preview,
         }
     }
 }
