@@ -103,7 +103,9 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
                     .keys()
                     .map(|name| name.as_str())
                     .collect();
-                let selected_tests = self.search_engine.get_tests_to_run(names.as_slice(), self.config.preview)?;
+                let selected_tests = self
+                    .search_engine
+                    .get_tests_to_run(names.as_slice(), &self.config.preview)?;
                 self.cache_manager
                     .update_history(selected_tests.iter().as_ref())?;
                 selected_tests

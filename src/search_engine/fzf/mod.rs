@@ -3,10 +3,11 @@ use std::process::{Command, Output, Stdio};
 use std::str;
 
 use crate::errors::FztError;
+use crate::runner::Preview;
 
 use super::SearchEngine;
 
-fn run_fzf(input: &str, read_null: bool, preview: bool) -> Result<Output, FztError> {
+fn run_fzf(input: &str, read_null: bool, preview: &Option<Preview>) -> Result<Output, FztError> {
     let mut command = Command::new("fzf");
     command
         .arg("-m")
@@ -21,15 +22,27 @@ fn run_fzf(input: &str, read_null: bool, preview: bool) -> Result<Output, FztErr
         command.arg("--read0").arg("--gap");
     }
 
-    if preview {
-        command
-    .arg("--delimiter")
-    .arg("::")
-    .arg("--preview")
-    .arg("rg --color=always --line-number --no-heading '{2}' '{1}' --context 5")
-    .arg("--bind")
-    .arg("enter:execute(sh -c 'line=$(rg --line-number --no-heading \"$2\" \"$1\" | cut -d: -f1 | head -n1); nvim -c \"normal! ${line}G\" \"$1\"' sh {} {1} {2})");
-
+    if let Some(preview_mode) = preview {
+        match preview_mode {
+            Preview::File => {
+                command
+                    .arg("--delimiter")
+                    .arg("::")
+                    .arg("--preview")
+                    .arg("bat --style=numbers --color=always {1}")
+                    .arg("--bind")
+                    .arg("enter:execute(sh -c 'nvim \"{1}\"' sh {} {1})");
+            }
+            Preview::Test => {
+                command
+                .arg("--delimiter")
+                .arg("::")
+                .arg("--preview")
+                .arg(" rg --color=always --line-number --no-heading '{2}' '{1}' --context 5 | bat --style=numbers --color=always")
+                .arg("--bind")
+                .arg("enter:execute(sh -c 'line=$(rg --line-number --no-heading \"$2\" \"$1\" | cut -d: -f1 | head -n1); nvim -c \"normal! ${line}G\" \"$1\"' sh {} {1} {2})");
+            }
+        }
     }
 
     let mut child = command.spawn()?;
@@ -48,7 +61,11 @@ fn run_fzf(input: &str, read_null: bool, preview: bool) -> Result<Output, FztErr
 pub struct FzfSearchEngine {}
 
 impl SearchEngine for FzfSearchEngine {
-    fn get_tests_to_run(&self, all_test: &[&str], preview: bool) -> Result<Vec<String>, FztError> {
+    fn get_tests_to_run(
+        &self,
+        all_test: &[&str],
+        preview: &Option<Preview>,
+    ) -> Result<Vec<String>, FztError> {
         let mut input = String::new();
         all_test.iter().for_each(|test| {
             input.push_str(format!("{}\n", test).as_str());
@@ -74,7 +91,7 @@ impl SearchEngine for FzfSearchEngine {
                 command.remove(command.len() - 1);
                 input.push_str(format!("{command}\0").as_str());
             });
-        let mut output = run_fzf(input.as_str(), true, false)?.stdout;
+        let mut output = run_fzf(input.as_str(), true, &None)?.stdout;
         // Replace Null byte with new line
         output.iter_mut().filter(|p| **p == 0).for_each(|p| *p = 10);
         Ok(str::from_utf8(output.as_slice())?
