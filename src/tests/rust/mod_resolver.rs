@@ -110,7 +110,7 @@ fn resolve_module(
     Ok(())
 }
 
-pub fn path_visit(
+fn path_visit(
     path: &PathBuf,
     module_paths: &mut HashMap<Vec<String>, PathBuf>,
     module_path: &[String],
@@ -154,7 +154,7 @@ mod tests {
         collections::HashMap,
         path::{Path, PathBuf},
     };
-    
+
     #[test]
     fn parse_file() {
         let path = Path::new("src/tests/rust/test_data/mods/nested_path_attr/src/lib.rs");
