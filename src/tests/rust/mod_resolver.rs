@@ -3,7 +3,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
-use syn::{Attribute, Item, ItemMod, LitStr, Meta};
+use syn::{Item, ItemMod, LitStr};
 
 use crate::errors::FztError;
 

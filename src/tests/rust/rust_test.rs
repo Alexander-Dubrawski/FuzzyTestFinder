@@ -13,7 +13,6 @@ use crate::{
         rust::{ParseRustTest, mod_resolver::get_module_paths, rust_test_parser::RustTestParser},
     },
 };
-use std::marker::PhantomData;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RustTests {
@@ -178,7 +177,6 @@ impl Tests for RustTests {
 
 #[cfg(test)]
 mod tests {
-    use serde::de::Expected;
 
     use crate::tests::rust::{ParseRustTest, rust_test::RustTest};
 
