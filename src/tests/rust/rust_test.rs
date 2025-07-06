@@ -28,7 +28,7 @@ impl RustTests {
 
     fn update_test(&mut self, cargo_tests: Vec<(Vec<String>, String)>) -> Result<(), FztError> {
         // TODO: check if `lib.rs` or `mod.rs` exists
-        let module_paths = get_module_paths(&Path::new(&self.root_folder).join("lib.rs"))?;
+        let module_paths = get_module_paths(&Path::new(&self.root_folder).join("src").join("lib.rs"))?;
         let mut updated_tests: HashMap<String, Vec<RustTest>> = HashMap::new();
         for (module_path, method_name) in cargo_tests.into_iter() {
             let test_path = module_paths

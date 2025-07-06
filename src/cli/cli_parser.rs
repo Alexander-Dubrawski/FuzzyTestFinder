@@ -16,6 +16,7 @@ use super::{
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
+#[clap(disable_help_flag = true)]
 struct Cli {
     #[arg(long, value_parser=["FzF"])]
     search_engine: Option<String>,
@@ -26,6 +27,9 @@ struct Cli {
         help = "Clear test build directory cache"
     )]
     clear_cache: bool,
+
+    #[clap(long, action = clap::ArgAction::HelpLong)]
+    help: Option<bool>,
 
     #[arg(long, short, default_value_t = false)]
     default: bool,
