@@ -16,7 +16,7 @@ impl ParseRustTest for RustTestParser {
             .arg("--")
             .arg("--list")
             .output()
-            .expect("failed to retrieve python tests");
+            .expect("failed to retrieve Rust tests");
         let output = std::str::from_utf8(binding.stdout.as_slice())
             .map(|out| out.to_string())
             .map_err(FztError::from)?;
