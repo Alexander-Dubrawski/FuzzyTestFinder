@@ -31,7 +31,12 @@ struct Cli {
     #[clap(long, action = clap::ArgAction::HelpLong)]
     help: Option<bool>,
 
-    #[arg(long, short, default_value_t = false)]
+    #[arg(
+        long,
+        short,
+        default_value_t = false,
+        help = "Make this runner the default one in the project"
+    )]
     default: bool,
 
     #[arg(
@@ -53,8 +58,16 @@ struct Cli {
     #[arg(long, default_value_t = false, short, help = "Clear history")]
     clear_history: bool,
 
-    #[arg(long, default_value_t = false, short)]
+    #[arg(
+        long,
+        default_value_t = false,
+        short,
+        help = "Prints out commands passed to the runtime"
+    )]
     verbose: bool,
+
+    #[arg(long, short,  help = "Preview test function symbol or file", value_parser=["file", "test"])]
+    preview: Option<String>,
 
     #[arg(
         long,
@@ -149,12 +162,19 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         RunnerMode::Select
     };
 
+    let preview = match cli.preview.as_deref() {
+        Some("file") => Some(crate::runner::Preview::File),
+        Some("test") => Some(crate::runner::Preview::Test),
+        _ => None,
+    };
+
     let runner_config = RunnerConfig::new(
         cli.clear_cache,
         cli.verbose,
         cli.clear_history,
         runtime_args,
         mode,
+        preview,
     );
 
     let runner = match &cli.command {

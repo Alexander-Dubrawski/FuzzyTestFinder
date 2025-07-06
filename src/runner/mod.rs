@@ -31,12 +31,18 @@ pub enum RunnerMode {
     Select,
 }
 
+pub enum Preview {
+    File,
+    Test,
+}
+
 pub struct RunnerConfig {
     pub clear_cache: bool,
     pub verbose: bool,
     pub clear_history: bool,
     pub runtime_args: Vec<String>,
     pub mode: RunnerMode,
+    pub preview: Option<Preview>,
 }
 
 impl RunnerConfig {
@@ -46,6 +52,7 @@ impl RunnerConfig {
         clear_history: bool,
         runtime_args: Vec<String>,
         mode: RunnerMode,
+        preview: Option<Preview>,
     ) -> Self {
         Self {
             clear_cache,
@@ -53,6 +60,7 @@ impl RunnerConfig {
             clear_history,
             runtime_args,
             mode,
+            preview,
         }
     }
 }
