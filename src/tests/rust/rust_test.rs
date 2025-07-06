@@ -27,8 +27,23 @@ impl RustTests {
     }
 
     fn update_test(&mut self, cargo_tests: Vec<(Vec<String>, String)>) -> Result<(), FztError> {
-        // TODO: check if `lib.rs` or `mod.rs` exists
-        let module_paths = get_module_paths(&Path::new(&self.root_folder).join("src").join("lib.rs"))?;
+        let mut path = Path::new(&self.root_folder).to_path_buf();
+        if path.join("src").exists() {
+            path = path.join("src");
+        }
+        if path.join("lib.rs").exists() {
+            path = path.join("lib.rs");
+        } else if path.join("mod.rs").exists() {
+            path = path.join("mod.rs");
+        } else if path.join("main.rs").exists() {
+            path = path.join("main.rs");
+        } else {
+            return Err(FztError::GeneralParsingError(format!(
+                "No valid Rust source file found in {:?}",
+                path
+            )));
+        }
+        let module_paths = get_module_paths(&path)?;
         let mut updated_tests: HashMap<String, Vec<RustTest>> = HashMap::new();
         for (module_path, method_name) in cargo_tests.into_iter() {
             let test_path = module_paths
@@ -135,28 +150,3 @@ impl Tests for RustTests {
         }
     }
 }
-
-// Filter for test
-// Build module_path_tree
-// Get file name.
-// Informational like line number can still be collected since we have meta information (Before doing that validate that what is needed to open a preview windoe in fzf)
-// pub fn update_tests(
-//     root_folder: &str,
-//     timestamp: &mut u128,
-//     tests: &mut HashMap<String, HashSet<String>>,
-//     only_check_for_change: bool,
-// ) -> Result<bool, FztError> {
-
-// }
-
-// #[cfg(test)]
-// mod tests {
-//     use std::path::Path;
-
-//     use super::collect_tests_from_file;
-
-//     #[test]
-//     fn foo() {
-//         //collect_tests_from_file(&Path::new("src/tests/rust/test_data/b/test_three.rs"));
-//     }
-// }
