@@ -34,6 +34,7 @@ pub enum RunnerMode {
 pub enum Preview {
     File,
     Test,
+    Directory,
 }
 
 pub enum FilterMode {

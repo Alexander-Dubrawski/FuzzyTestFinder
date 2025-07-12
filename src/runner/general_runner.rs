@@ -11,6 +11,8 @@ use crate::{
     tests::{Test, Tests},
 };
 
+use super::Preview;
+
 pub struct GeneralCacheRunner<SE: SearchEngine, RT: Runtime, T: Tests> {
     tests: T,
     cache_manager: CacheManager,
@@ -201,9 +203,15 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     .keys()
                     .map(|file_path| file_path.as_str())
                     .collect();
+                // If preview is set always use Directory
+                let preview = if self.config.preview.is_some() {
+                    Some(Preview::Directory)
+                } else {
+                    None
+                };
                 let selected_dictionaries = self
                     .search_engine
-                    .get_tests_to_run(file_paths.as_slice(), &None)?;
+                    .get_tests_to_run(file_paths.as_slice(), &preview)?;
                 self.cache_manager.update_history(
                     selected_dictionaries.iter().as_ref(),
                     HistoryGranularity::Directory,

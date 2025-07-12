@@ -33,10 +33,17 @@ fn run_fzf(input: &str, read_null: bool, preview: &Option<Preview>) -> Result<Ou
             }
             Preview::Test => {
                 command
-                .arg("--delimiter")
-                .arg("::")
-                .arg("--preview")
-                .arg(" rg --color=always --line-number --no-heading '{2}' '{1}' --context 5 | bat --style=numbers --color=always");
+                        .arg("--delimiter")
+                        .arg("::")
+                        .arg("--preview")
+                        .arg(" rg --color=always --line-number --no-heading '{2}' '{1}' --context 5 | bat --style=numbers --color=always");
+            }
+            Preview::Directory => {
+                command
+                    .arg("--delimiter")
+                    .arg("::")
+                    .arg("--preview")
+                    .arg(" ls '{1}'");
             }
         }
     }

@@ -66,7 +66,13 @@ struct Cli {
     )]
     verbose: bool,
 
-    #[arg(long, short,  help = "Preview test function symbol or file", value_parser=["file", "test"])]
+    #[arg(
+        long,
+        short,
+        help = "Preview test function symbol or file. \
+                If 'granularity' is set to directory, then 'directory' is always used as preview. \
+                preview is not used if '--history' is set.",
+        value_parser=["file", "test", "directory"])]
     preview: Option<String>,
 
     #[arg(
@@ -177,6 +183,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
     let preview = match cli.preview.as_deref() {
         Some("file") => Some(Preview::File),
         Some("test") => Some(Preview::Test),
+        Some("directory") => Some(Preview::Directory),
         Some(_) => {
             return Err(FztError::InvalidArgument(
                 "Invalid preview option. Use 'file' or 'test'.".to_string(),
