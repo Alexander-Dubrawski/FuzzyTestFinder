@@ -41,10 +41,13 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         }
     }
 
-    fn filter_mode_test(
-        &mut self,
-        tests_runtime_args: HashMap<String, String>,
-    ) -> Result<Vec<String>, FztError> {
+    fn filter_mode_test(&mut self) -> Result<Vec<String>, FztError> {
+        let tests_runtime_args: HashMap<String, String> = HashMap::from_iter(
+            self.tests
+                .tests()
+                .iter()
+                .map(|test| (test.name(), test.runtime_argument())),
+        );
         Ok(match self.config.mode {
             super::RunnerMode::All => self
                 .tests
@@ -91,11 +94,60 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         })
     }
 
-    fn filter_mode_file(
-        &mut self,
-        tests_runtime_args: HashMap<String, String>,
-    ) -> Result<Vec<String>, FztError> {
-        todo!()
+    fn filter_mode_file(&mut self) -> Result<Vec<String>, FztError> {
+        let mut tests_runtime_args: HashMap<String, Vec<String>> = HashMap::new();
+        for test in self.tests.tests().iter() {
+            let file_name = test.file_name();
+            if let Some(args) = tests_runtime_args.get_mut(&file_name) {
+                args.push(test.runtime_argument());
+            } else {
+                tests_runtime_args.insert(file_name, vec![test.runtime_argument()]);
+            }
+        }
+        Ok(match self.config.mode {
+            super::RunnerMode::All => self
+                .tests
+                .tests()
+                .iter()
+                .map(|test| test.runtime_argument())
+                .collect(),
+            super::RunnerMode::Last => {
+                let selected_files = self
+                    .cache_manager
+                    .recent_history_command(HistoryGranularity::File)?;
+                selected_files
+                    .into_iter()
+                    .flat_map(|file_name| tests_runtime_args[&file_name].clone())
+                    .collect()
+            }
+            super::RunnerMode::History => {
+                let history = self.cache_manager.history(HistoryGranularity::File)?;
+                let selected_files = self.search_engine.get_from_history(history.as_slice())?;
+                if selected_files.len() > 0 {
+                    self.cache_manager
+                        .update_history(selected_tests.iter().as_ref(), HistoryGranularity::File)?;
+                }
+                selected_files
+                    .into_iter()
+                    .flat_map(|file_name| tests_runtime_args[&file_name].clone())
+                    .collect()
+            }
+            super::RunnerMode::Select => {
+                let file_paths: Vec<&str> = tests_runtime_args
+                    .keys()
+                    .map(|file_path| file_path.as_str())
+                    .collect();
+                let selected_files = self
+                    .search_engine
+                    .get_tests_to_run(file_paths.as_slice(), &self.config.preview)?;
+                self.cache_manager
+                    .update_history(selected_files.iter().as_ref(), HistoryGranularity::File)?;
+                selected_files
+                    .into_iter()
+                    .flat_map(|file_name| tests_runtime_args[&file_name].clone())
+                    .collect()
+            }
+        })
     }
 }
 
@@ -123,15 +175,9 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
             self.cache_manager
                 .add_entry(self.tests.to_json()?.as_str())?;
         }
-        let tests_runtime_args: HashMap<String, String> = HashMap::from_iter(
-            self.tests
-                .tests()
-                .iter()
-                .map(|test| (test.name(), test.runtime_argument())),
-        );
         let tests_to_run: Vec<String> = match self.config.filter_mode {
-            super::FilterMode::Test => self.filter_mode_test(tests_runtime_args)?,
-            super::FilterMode::File => todo!(),
+            super::FilterMode::Test => self.filter_mode_test()?,
+            super::FilterMode::File => self.filter_mode_file()?,
             super::FilterMode::Directory => todo!(),
         };
         if !tests_to_run.is_empty() {

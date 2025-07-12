@@ -144,6 +144,10 @@ impl Test for RustTestItem {
     fn name(&self) -> String {
         format!("{}::{}", self.path, self.test)
     }
+
+    fn file_name(&self) -> String {
+        self.path.clone()
+    }
 }
 
 impl Tests for RustTests {

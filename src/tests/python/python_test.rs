@@ -19,4 +19,8 @@ impl Test for PythonTest {
     fn name(&self) -> String {
         format!("{}::{}", self.path, self.test)
     }
+
+    fn file_name(&self) -> String {
+        self.path.clone()
+    }
 }
