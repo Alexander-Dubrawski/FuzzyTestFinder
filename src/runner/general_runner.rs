@@ -40,39 +40,12 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
             runner_name,
         }
     }
-}
 
-impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
-    for GeneralCacheRunner<SE, RT, T>
-{
-    fn run(&mut self) -> Result<(), FztError> {
-        if self.config.clear_cache || self.config.clear_history {
-            if self.config.clear_cache {
-                self.cache_manager.clear_cache()?;
-            }
-            if self.config.clear_history {
-                self.cache_manager.clear_history()?;
-            }
-            return Ok(());
-        }
-        if let Some(reader) = self.cache_manager.get_entry()? {
-            self.tests = serde_json::from_reader(reader)?;
-            if self.tests.update()? {
-                self.cache_manager
-                    .add_entry(self.tests.to_json()?.as_str())?;
-            }
-        } else {
-            self.tests.update()?;
-            self.cache_manager
-                .add_entry(self.tests.to_json()?.as_str())?;
-        }
-        let tests_runtime_args: HashMap<String, String> = HashMap::from_iter(
-            self.tests
-                .tests()
-                .iter()
-                .map(|test| (test.name(), test.runtime_argument())),
-        );
-        let tests_to_run: Vec<String> = match self.config.mode {
+    fn filter_mode_test(
+        &mut self,
+        tests_runtime_args: HashMap<String, String>,
+    ) -> Result<Vec<String>, FztError> {
+        Ok(match self.config.mode {
             super::RunnerMode::All => self
                 .tests
                 .tests()
@@ -113,6 +86,44 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
                     .map(|name| tests_runtime_args[&name].clone())
                     .collect()
             }
+        })
+    }
+}
+
+impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
+    for GeneralCacheRunner<SE, RT, T>
+{
+    fn run(&mut self) -> Result<(), FztError> {
+        if self.config.clear_cache || self.config.clear_history {
+            if self.config.clear_cache {
+                self.cache_manager.clear_cache()?;
+            }
+            if self.config.clear_history {
+                self.cache_manager.clear_history()?;
+            }
+            return Ok(());
+        }
+        if let Some(reader) = self.cache_manager.get_entry()? {
+            self.tests = serde_json::from_reader(reader)?;
+            if self.tests.update()? {
+                self.cache_manager
+                    .add_entry(self.tests.to_json()?.as_str())?;
+            }
+        } else {
+            self.tests.update()?;
+            self.cache_manager
+                .add_entry(self.tests.to_json()?.as_str())?;
+        }
+        let tests_runtime_args: HashMap<String, String> = HashMap::from_iter(
+            self.tests
+                .tests()
+                .iter()
+                .map(|test| (test.name(), test.runtime_argument())),
+        );
+        let tests_to_run: Vec<String> = match self.config.filter_mode {
+            super::FilterMode::Test => self.filter_mode_test(tests_runtime_args)?,
+            super::FilterMode::File => todo!(),
+            super::FilterMode::Directory => todo!(),
         };
         if !tests_to_run.is_empty() {
             self.runtime.run_tests(

@@ -3,7 +3,7 @@ use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 use crate::{
     cache::helper::project_hash,
     errors::FztError,
-    runner::{Runner, RunnerConfig, RunnerMode},
+    runner::{FilterMode, Preview, Runner, RunnerConfig, RunnerMode},
     search_engine::fzf::FzfSearchEngine,
 };
 
@@ -76,6 +76,18 @@ struct Cli {
         help = "Run all tests in project"
     )]
     all: bool,
+
+    #[arg(
+        long,
+        default_value_t = String::from("test"),
+        short,
+        help = "Granularity of filtering. \
+                Can be 'test' for running a single tests, \
+                'file' for running all tests in a file, \
+                or 'directory' for running all tests in a directory.",
+        value_parser=["directory", "file", "test"]
+    )]
+    granularity: String,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -163,9 +175,25 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
     };
 
     let preview = match cli.preview.as_deref() {
-        Some("file") => Some(crate::runner::Preview::File),
-        Some("test") => Some(crate::runner::Preview::Test),
-        _ => None,
+        Some("file") => Some(Preview::File),
+        Some("test") => Some(Preview::Test),
+        Some(_) => {
+            return Err(FztError::InvalidArgument(
+                "Invalid preview option. Use 'file' or 'test'.".to_string(),
+            ));
+        }
+        None => None,
+    };
+
+    let filter_mode = match cli.granularity.as_str() {
+        "file" => FilterMode::File,
+        "test" => FilterMode::Test,
+        "directory" => FilterMode::Directory,
+        _ => {
+            return Err(FztError::InvalidArgument(
+                "Invalid filter mode option. Use 'directory', 'file' or 'test'.".to_string(),
+            ));
+        }
     };
 
     let runner_config = RunnerConfig::new(
@@ -175,6 +203,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         runtime_args,
         mode,
         preview,
+        filter_mode,
     );
 
     let runner = match &cli.command {
