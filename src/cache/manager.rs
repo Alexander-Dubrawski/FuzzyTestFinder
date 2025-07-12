@@ -125,22 +125,22 @@ impl CacheManager {
             return Ok(());
         }
 
-        let histroy_file = match granularity {
+        let history_file = match granularity {
             HistoryGranularity::Test => &self.history_test_granularity,
             HistoryGranularity::File => &self.history_file_granularity,
             HistoryGranularity::Directory => &self.history_directory_granularity,
         };
 
-        let mut history = if !Path::new(histroy_file).exists() {
+        let mut history = if !Path::new(history_file).exists() {
             VecDeque::new()
         } else {
-            let file = File::open(histroy_file)?;
+            let file = File::open(history_file)?;
             let reader = BufReader::new(file);
             let content: VecDeque<Vec<String>> = serde_json::from_reader(reader)?;
             content
         };
         history.push_front(selection.to_vec());
-        let file = File::create(histroy_file)?;
+        let file = File::create(history_file)?;
         let mut writer = BufWriter::new(file);
         if history.len() > HISTORY_SIZE {
             history.pop_back();
@@ -153,16 +153,16 @@ impl CacheManager {
         &self,
         granularity: HistoryGranularity,
     ) -> Result<Vec<String>, FztError> {
-        let histroy_file = match granularity {
+        let history_file = match granularity {
             HistoryGranularity::Test => &self.history_test_granularity,
             HistoryGranularity::File => &self.history_file_granularity,
             HistoryGranularity::Directory => &self.history_directory_granularity,
         };
 
-        if !Path::new(histroy_file).exists() {
+        if !Path::new(history_file).exists() {
             Ok(vec![])
         } else {
-            let file = File::open(histroy_file)?;
+            let file = File::open(history_file)?;
             let reader = BufReader::new(file);
             let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
             Ok(content.first().map(|tests| tests.clone()).unwrap_or(vec![]))
@@ -170,16 +170,16 @@ impl CacheManager {
     }
 
     pub fn history(&self, granularity: HistoryGranularity) -> Result<Vec<Vec<String>>, FztError> {
-        let histroy_file = match granularity {
+        let history_file = match granularity {
             HistoryGranularity::Test => &self.history_test_granularity,
             HistoryGranularity::File => &self.history_file_granularity,
             HistoryGranularity::Directory => &self.history_directory_granularity,
         };
 
-        if !Path::new(histroy_file).exists() {
+        if !Path::new(history_file).exists() {
             Ok(vec![vec![]])
         } else {
-            let file = File::open(histroy_file)?;
+            let file = File::open(history_file)?;
             let reader = BufReader::new(file);
             let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
             Ok(content)
