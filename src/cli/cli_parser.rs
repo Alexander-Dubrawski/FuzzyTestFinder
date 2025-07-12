@@ -88,7 +88,7 @@ struct Cli {
         default_value_t = String::from("test"),
         short,
         help = "Granularity of filtering. \
-                Can be 'test' for running a single tests, \
+                Can be 'test' for running a single test, \
                 'file' for running all tests in a file, \
                 or 'directory' for running all tests in a directory.",
         value_parser=["directory", "file", "test"]
@@ -186,7 +186,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         Some("directory") => Some(Preview::Directory),
         Some(_) => {
             return Err(FztError::InvalidArgument(
-                "Invalid preview option. Use 'file' or 'test'.".to_string(),
+                "Invalid preview option. Use 'file', 'test', or 'directory'.".to_string(),
             ));
         }
         None => None,
