@@ -145,7 +145,7 @@ impl Test for RustTestItem {
         format!("{}::{}", self.path, self.test)
     }
 
-    fn file_name(&self) -> String {
+    fn file_path(&self) -> String {
         self.path.clone()
     }
 }

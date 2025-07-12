@@ -97,11 +97,11 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
     fn filter_mode_file(&mut self) -> Result<Vec<String>, FztError> {
         let mut tests_runtime_args: HashMap<String, Vec<String>> = HashMap::new();
         for test in self.tests.tests().iter() {
-            let file_name = test.file_name();
-            if let Some(args) = tests_runtime_args.get_mut(&file_name) {
+            let file_path = test.file_path();
+            if let Some(args) = tests_runtime_args.get_mut(&file_path) {
                 args.push(test.runtime_argument());
             } else {
-                tests_runtime_args.insert(file_name, vec![test.runtime_argument()]);
+                tests_runtime_args.insert(file_path, vec![test.runtime_argument()]);
             }
         }
         Ok(match self.config.mode {
@@ -117,7 +117,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     .recent_history_command(HistoryGranularity::File)?;
                 selected_files
                     .into_iter()
-                    .flat_map(|file_name| tests_runtime_args[&file_name].clone())
+                    .flat_map(|file_path| tests_runtime_args[&file_path].clone())
                     .collect()
             }
             super::RunnerMode::History => {
@@ -125,11 +125,11 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                 let selected_files = self.search_engine.get_from_history(history.as_slice())?;
                 if selected_files.len() > 0 {
                     self.cache_manager
-                        .update_history(selected_tests.iter().as_ref(), HistoryGranularity::File)?;
+                        .update_history(selected_files.iter().as_ref(), HistoryGranularity::File)?;
                 }
                 selected_files
                     .into_iter()
-                    .flat_map(|file_name| tests_runtime_args[&file_name].clone())
+                    .flat_map(|file_path| tests_runtime_args[&file_path].clone())
                     .collect()
             }
             super::RunnerMode::Select => {
