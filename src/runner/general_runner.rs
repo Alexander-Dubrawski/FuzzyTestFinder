@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::de::DeserializeOwned;
 
 use crate::{
-    cache::manager::CacheManager,
+    cache::manager::{CacheManager, HistoryGranularity},
     errors::FztError,
     runner::{MetaData, Runner, RunnerConfig, RunnerName},
     runtime::Runtime,
@@ -53,18 +53,20 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                 .map(|test| test.runtime_argument())
                 .collect(),
             super::RunnerMode::Last => {
-                let selected_tests = self.cache_manager.recent_history_command()?;
+                let selected_tests = self
+                    .cache_manager
+                    .recent_history_command(HistoryGranularity::Test)?;
                 selected_tests
                     .into_iter()
                     .map(|name| tests_runtime_args[&name].clone())
                     .collect()
             }
             super::RunnerMode::History => {
-                let history = self.cache_manager.history()?;
+                let history = self.cache_manager.history(HistoryGranularity::Test)?;
                 let selected_tests = self.search_engine.get_from_history(history.as_slice())?;
                 if selected_tests.len() > 0 {
                     self.cache_manager
-                        .update_history(selected_tests.iter().as_ref())?;
+                        .update_history(selected_tests.iter().as_ref(), HistoryGranularity::Test)?;
                 }
                 selected_tests
                     .into_iter()
@@ -80,13 +82,20 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     .search_engine
                     .get_tests_to_run(names.as_slice(), &self.config.preview)?;
                 self.cache_manager
-                    .update_history(selected_tests.iter().as_ref())?;
+                    .update_history(selected_tests.iter().as_ref(), HistoryGranularity::Test)?;
                 selected_tests
                     .into_iter()
                     .map(|name| tests_runtime_args[&name].clone())
                     .collect()
             }
         })
+    }
+
+    fn filter_mode_file(
+        &mut self,
+        tests_runtime_args: HashMap<String, String>,
+    ) -> Result<Vec<String>, FztError> {
+        todo!()
     }
 }
 

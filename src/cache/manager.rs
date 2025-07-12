@@ -10,9 +10,17 @@ use crate::errors::FztError;
 
 const HISTORY_SIZE: usize = 200;
 
+pub enum HistoryGranularity {
+    Test,
+    File,
+    Directory,
+}
+
 pub struct CacheManager {
     cache_file: PathBuf,
-    history_file: PathBuf,
+    history_test_granularity: PathBuf,
+    history_file_granularity: PathBuf,
+    history_directory_granularity: PathBuf,
 }
 
 impl CacheManager {
@@ -20,10 +28,17 @@ impl CacheManager {
         let mut cache_location = home_dir().expect("Could not find home directory");
         cache_location.push(".fzt");
         let cache_file = cache_location.join(format!("{}.json", project_id));
-        let history_file = cache_location.join(format!("{}-history.json", project_id));
+        let history_test_granularity =
+            cache_location.join(format!("{}-history-test-granularity.json", project_id));
+        let history_file_granularity =
+            cache_location.join(format!("{}-history-file-granularity.json", project_id));
+        let history_directory_granularity =
+            cache_location.join(format!("{}-history-directory-granularity.json", project_id));
         Self {
             cache_file,
-            history_file,
+            history_test_granularity,
+            history_file_granularity,
+            history_directory_granularity,
         }
     }
 
@@ -51,10 +66,17 @@ impl CacheManager {
         }
     }
 
-    pub fn new_from_path(cache_file: PathBuf, history_file: PathBuf) -> Self {
+    pub fn new_from_path(
+        cache_file: PathBuf,
+        history_test_granularity: PathBuf,
+        history_file_granularity: PathBuf,
+        history_directory_granularity: PathBuf,
+    ) -> Self {
         Self {
             cache_file,
-            history_file,
+            history_test_granularity,
+            history_file_granularity,
+            history_directory_granularity,
         }
     }
 
@@ -82,26 +104,43 @@ impl CacheManager {
     }
 
     pub fn clear_history(&self) -> Result<(), FztError> {
-        if Path::new(&self.history_file).exists() {
-            std::fs::remove_file(&self.history_file)?;
+        if Path::new(&self.history_test_granularity).exists() {
+            std::fs::remove_file(&self.history_test_granularity)?;
+        }
+        if Path::new(&self.history_file_granularity).exists() {
+            std::fs::remove_file(&self.history_file_granularity)?;
+        }
+        if Path::new(&self.history_directory_granularity).exists() {
+            std::fs::remove_file(&self.history_directory_granularity)?;
         }
         Ok(())
     }
 
-    pub fn update_history(&self, tests: &[String]) -> Result<(), FztError> {
-        if tests.is_empty() {
+    pub fn update_history(
+        &self,
+        selection: &[String],
+        granularity: HistoryGranularity,
+    ) -> Result<(), FztError> {
+        if selection.is_empty() {
             return Ok(());
         }
-        let mut history = if !Path::new(&self.history_file).exists() {
+
+        let histroy_file = match granularity {
+            HistoryGranularity::Test => &self.history_test_granularity,
+            HistoryGranularity::File => &self.history_file_granularity,
+            HistoryGranularity::Directory => &self.history_directory_granularity,
+        };
+
+        let mut history = if !Path::new(histroy_file).exists() {
             VecDeque::new()
         } else {
-            let file = File::open(&self.history_file)?;
+            let file = File::open(histroy_file)?;
             let reader = BufReader::new(file);
             let content: VecDeque<Vec<String>> = serde_json::from_reader(reader)?;
             content
         };
-        history.push_front(tests.to_vec());
-        let file = File::create(&self.history_file)?;
+        history.push_front(selection.to_vec());
+        let file = File::create(histroy_file)?;
         let mut writer = BufWriter::new(file);
         if history.len() > HISTORY_SIZE {
             history.pop_back();
@@ -110,22 +149,37 @@ impl CacheManager {
         Ok(())
     }
 
-    pub fn recent_history_command(&self) -> Result<Vec<String>, FztError> {
-        if !Path::new(&self.history_file).exists() {
+    pub fn recent_history_command(
+        &self,
+        granularity: HistoryGranularity,
+    ) -> Result<Vec<String>, FztError> {
+        let histroy_file = match granularity {
+            HistoryGranularity::Test => &self.history_test_granularity,
+            HistoryGranularity::File => &self.history_file_granularity,
+            HistoryGranularity::Directory => &self.history_directory_granularity,
+        };
+
+        if !Path::new(histroy_file).exists() {
             Ok(vec![])
         } else {
-            let file = File::open(&self.history_file)?;
+            let file = File::open(histroy_file)?;
             let reader = BufReader::new(file);
             let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
             Ok(content.first().map(|tests| tests.clone()).unwrap_or(vec![]))
         }
     }
 
-    pub fn history(&self) -> Result<Vec<Vec<String>>, FztError> {
-        if !Path::new(&self.history_file).exists() {
+    pub fn history(&self, granularity: HistoryGranularity) -> Result<Vec<Vec<String>>, FztError> {
+        let histroy_file = match granularity {
+            HistoryGranularity::Test => &self.history_test_granularity,
+            HistoryGranularity::File => &self.history_file_granularity,
+            HistoryGranularity::Directory => &self.history_directory_granularity,
+        };
+
+        if !Path::new(histroy_file).exists() {
             Ok(vec![vec![]])
         } else {
-            let file = File::open(&self.history_file)?;
+            let file = File::open(histroy_file)?;
             let reader = BufReader::new(file);
             let content: Vec<Vec<String>> = serde_json::from_reader(reader)?;
             Ok(content)
