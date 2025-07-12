@@ -34,6 +34,13 @@ pub enum RunnerMode {
 pub enum Preview {
     File,
     Test,
+    Directory,
+}
+
+pub enum FilterMode {
+    Test,
+    File,
+    Directory,
 }
 
 pub struct RunnerConfig {
@@ -43,6 +50,7 @@ pub struct RunnerConfig {
     pub runtime_args: Vec<String>,
     pub mode: RunnerMode,
     pub preview: Option<Preview>,
+    pub filter_mode: FilterMode,
 }
 
 impl RunnerConfig {
@@ -53,6 +61,7 @@ impl RunnerConfig {
         runtime_args: Vec<String>,
         mode: RunnerMode,
         preview: Option<Preview>,
+        filter_mode: FilterMode,
     ) -> Self {
         Self {
             clear_cache,
@@ -61,6 +70,7 @@ impl RunnerConfig {
             runtime_args,
             mode,
             preview,
+            filter_mode,
         }
     }
 }

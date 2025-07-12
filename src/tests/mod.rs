@@ -7,6 +7,7 @@ pub mod rust;
 pub trait Test {
     fn runtime_argument(&self) -> String;
     fn name(&self) -> String;
+    fn file_path(&self) -> String;
 }
 
 pub trait Tests {

@@ -57,6 +57,10 @@ impl Test for JavaTestItem {
     fn name(&self) -> String {
         format!("{}::{}", self.path, self.test)
     }
+
+    fn file_path(&self) -> String {
+        self.path.clone()
+    }
 }
 
 impl Tests for JavaTests {
