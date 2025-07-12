@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use serde::de::DeserializeOwned;
 
@@ -149,6 +149,72 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
             }
         })
     }
+
+    fn filter_mode_directory(&mut self) -> Result<Vec<String>, FztError> {
+        let mut tests_runtime_args: HashMap<String, Vec<String>> = HashMap::new();
+        for test in self.tests.tests().iter() {
+            let file_path = test.file_path();
+            let parent = PathBuf::from(file_path)
+                .parent()
+                .map(|path| path.to_str().expect("Expect valid path"))
+                .unwrap_or("root")
+                .to_string();
+            if let Some(args) = tests_runtime_args.get_mut(&parent) {
+                args.push(test.runtime_argument());
+            } else {
+                tests_runtime_args.insert(parent.to_string(), vec![test.runtime_argument()]);
+            }
+        }
+        Ok(match self.config.mode {
+            super::RunnerMode::All => self
+                .tests
+                .tests()
+                .iter()
+                .map(|test| test.runtime_argument())
+                .collect(),
+            super::RunnerMode::Last => {
+                let selected_dictionaries = self
+                    .cache_manager
+                    .recent_history_command(HistoryGranularity::Directory)?;
+                selected_dictionaries
+                    .into_iter()
+                    .flat_map(|file_path| tests_runtime_args[&file_path].clone())
+                    .collect()
+            }
+            super::RunnerMode::History => {
+                let history = self.cache_manager.history(HistoryGranularity::Directory)?;
+                let selected_dictionaries =
+                    self.search_engine.get_from_history(history.as_slice())?;
+                if selected_dictionaries.len() > 0 {
+                    self.cache_manager.update_history(
+                        selected_dictionaries.iter().as_ref(),
+                        HistoryGranularity::Directory,
+                    )?;
+                }
+                selected_dictionaries
+                    .into_iter()
+                    .flat_map(|file_path| tests_runtime_args[&file_path].clone())
+                    .collect()
+            }
+            super::RunnerMode::Select => {
+                let file_paths: Vec<&str> = tests_runtime_args
+                    .keys()
+                    .map(|file_path| file_path.as_str())
+                    .collect();
+                let selected_dictionaries = self
+                    .search_engine
+                    .get_tests_to_run(file_paths.as_slice(), &None)?;
+                self.cache_manager.update_history(
+                    selected_dictionaries.iter().as_ref(),
+                    HistoryGranularity::Directory,
+                )?;
+                selected_dictionaries
+                    .into_iter()
+                    .flat_map(|file_name| tests_runtime_args[&file_name].clone())
+                    .collect()
+            }
+        })
+    }
 }
 
 impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
@@ -178,7 +244,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
         let tests_to_run: Vec<String> = match self.config.filter_mode {
             super::FilterMode::Test => self.filter_mode_test()?,
             super::FilterMode::File => self.filter_mode_file()?,
-            super::FilterMode::Directory => todo!(),
+            super::FilterMode::Directory => self.filter_mode_directory()?,
         };
         if !tests_to_run.is_empty() {
             self.runtime.run_tests(
