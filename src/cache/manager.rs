@@ -198,7 +198,12 @@ mod tests {
     #[test]
     fn get_non_existing_entry() {
         let path = PathBuf::from("/ifhoeowhfoew/oihsoehwofihwoih.json");
-        let manager = CacheManager::new_from_path(path, PathBuf::from("file.path()"));
+        let manager = CacheManager::new_from_path(
+            path,
+            PathBuf::from("file.path()"),
+            PathBuf::from(""),
+            PathBuf::from(""),
+        );
         let result = manager.get_entry().unwrap();
         assert!(result.is_none());
     }
@@ -207,7 +212,12 @@ mod tests {
     fn get_existing_entry() {
         let file = NamedTempFile::new().unwrap();
         let path = PathBuf::from(file.path());
-        let manager = CacheManager::new_from_path(path, PathBuf::from("file.path()"));
+        let manager = CacheManager::new_from_path(
+            path,
+            PathBuf::from("file.path()"),
+            PathBuf::from(""),
+            PathBuf::from(""),
+        );
         let mut reader = manager.get_entry().unwrap().unwrap();
         let mut file_content = String::new();
         reader.read_to_string(&mut file_content).unwrap();
@@ -219,7 +229,12 @@ mod tests {
         let mut file = NamedTempFile::new().unwrap();
         writeln!(file, "Old").unwrap();
         let path = PathBuf::from(file.path());
-        let manager = CacheManager::new_from_path(path.clone(), PathBuf::from("file.path()"));
+        let manager = CacheManager::new_from_path(
+            path.clone(),
+            PathBuf::from("file.path()"),
+            PathBuf::from(""),
+            PathBuf::from(""),
+        );
         manager.add_entry("New").unwrap();
 
         let entry = File::open(path).unwrap();
