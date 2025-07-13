@@ -7,7 +7,12 @@ use crate::runner::Preview;
 
 use super::SearchEngine;
 
-fn run_fzf(input: &str, read_null: bool, preview: &Option<Preview>) -> Result<Output, FztError> {
+fn run_fzf(
+    input: &str,
+    read_null: bool,
+    preview: &Option<Preview>,
+    query: &Option<String>,
+) -> Result<Output, FztError> {
     let mut command = Command::new("fzf");
     command
         .arg("-m")
@@ -20,6 +25,10 @@ fn run_fzf(input: &str, read_null: bool, preview: &Option<Preview>) -> Result<Ou
 
     if read_null {
         command.arg("--read0").arg("--gap");
+    }
+
+    if let Some(query) = query {
+        command.arg("--query").arg(query);
     }
 
     if let Some(preview_mode) = preview {
@@ -68,12 +77,13 @@ impl SearchEngine for FzfSearchEngine {
         &self,
         all_test: &[&str],
         preview: &Option<Preview>,
+        query: &Option<String>,
     ) -> Result<Vec<String>, FztError> {
         let mut input = String::new();
         all_test.iter().for_each(|test| {
             input.push_str(format!("{}\n", test).as_str());
         });
-        let output = run_fzf(input.as_str(), false, preview)?;
+        let output = run_fzf(input.as_str(), false, preview, query)?;
         let tests: Vec<String> = str::from_utf8(output.stdout.as_slice())?
             .lines()
             .map(|line| line.to_string())
@@ -81,7 +91,11 @@ impl SearchEngine for FzfSearchEngine {
         Ok(tests)
     }
 
-    fn get_from_history(&self, history: &[Vec<String>]) -> Result<Vec<String>, FztError> {
+    fn get_from_history(
+        &self,
+        history: &[Vec<String>],
+        query: &Option<String>,
+    ) -> Result<Vec<String>, FztError> {
         let mut input = String::new();
         history
             .iter()
@@ -94,7 +108,7 @@ impl SearchEngine for FzfSearchEngine {
                 command.remove(command.len() - 1);
                 input.push_str(format!("{command}\0").as_str());
             });
-        let mut output = run_fzf(input.as_str(), true, &None)?.stdout;
+        let mut output = run_fzf(input.as_str(), true, &None, query)?.stdout;
         // Replace Null byte with new line
         output.iter_mut().filter(|p| **p == 0).for_each(|p| *p = 10);
         Ok(str::from_utf8(output.as_slice())?

@@ -51,6 +51,7 @@ pub struct RunnerConfig {
     pub mode: RunnerMode,
     pub preview: Option<Preview>,
     pub filter_mode: FilterMode,
+    pub query: Option<String>,
 }
 
 impl RunnerConfig {
@@ -62,6 +63,7 @@ impl RunnerConfig {
         mode: RunnerMode,
         preview: Option<Preview>,
         filter_mode: FilterMode,
+        query: Option<String>,
     ) -> Self {
         Self {
             clear_cache,
@@ -71,6 +73,7 @@ impl RunnerConfig {
             mode,
             preview,
             filter_mode,
+            query,
         }
     }
 }

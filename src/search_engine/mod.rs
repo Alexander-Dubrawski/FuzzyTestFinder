@@ -7,7 +7,12 @@ pub trait SearchEngine {
         &self,
         all_test: &[&str],
         preview: &Option<Preview>,
+        query: &Option<String>,
     ) -> Result<Vec<String>, FztError>;
-    fn get_from_history(&self, history: &[Vec<String>]) -> Result<Vec<String>, FztError>;
+    fn get_from_history(
+        &self,
+        history: &[Vec<String>],
+        query: &Option<String>,
+    ) -> Result<Vec<String>, FztError>;
     fn name(&self) -> String;
 }
