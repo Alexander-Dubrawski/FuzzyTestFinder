@@ -95,6 +95,9 @@ struct Cli {
     )]
     granularity: String,
 
+    #[arg(long, short, help = "Start the finder with the given query")]
+    query: Option<String>,
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -211,6 +214,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         mode,
         preview,
         filter_mode,
+        cli.query,
     );
 
     let runner = match &cli.command {
