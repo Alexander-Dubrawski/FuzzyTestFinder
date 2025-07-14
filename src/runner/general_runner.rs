@@ -109,12 +109,6 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         &mut self,
         query: &Option<String>,
     ) -> Result<Vec<String>, FztError> {
-        let tests_runtime_args: HashMap<String, String> = HashMap::from_iter(
-            self.tests
-                .tests()
-                .iter()
-                .map(|test| (test.runtime_argument(), test.name())),
-        );
         Ok(match self.config.mode {
             super::RunnerMode::All => self
                 .tests
@@ -142,6 +136,12 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                 selected_tests
             }
             super::RunnerMode::Select => {
+                let runtime_args_test_names: HashMap<String, String> = HashMap::from_iter(
+                    self.tests
+                        .tests()
+                        .iter()
+                        .map(|test| (test.runtime_argument(), test.name())),
+                );
                 let runtime_args: Vec<String> = self
                     .tests
                     .tests()
@@ -163,7 +163,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                 )?;
                 let selected_test_names: Vec<String> = selected_test_runtime
                     .iter()
-                    .map(|name| tests_runtime_args[name].clone())
+                    .map(|name| runtime_args_test_names[name].clone())
                     .collect();
                 self.cache_manager.update_history(
                     selected_test_names.iter().as_ref(),
