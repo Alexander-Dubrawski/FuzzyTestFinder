@@ -92,10 +92,84 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                 )?;
                 self.cache_manager
                     .update_history(selected_tests.iter().as_ref(), HistoryGranularity::Test)?;
-                selected_tests
+                let selected_test_runtime: Vec<String> = selected_tests
                     .into_iter()
                     .map(|name| tests_runtime_args[&name].clone())
-                    .collect()
+                    .collect();
+                self.cache_manager.update_history(
+                    selected_test_runtime.iter().as_ref(),
+                    HistoryGranularity::RunTime,
+                )?;
+                selected_test_runtime
+            }
+        })
+    }
+
+    fn filter_mode_runtime_argument(
+        &mut self,
+        query: &Option<String>,
+    ) -> Result<Vec<String>, FztError> {
+        Ok(match self.config.mode {
+            super::RunnerMode::All => self
+                .tests
+                .tests()
+                .iter()
+                .map(|test| test.runtime_argument())
+                .collect(),
+            super::RunnerMode::Last => {
+                let selected_tests = self
+                    .cache_manager
+                    .recent_history_command(HistoryGranularity::RunTime)?;
+                selected_tests
+            }
+            super::RunnerMode::History => {
+                let history = self.cache_manager.history(HistoryGranularity::RunTime)?;
+                let selected_tests = self
+                    .search_engine
+                    .get_from_history(history.as_slice(), query)?;
+                if selected_tests.len() > 0 {
+                    self.cache_manager.update_history(
+                        selected_tests.iter().as_ref(),
+                        HistoryGranularity::RunTime,
+                    )?;
+                }
+                selected_tests
+            }
+            super::RunnerMode::Select => {
+                let runtime_args_test_names: HashMap<String, String> = HashMap::from_iter(
+                    self.tests
+                        .tests()
+                        .iter()
+                        .map(|test| (test.runtime_argument(), test.name())),
+                );
+                let runtime_args: Vec<String> = self
+                    .tests
+                    .tests()
+                    .iter()
+                    .map(|test| test.runtime_argument())
+                    .collect();
+                let selected_test_runtime = self.search_engine.get_tests_to_run(
+                    runtime_args
+                        .iter()
+                        .map(|arg| arg.as_str())
+                        .collect::<Vec<&str>>()
+                        .as_slice(),
+                    &self.config.preview,
+                    query,
+                )?;
+                self.cache_manager.update_history(
+                    selected_test_runtime.iter().as_ref(),
+                    HistoryGranularity::RunTime,
+                )?;
+                let selected_test_names: Vec<String> = selected_test_runtime
+                    .iter()
+                    .map(|name| runtime_args_test_names[name].clone())
+                    .collect();
+                self.cache_manager.update_history(
+                    selected_test_names.iter().as_ref(),
+                    HistoryGranularity::Test,
+                )?;
+                selected_test_runtime
             }
         })
     }
@@ -263,6 +337,9 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
             super::FilterMode::File => self.filter_mode_file(&self.config.query.clone())?,
             super::FilterMode::Directory => {
                 self.filter_mode_directory(&self.config.query.clone())?
+            }
+            super::FilterMode::RunTime => {
+                self.filter_mode_runtime_argument(&self.config.query.clone())?
             }
         };
         if !tests_to_run.is_empty() {

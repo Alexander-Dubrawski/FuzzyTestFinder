@@ -41,6 +41,7 @@ pub enum FilterMode {
     Test,
     File,
     Directory,
+    RunTime,
 }
 
 pub struct RunnerConfig {
