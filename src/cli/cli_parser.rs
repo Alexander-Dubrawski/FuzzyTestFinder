@@ -89,9 +89,10 @@ struct Cli {
         short,
         help = "Granularity of filtering. \
                 Can be 'test' for running a single test, \
+                'runtime' for running a single test based on its runtime argument, \
                 'file' for running all tests in a file, \
                 or 'directory' for running all tests in a directory.",
-        value_parser=["directory", "file", "test"]
+        value_parser=["directory", "file", "test", "runtime"]
     )]
     granularity: String,
 
@@ -199,6 +200,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         "file" => FilterMode::File,
         "test" => FilterMode::Test,
         "directory" => FilterMode::Directory,
+        "runtime" => FilterMode::RunTime,
         _ => {
             return Err(FztError::InvalidArgument(
                 "Invalid filter mode option. Use 'directory', 'file' or 'test'.".to_string(),
