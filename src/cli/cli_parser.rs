@@ -99,6 +99,15 @@ struct Cli {
     #[arg(long, short, help = "Start the finder with the given query")]
     query: Option<String>,
 
+    #[arg(
+        long,
+        default_value_t = false,
+        short,
+        help = "Continues filter selection after the first selection is made. \
+                If set, the user can select multiple times in the filter selection step."
+    )]
+    continues_append: bool,    
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -217,6 +226,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         preview,
         filter_mode,
         cli.query,
+        cli.continues_append,
     );
 
     let runner = match &cli.command {

@@ -306,6 +306,14 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
             }
         })
     }
+
+    fn continiues_append(&self) -> Result<Vec<String>, FztError> {
+        // TODO: 
+        // - Own history for continues append mode 
+        // - While loop ask for user selection granularity or to end
+        // - Handle granularity
+        todo!()
+    }
 }
 
 impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
