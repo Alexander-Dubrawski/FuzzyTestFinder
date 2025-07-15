@@ -51,7 +51,7 @@ struct Cli {
         long,
         default_value_t = false,
         short,
-        help = "Parse tests commands from history"
+        help = "Parse test items from history. Holds a history for each 'granularity' selected and --continues-append."
     )]
     history: bool,
 
