@@ -15,6 +15,7 @@ pub enum HistoryGranularity {
     File,
     Directory,
     RunTime,
+    ContinuesAppend,
 }
 
 pub struct CacheManager {
@@ -23,6 +24,7 @@ pub struct CacheManager {
     history_file_granularity: PathBuf,
     history_directory_granularity: PathBuf,
     history_runtime_granularity: PathBuf,
+    history_continues_append_granularity : PathBuf,
 }
 
 impl CacheManager {
@@ -38,12 +40,15 @@ impl CacheManager {
             cache_location.join(format!("{}-history-directory-granularity.json", project_id));
         let history_runtime_granularity =
             cache_location.join(format!("{}-history-runtime-granularity.json", project_id));
+        let history_continues_append_granularity =
+            cache_location.join(format!("{}-history-continues-append-granularity.json", project_id));
         Self {
             cache_file,
             history_test_granularity,
             history_file_granularity,
             history_directory_granularity,
             history_runtime_granularity,
+            history_continues_append_granularity,
         }
     }
 
@@ -77,6 +82,7 @@ impl CacheManager {
         history_file_granularity: PathBuf,
         history_directory_granularity: PathBuf,
         history_runtime_granularity: PathBuf,
+        history_continues_append_granularity: PathBuf,
     ) -> Self {
         Self {
             cache_file,
@@ -84,6 +90,7 @@ impl CacheManager {
             history_file_granularity,
             history_directory_granularity,
             history_runtime_granularity,
+            history_continues_append_granularity,
         }
     }
 
@@ -123,7 +130,20 @@ impl CacheManager {
         if Path::new(&self.history_runtime_granularity).exists() {
             std::fs::remove_file(&self.history_runtime_granularity)?;
         }
+        if Path::new(&self.history_continues_append_granularity).exists() {
+            std::fs::remove_file(&self.history_continues_append_granularity)?;
+        }
         Ok(())
+    }
+
+    fn get_history_file(&self, granularity: HistoryGranularity) -> &PathBuf {
+        match granularity {
+            HistoryGranularity::Test => &self.history_test_granularity,
+            HistoryGranularity::File => &self.history_file_granularity,
+            HistoryGranularity::Directory => &self.history_directory_granularity,
+            HistoryGranularity::RunTime => &self.history_runtime_granularity,
+            HistoryGranularity::ContinuesAppend => &self.history_continues_append_granularity,
+        }
     }
 
     pub fn update_history(
@@ -135,12 +155,7 @@ impl CacheManager {
             return Ok(());
         }
 
-        let history_file = match granularity {
-            HistoryGranularity::Test => &self.history_test_granularity,
-            HistoryGranularity::File => &self.history_file_granularity,
-            HistoryGranularity::Directory => &self.history_directory_granularity,
-            HistoryGranularity::RunTime => &self.history_runtime_granularity,
-        };
+        let history_file = self.get_history_file(granularity);
 
         let mut history = if !Path::new(history_file).exists() {
             VecDeque::new()
@@ -164,12 +179,7 @@ impl CacheManager {
         &self,
         granularity: HistoryGranularity,
     ) -> Result<Vec<String>, FztError> {
-        let history_file = match granularity {
-            HistoryGranularity::Test => &self.history_test_granularity,
-            HistoryGranularity::File => &self.history_file_granularity,
-            HistoryGranularity::Directory => &self.history_directory_granularity,
-            HistoryGranularity::RunTime => &self.history_runtime_granularity,
-        };
+        let history_file = self.get_history_file(granularity);
 
         if !Path::new(history_file).exists() {
             Ok(vec![])
@@ -182,12 +192,7 @@ impl CacheManager {
     }
 
     pub fn history(&self, granularity: HistoryGranularity) -> Result<Vec<Vec<String>>, FztError> {
-        let history_file = match granularity {
-            HistoryGranularity::Test => &self.history_test_granularity,
-            HistoryGranularity::File => &self.history_file_granularity,
-            HistoryGranularity::Directory => &self.history_directory_granularity,
-            HistoryGranularity::RunTime => &self.history_runtime_granularity,
-        };
+        let history_file = self.get_history_file(granularity);
 
         if !Path::new(history_file).exists() {
             Ok(vec![vec![]])
@@ -217,6 +222,7 @@ mod tests {
             PathBuf::from(""),
             PathBuf::from(""),
             PathBuf::from(""),
+            PathBuf::from(""),
         );
         let result = manager.get_entry().unwrap();
         assert!(result.is_none());
@@ -229,6 +235,7 @@ mod tests {
         let manager = CacheManager::new_from_path(
             path,
             PathBuf::from("file.path()"),
+            PathBuf::from(""),
             PathBuf::from(""),
             PathBuf::from(""),
             PathBuf::from(""),
