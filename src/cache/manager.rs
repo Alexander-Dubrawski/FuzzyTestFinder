@@ -10,12 +10,13 @@ use crate::errors::FztError;
 
 const HISTORY_SIZE: usize = 200;
 
+#[derive(Clone)]
 pub enum HistoryGranularity {
     Test,
     File,
     Directory,
     RunTime,
-    ContinuesAppend,
+    Append,
 }
 
 pub struct CacheManager {
@@ -24,7 +25,7 @@ pub struct CacheManager {
     history_file_granularity: PathBuf,
     history_directory_granularity: PathBuf,
     history_runtime_granularity: PathBuf,
-    history_continues_append_granularity : PathBuf,
+    history_continues_append_granularity: PathBuf,
 }
 
 impl CacheManager {
@@ -40,8 +41,10 @@ impl CacheManager {
             cache_location.join(format!("{}-history-directory-granularity.json", project_id));
         let history_runtime_granularity =
             cache_location.join(format!("{}-history-runtime-granularity.json", project_id));
-        let history_continues_append_granularity =
-            cache_location.join(format!("{}-history-continues-append-granularity.json", project_id));
+        let history_continues_append_granularity = cache_location.join(format!(
+            "{}-history-continues-append-granularity.json",
+            project_id
+        ));
         Self {
             cache_file,
             history_test_granularity,
@@ -142,7 +145,7 @@ impl CacheManager {
             HistoryGranularity::File => &self.history_file_granularity,
             HistoryGranularity::Directory => &self.history_directory_granularity,
             HistoryGranularity::RunTime => &self.history_runtime_granularity,
-            HistoryGranularity::ContinuesAppend => &self.history_continues_append_granularity,
+            HistoryGranularity::Append => &self.history_continues_append_granularity,
         }
     }
 

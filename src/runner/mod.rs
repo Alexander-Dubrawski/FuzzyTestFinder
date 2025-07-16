@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::errors::FztError;
 
 pub mod general_runner;
+mod helper;
 
 pub trait Runner {
     fn run(&mut self) -> Result<(), FztError>;
@@ -42,6 +43,7 @@ pub enum FilterMode {
     File,
     Directory,
     RunTime,
+    Append,
 }
 
 pub struct RunnerConfig {
@@ -53,7 +55,6 @@ pub struct RunnerConfig {
     pub preview: Option<Preview>,
     pub filter_mode: FilterMode,
     pub query: Option<String>,
-    pub continues_append: bool,
 }
 
 impl RunnerConfig {
@@ -66,7 +67,6 @@ impl RunnerConfig {
         preview: Option<Preview>,
         filter_mode: FilterMode,
         query: Option<String>,
-        continues_append: bool
     ) -> Self {
         Self {
             clear_cache,
@@ -77,7 +77,6 @@ impl RunnerConfig {
             preview,
             filter_mode,
             query,
-            continues_append,
         }
     }
 }
