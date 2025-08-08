@@ -8,7 +8,7 @@ use crate::{
     runner::{MetaData, Runner, RunnerConfig, RunnerName},
     runtime::Runtime,
     search_engine::SearchEngine,
-    tests::{Test, Tests},
+    tests::{test_provider::TestProvider, Test, Tests},
 };
 
 use super::Preview;
@@ -308,11 +308,15 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
     }
 
     fn continiues_append(&self) -> Result<Vec<String>, FztError> {
-        // TODO: 
-        // - Own history for continues append mode 
+        // TODO:
+        // - Own history for continues append mode
         // - While loop ask for user selection granularity or to end
         // - Handle granularity
         todo!()
+    }
+
+    fn filter_tests(&mut self, test_provide: TestProvider) -> Result<Vec<String>, FztError> {
+        
     }
 }
 
@@ -340,6 +344,8 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
             self.cache_manager
                 .add_entry(self.tests.to_json()?.as_str())?;
         }
+        let test_provider = TestProvider::new(&self.tests);
+
         let tests_to_run: Vec<String> = match self.config.filter_mode {
             super::FilterMode::Test => self.filter_mode_test(&self.config.query.clone())?,
             super::FilterMode::File => self.filter_mode_file(&self.config.query.clone())?,
