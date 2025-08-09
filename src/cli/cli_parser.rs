@@ -73,7 +73,7 @@ struct Cli {
         short,
         help = "Preview test function symbol or file. \
                 If 'mode' is set to directory, then 'directory' is always used as preview. \
-                preview is not used if '--history' is set, or granularity is 'runtime'.",
+                Preview is not used if '--history' is set, or granularity is 'runtime'.",
         value_parser=["file", "test", "directory"])]
     preview: Option<String>,
 

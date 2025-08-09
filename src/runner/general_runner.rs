@@ -65,16 +65,24 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     .as_slice(),
             ),
             super::RunnerMode::Select => {
-                let preview = if self.config.preview.is_some() {
-                    Some(Preview::Directory)
-                } else {
+                let preview = if select == &Select::Directory {
+                    if self.config.preview.is_some() {
+                        Some(Preview::Directory)
+                    } else {
+                        None
+                    }
+                } else if select == &Select::RunTime {
                     None
+                } else {
+                    self.config.preview.clone()
                 };
                 let selected_items = self.search_engine.get_tests_to_run(
                     test_provider.select_option(select).as_slice(),
                     &preview,
                     query,
                 )?;
+                self.history_provider
+                    .update_history(granularity, selected_items.as_slice())?;
                 test_provider.runtime_arguments(select, selected_items.as_slice())
             }
         })
@@ -133,7 +141,10 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
                 &HistoryGranularity::RunTime,
                 &Select::RunTime,
             )?,
-            super::FilterMode::Append => todo!(),
+            super::FilterMode::Append => {
+                // TODO: Handle append
+                todo!()
+            }
         };
         if !tests_to_run.is_empty() {
             self.runtime.run_tests(

@@ -261,6 +261,7 @@ mod tests {
             PathBuf::from(""),
             PathBuf::from(""),
             PathBuf::from(""),
+            PathBuf::from(""),
         );
         manager.add_entry("New").unwrap();
 

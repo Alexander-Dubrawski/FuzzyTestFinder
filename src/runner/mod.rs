@@ -25,6 +25,7 @@ pub struct MetaData {
     pub runtime: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum RunnerMode {
     All,
     Last,
@@ -32,12 +33,14 @@ pub enum RunnerMode {
     Select,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Preview {
     File,
     Test,
     Directory,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum FilterMode {
     Test,
     File,
@@ -46,6 +49,7 @@ pub enum FilterMode {
     Append,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RunnerConfig {
     pub clear_cache: bool,
     pub verbose: bool,
