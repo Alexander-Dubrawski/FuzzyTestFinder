@@ -19,6 +19,7 @@ pub enum HistoryGranularity {
     Append,
 }
 
+#[derive(Clone)]
 pub struct CacheManager {
     cache_file: PathBuf,
     history_test_granularity: PathBuf,
@@ -139,7 +140,7 @@ impl CacheManager {
         Ok(())
     }
 
-    fn get_history_file(&self, granularity: HistoryGranularity) -> &PathBuf {
+    fn get_history_file(&self, granularity: &HistoryGranularity) -> &PathBuf {
         match granularity {
             HistoryGranularity::Test => &self.history_test_granularity,
             HistoryGranularity::File => &self.history_file_granularity,
@@ -152,7 +153,7 @@ impl CacheManager {
     pub fn update_history(
         &self,
         selection: &[String],
-        granularity: HistoryGranularity,
+        granularity: &HistoryGranularity,
     ) -> Result<(), FztError> {
         if selection.is_empty() {
             return Ok(());
@@ -180,7 +181,7 @@ impl CacheManager {
 
     pub fn recent_history_command(
         &self,
-        granularity: HistoryGranularity,
+        granularity: &HistoryGranularity,
     ) -> Result<Vec<String>, FztError> {
         let history_file = self.get_history_file(granularity);
 
@@ -194,7 +195,7 @@ impl CacheManager {
         }
     }
 
-    pub fn history(&self, granularity: HistoryGranularity) -> Result<Vec<Vec<String>>, FztError> {
+    pub fn history(&self, granularity: &HistoryGranularity) -> Result<Vec<Vec<String>>, FztError> {
         let history_file = self.get_history_file(granularity);
 
         if !Path::new(history_file).exists() {

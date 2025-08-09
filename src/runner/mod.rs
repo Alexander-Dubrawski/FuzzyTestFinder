@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::errors::FztError;
 
 pub mod general_runner;
-mod helper;
+mod history_provider;
 
 pub trait Runner {
     fn run(&mut self) -> Result<(), FztError>;
