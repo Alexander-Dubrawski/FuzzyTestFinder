@@ -122,12 +122,13 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
             super::RunnerMode::Last => {
                 let mut selection = HashMap::new();
                 let last = self.history_provider.last(&HistoryGranularity::Append)?;
+
                 last.into_iter().for_each(|test| {
-                    let mut iter = test.splitn(2, ' ');
+                    let mut parts = test.splitn(2, ' ');
+                    let first = parts.next().unwrap();
+                    let selected_items = parts.next().unwrap().to_string();
                     // TODO: Error handling
-                    let select = Select::from_str(iter.next().unwrap()).unwrap();
-                    let selected_items =
-                        iter.next().unwrap().strip_prefix(' ').unwrap().to_string();
+                    let select = Select::from_str(first).unwrap();
                     selection
                         .entry(select)
                         .or_insert(vec![])
@@ -148,11 +149,11 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     query,
                 )?;
                 history.into_iter().for_each(|test| {
-                    let mut iter = test.splitn(2, ' ');
+                    let mut parts = test.splitn(2, ' ');
+                    let first = parts.next().unwrap();
+                    let selected_items = parts.next().unwrap().to_string();
                     // TODO: Error handling
-                    let select = Select::from_str(iter.next().unwrap()).unwrap();
-                    let selected_items =
-                        iter.next().unwrap().strip_prefix(' ').unwrap().to_string();
+                    let select = Select::from_str(first).unwrap();
                     selection
                         .entry(select)
                         .or_insert(vec![])
