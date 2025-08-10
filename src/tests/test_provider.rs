@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt, path::PathBuf};
+use std::{collections::HashMap, fmt, path::PathBuf, str::FromStr};
 
 use super::{Test, Tests};
 
@@ -17,6 +17,20 @@ impl fmt::Display for Select {
             Select::File => write!(f, "File"),
             Select::Directory => write!(f, "Directory"),
             Select::RunTime => write!(f, "RunTime"),
+        }
+    }
+}
+
+impl FromStr for Select {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "Test" => Ok(Select::Test),
+            "File" => Ok(Select::File),
+            "Directory" => Ok(Select::Directory),
+            "RunTime" => Ok(Select::RunTime),
+            _ => Err(format!("Invalid selection: {}", s)),
         }
     }
 }

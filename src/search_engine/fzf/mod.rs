@@ -120,4 +120,8 @@ impl SearchEngine for FzfSearchEngine {
     fn name(&self) -> String {
         String::from("fzf")
     }
+
+    fn appened(&self) -> Result<super::Appened, FztError> {
+        todo!()
+    }
 }

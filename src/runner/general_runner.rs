@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use serde::de::DeserializeOwned;
 
@@ -106,8 +106,52 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
     ) -> Result<Vec<String>, FztError> {
         Ok(match self.config.mode {
             super::RunnerMode::All => test_provider.all(&Select::RunTime),
-            super::RunnerMode::Last => todo!(),
-            super::RunnerMode::History => todo!(),
+            super::RunnerMode::Last => {
+                let mut selection = HashMap::new();
+                let last = self.history_provider.last(&HistoryGranularity::Append)?;
+                last.into_iter().for_each(|test| {
+                    let mut iter = test.splitn(2, ' ');
+                    // TODO: Error handling
+                    let select = Select::from_str(iter.next().unwrap()).unwrap();
+                    let selected_items =
+                        iter.next().unwrap().strip_prefix(' ').unwrap().to_string();
+                    selection
+                        .entry(select)
+                        .or_insert(vec![])
+                        .push(selected_items);
+                });
+                selection
+                    .iter()
+                    .flat_map(|(select, selected_items)| {
+                        test_provider.runtime_arguments(select, selected_items.as_slice())
+                    })
+                    .collect()
+            }
+            super::RunnerMode::History => {
+                let mut selection = HashMap::new();
+                let history = self.history_provider.history(
+                    &HistoryGranularity::Append,
+                    &self.search_engine,
+                    query,
+                )?;
+                history.into_iter().for_each(|test| {
+                    let mut iter = test.splitn(2, ' ');
+                    // TODO: Error handling
+                    let select = Select::from_str(iter.next().unwrap()).unwrap();
+                    let selected_items =
+                        iter.next().unwrap().strip_prefix(' ').unwrap().to_string();
+                    selection
+                        .entry(select)
+                        .or_insert(vec![])
+                        .push(selected_items);
+                });
+                selection
+                    .iter()
+                    .flat_map(|(select, selected_items)| {
+                        test_provider.runtime_arguments(select, selected_items.as_slice())
+                    })
+                    .collect()
+            }
             super::RunnerMode::Select => {
                 let mut selection = HashMap::new();
                 loop {
@@ -155,7 +199,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                         &HistoryGranularity::Append,
                         selected_items
                             .iter()
-                            .map(|test| format!("{} {}", select, test))
+                            .map(|test| format!("{:<20} {}", select, test))
                             .collect::<Vec<String>>()
                             .as_slice(),
                     )?;
@@ -224,8 +268,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
                 &Select::RunTime,
             )?,
             super::FilterMode::Append => {
-                // TODO: Handle append
-                todo!()
+                self.select_append(&self.config.query.clone(), &test_provider)?
             }
         };
         if !tests_to_run.is_empty() {
