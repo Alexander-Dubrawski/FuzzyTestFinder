@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use super::{Test, Tests};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Select {
     Test,
     File,

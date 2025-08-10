@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::de::DeserializeOwned;
 
 use crate::{
@@ -5,10 +7,9 @@ use crate::{
     errors::FztError,
     runner::{MetaData, Runner, RunnerConfig, RunnerName},
     runtime::Runtime,
-    search_engine::SearchEngine,
+    search_engine::{Appened, SearchEngine},
     tests::{
-        Tests,
-        test_provider::{Select, TestProvider},
+        test_provider::{Select, TestProvider}, Tests
     },
 };
 
@@ -47,6 +48,25 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         }
     }
 
+    fn select(&mut self, select: &Select, test_provider: &TestProvider, query: &Option<String>) -> Result<Vec<String>, FztError> {
+        let preview = if select == &Select::Directory {
+            if self.config.preview.is_some() {
+                Some(Preview::Directory)
+            } else {
+                None
+            }
+        } else if select == &Select::RunTime {
+            None
+        } else {
+            self.config.preview.clone()
+        };
+        Ok(self.search_engine.get_tests_to_run(
+            test_provider.select_option(select).as_slice(),
+            &preview,
+            query,
+        )?)       
+    }
+
     fn select_tests(
         &mut self,
         query: &Option<String>,
@@ -65,26 +85,52 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     .as_slice(),
             ),
             super::RunnerMode::Select => {
-                let preview = if select == &Select::Directory {
-                    if self.config.preview.is_some() {
-                        Some(Preview::Directory)
-                    } else {
-                        None
-                    }
-                } else if select == &Select::RunTime {
-                    None
-                } else {
-                    self.config.preview.clone()
-                };
-                let selected_items = self.search_engine.get_tests_to_run(
-                    test_provider.select_option(select).as_slice(),
-                    &preview,
-                    query,
-                )?;
+                let selected_items = self.select(select, test_provider, query)?;
                 self.history_provider
                     .update_history(granularity, selected_items.as_slice())?;
                 test_provider.runtime_arguments(select, selected_items.as_slice())
             }
+        })
+    }
+
+    fn select_append(
+        &mut self,
+        query: &Option<String>,
+        test_provider: &TestProvider,        
+    ) -> Result<Vec<String>, FztError> {
+        Ok(match self.config.mode {
+            super::RunnerMode::All => test_provider.all(&Select::RunTime),
+            super::RunnerMode::Last => todo!(),
+            super::RunnerMode::History => todo!(),
+            super::RunnerMode::Select => {
+                let mut selection = HashMap::new();
+                loop {
+                    match self.search_engine.appened()? {
+                        Appened::Test => {
+                            let mut selected_items = self.select(&Select::Test, test_provider, query)?;
+                            selection.entry(Select::Test).or_insert(vec![]).append(&mut selected_items);
+                        },
+                        Appened::File => {
+                            let mut selected_items = self.select(&Select::File, test_provider, query)?;
+                            selection.entry(Select::File).or_insert(vec![]).append(&mut selected_items);    
+                        },
+                        Appened::Directory => {
+                            let mut selected_items = self.select(&Select::Directory, test_provider, query)?;
+                            selection.entry(Select::Directory).or_insert(vec![]).append(&mut selected_items);                                
+                        },
+                        Appened::RunTime => {
+                            let mut selected_items = self.select(&Select::RunTime, test_provider, query)?;
+                            selection.entry(Select::RunTime).or_insert(vec![]).append(&mut selected_items);                              
+                        },
+                        Appened::List => {
+                            todo!()
+                        },
+                        Appened::Done => break,
+                    } 
+                }
+                
+                todo!()
+            },
         })
     }
 }
