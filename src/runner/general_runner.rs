@@ -207,16 +207,18 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                         Appened::Done => break,
                     }
                 }
-                for (select, selected_items) in selection.iter() {
-                    self.history_provider.update_history(
-                        &HistoryGranularity::Append,
+                let history_update: Vec<String> = selection
+                    .iter()
+                    .flat_map(|(select, selected_items)| {
                         selected_items
                             .iter()
                             .map(|test| format!("{:<20} {}", select, test))
                             .collect::<Vec<String>>()
-                            .as_slice(),
-                    )?;
-                }
+                    })
+                    .collect();
+                self.history_provider
+                    .update_history(&HistoryGranularity::Append, history_update.as_slice())?;
+
                 selection
                     .iter()
                     .flat_map(|(select, selected_items)| {
