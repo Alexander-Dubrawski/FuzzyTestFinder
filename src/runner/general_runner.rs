@@ -9,7 +9,8 @@ use crate::{
     runtime::Runtime,
     search_engine::{Appened, SearchEngine},
     tests::{
-        test_provider::{Select, TestProvider}, Tests
+        Tests,
+        test_provider::{Select, TestProvider},
     },
 };
 
@@ -48,7 +49,12 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         }
     }
 
-    fn select(&mut self, select: &Select, test_provider: &TestProvider, query: &Option<String>) -> Result<Vec<String>, FztError> {
+    fn select(
+        &mut self,
+        select: &Select,
+        test_provider: &TestProvider,
+        query: &Option<String>,
+    ) -> Result<Vec<String>, FztError> {
         let preview = if select == &Select::Directory {
             if self.config.preview.is_some() {
                 Some(Preview::Directory)
@@ -64,7 +70,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
             test_provider.select_option(select).as_slice(),
             &preview,
             query,
-        )?)       
+        )?)
     }
 
     fn select_tests(
@@ -96,7 +102,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
     fn select_append(
         &mut self,
         query: &Option<String>,
-        test_provider: &TestProvider,        
+        test_provider: &TestProvider,
     ) -> Result<Vec<String>, FztError> {
         Ok(match self.config.mode {
             super::RunnerMode::All => test_provider.all(&Select::RunTime),
@@ -107,30 +113,60 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                 loop {
                     match self.search_engine.appened()? {
                         Appened::Test => {
-                            let mut selected_items = self.select(&Select::Test, test_provider, query)?;
-                            selection.entry(Select::Test).or_insert(vec![]).append(&mut selected_items);
-                        },
+                            let mut selected_items =
+                                self.select(&Select::Test, test_provider, query)?;
+                            selection
+                                .entry(Select::Test)
+                                .or_insert(vec![])
+                                .append(&mut selected_items);
+                        }
                         Appened::File => {
-                            let mut selected_items = self.select(&Select::File, test_provider, query)?;
-                            selection.entry(Select::File).or_insert(vec![]).append(&mut selected_items);    
-                        },
+                            let mut selected_items =
+                                self.select(&Select::File, test_provider, query)?;
+                            selection
+                                .entry(Select::File)
+                                .or_insert(vec![])
+                                .append(&mut selected_items);
+                        }
                         Appened::Directory => {
-                            let mut selected_items = self.select(&Select::Directory, test_provider, query)?;
-                            selection.entry(Select::Directory).or_insert(vec![]).append(&mut selected_items);                                
-                        },
+                            let mut selected_items =
+                                self.select(&Select::Directory, test_provider, query)?;
+                            selection
+                                .entry(Select::Directory)
+                                .or_insert(vec![])
+                                .append(&mut selected_items);
+                        }
                         Appened::RunTime => {
-                            let mut selected_items = self.select(&Select::RunTime, test_provider, query)?;
-                            selection.entry(Select::RunTime).or_insert(vec![]).append(&mut selected_items);                              
-                        },
+                            let mut selected_items =
+                                self.select(&Select::RunTime, test_provider, query)?;
+                            selection
+                                .entry(Select::RunTime)
+                                .or_insert(vec![])
+                                .append(&mut selected_items);
+                        }
                         Appened::List => {
                             todo!()
-                        },
+                        }
                         Appened::Done => break,
-                    } 
+                    }
                 }
-                
-                todo!()
-            },
+                for (select, selected_items) in selection.iter() {
+                    self.history_provider.update_history(
+                        &HistoryGranularity::Append,
+                        selected_items
+                            .iter()
+                            .map(|test| format!("{} {}", select, test))
+                            .collect::<Vec<String>>()
+                            .as_slice(),
+                    )?;
+                }
+                selection
+                    .iter()
+                    .flat_map(|(select, selected_items)| {
+                        test_provider.runtime_arguments(select, selected_items.as_slice())
+                    })
+                    .collect()
+            }
         })
     }
 }

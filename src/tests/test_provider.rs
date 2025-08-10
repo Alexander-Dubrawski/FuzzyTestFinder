@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, fmt, path::PathBuf};
 
 use super::{Test, Tests};
 
@@ -8,6 +8,17 @@ pub enum Select {
     File,
     Directory,
     RunTime,
+}
+
+impl fmt::Display for Select {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Select::Test => write!(f, "Test"),
+            Select::File => write!(f, "File"),
+            Select::Directory => write!(f, "Directory"),
+            Select::RunTime => write!(f, "RunTime"),
+        }
+    }
 }
 
 fn extract_test_selection<T: Test>(tests: &[T]) -> HashMap<String, String> {
