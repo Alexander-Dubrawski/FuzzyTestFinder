@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{errors::FztError, runner::Preview};
 
 pub mod fzf;
@@ -8,8 +10,22 @@ pub enum Appened {
     File,
     Directory,
     RunTime,
-    List,
     Done,
+}
+
+impl FromStr for Appened {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "Test" => Ok(Appened::Test),
+            "File" => Ok(Appened::File),
+            "Directory" => Ok(Appened::Directory),
+            "RunTime" => Ok(Appened::RunTime),
+            "Done" => Ok(Appened::Done),
+            _ => Err(format!("Invalid selection: {}", s)),
+        }
+    }
 }
 
 pub trait SearchEngine {
@@ -25,5 +41,5 @@ pub trait SearchEngine {
         query: &Option<String>,
     ) -> Result<Vec<String>, FztError>;
     fn name(&self) -> String;
-    fn appened(&self) -> Result<Appened, FztError>;
+    fn appened(&self, selected_items: &str) -> Result<Appened, FztError>;
 }

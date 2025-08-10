@@ -16,6 +16,17 @@ use crate::{
 
 use super::{Preview, history_provider::HistoryProvider};
 
+fn append_selection_to_preview(selection: &HashMap<Select, Vec<String>>) -> String {
+    let mut preview = String::new();
+    selection.iter().for_each(|(select, selected_items)| {
+        preview.push_str(&format!("{}\n ", select));
+        preview.push_str("-".repeat(select.to_string().len()).as_str());
+        preview.push_str(&selected_items.join("\n"));
+        preview.push('\n');
+    });
+    preview
+}
+
 pub struct GeneralCacheRunner<SE: SearchEngine, RT: Runtime, T: Tests> {
     tests: T,
     cache_manager: CacheManager,
@@ -155,7 +166,10 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
             super::RunnerMode::Select => {
                 let mut selection = HashMap::new();
                 loop {
-                    match self.search_engine.appened()? {
+                    match self
+                        .search_engine
+                        .appened(append_selection_to_preview(&selection).as_str())?
+                    {
                         Appened::Test => {
                             let mut selected_items =
                                 self.select(&Select::Test, test_provider, query)?;
@@ -187,9 +201,6 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                                 .entry(Select::RunTime)
                                 .or_insert(vec![])
                                 .append(&mut selected_items);
-                        }
-                        Appened::List => {
-                            todo!()
                         }
                         Appened::Done => break,
                     }
