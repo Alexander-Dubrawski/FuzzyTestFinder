@@ -18,11 +18,11 @@ impl FromStr for Appened {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "Test" => Ok(Appened::Test),
-            "File" => Ok(Appened::File),
-            "Directory" => Ok(Appened::Directory),
-            "RunTime" => Ok(Appened::RunTime),
-            "Done" => Ok(Appened::Done),
+            "test" => Ok(Appened::Test),
+            "file" => Ok(Appened::File),
+            "directory" => Ok(Appened::Directory),
+            "runtime" => Ok(Appened::RunTime),
+            "done" => Ok(Appened::Done),
             _ => Err(format!("Invalid selection: {}", s)),
         }
     }

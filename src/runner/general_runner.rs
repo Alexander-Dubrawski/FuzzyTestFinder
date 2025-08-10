@@ -19,9 +19,11 @@ use super::{Preview, history_provider::HistoryProvider};
 fn append_selection_to_preview(selection: &HashMap<Select, Vec<String>>) -> String {
     let mut preview = String::new();
     selection.iter().for_each(|(select, selected_items)| {
-        preview.push_str(&format!("{}\n ", select));
+        preview.push_str(&format!("{}\n", select));
         preview.push_str("-".repeat(select.to_string().len()).as_str());
+        preview.push('\n');
         preview.push_str(&selected_items.join("\n"));
+        preview.push('\n');
         preview.push('\n');
     });
     preview

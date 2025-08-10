@@ -26,10 +26,10 @@ impl FromStr for Select {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "Test" => Ok(Select::Test),
-            "File" => Ok(Select::File),
-            "Directory" => Ok(Select::Directory),
-            "RunTime" => Ok(Select::RunTime),
+            "test" => Ok(Select::Test),
+            "file" => Ok(Select::File),
+            "directory" => Ok(Select::Directory),
+            "runtime" => Ok(Select::RunTime),
             _ => Err(format!("Invalid selection: {}", s)),
         }
     }

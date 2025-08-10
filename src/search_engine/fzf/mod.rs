@@ -76,7 +76,7 @@ fn run_fzf_append(input: &str, preview: &str) -> Result<Output, FztError> {
         .arg("--height")
         .arg("50%")
         .arg("--preview")
-        .arg(format!("echo {}", preview))
+        .arg(format!("echo '{}'", preview))
         .stdin(Stdio::piped())
         .stdout(Stdio::piped());
     let mut child = command.spawn()?;
@@ -144,7 +144,7 @@ impl SearchEngine for FzfSearchEngine {
     }
 
     fn appened(&self, preview: &str) -> Result<Appened, FztError> {
-        let output = run_fzf_append("Test\nFile\nDirectory\nRuntime\nDone", preview)?;
+        let output = run_fzf_append("Done\nDirectory\nFile\nRuntime\nTest", preview)?;
         let mode: String = str::from_utf8(output.stdout.as_slice())?.to_string();
         // TODO: Error handling
         Ok(Appened::from_str(mode.trim()).unwrap())
