@@ -29,6 +29,27 @@ fn append_selection_to_preview(selection: &HashMap<SelectGranularity, Vec<String
     preview
 }
 
+fn parse_append_history(history: Vec<String>) -> HashMap<SelectGranularity, Vec<String>> {
+    let mut selection = HashMap::new();
+    history.into_iter().for_each(|test| {
+        let mut parts = test.splitn(2, ' ');
+        let first = parts
+            .next()
+            .expect(format!("THIS IS A BUG. History pars should contain two parts").as_str());
+        let selected_items = parts
+            .next()
+            .expect(format!("THIS IS A BUG. History pars should contain two parts").as_str())
+            .to_string();
+        let select = SelectGranularity::from_str(first)
+            .expect(format!("THIS IS A BUG. {first} should map to SelectGranularity").as_str());
+        selection
+            .entry(select)
+            .or_insert(vec![])
+            .push(selected_items);
+    });
+    selection
+}
+
 pub struct GeneralCacheRunner<SE: SearchEngine, RT: Runtime, T: Tests> {
     tests: T,
     cache_manager: CacheManager,
@@ -122,21 +143,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         Ok(match self.config.mode {
             super::RunnerMode::All => test_provider.all(&SelectGranularity::RunTime),
             super::RunnerMode::Last => {
-                let mut selection = HashMap::new();
-                let last = self.history_provider.last(&HistoryGranularity::Append)?;
-
-                last.into_iter().for_each(|test| {
-                    let mut parts = test.splitn(2, ' ');
-                    let first = parts.next().unwrap();
-                    let selected_items = parts.next().unwrap().to_string();
-                    // TODO: Error handling
-                    let select = SelectGranularity::from_str(first).unwrap();
-                    selection
-                        .entry(select)
-                        .or_insert(vec![])
-                        .push(selected_items);
-                });
-                selection
+                parse_append_history(self.history_provider.last(&HistoryGranularity::Append)?)
                     .iter()
                     .flat_map(|(select, selected_items)| {
                         test_provider.runtime_arguments(select, selected_items.as_slice())
@@ -144,24 +151,12 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     .collect()
             }
             super::RunnerMode::History => {
-                let mut selection = HashMap::new();
                 let history = self.history_provider.history(
                     &HistoryGranularity::Append,
                     &self.search_engine,
                     query,
                 )?;
-                history.into_iter().for_each(|test| {
-                    let mut parts = test.splitn(2, ' ');
-                    let first = parts.next().unwrap();
-                    let selected_items = parts.next().unwrap().to_string();
-                    // TODO: Error handling
-                    let select = SelectGranularity::from_str(first).unwrap();
-                    selection
-                        .entry(select)
-                        .or_insert(vec![])
-                        .push(selected_items);
-                });
-                selection
+                parse_append_history(history)
                     .iter()
                     .flat_map(|(select, selected_items)| {
                         test_provider.runtime_arguments(select, selected_items.as_slice())

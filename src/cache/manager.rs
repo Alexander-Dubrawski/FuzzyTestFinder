@@ -10,7 +10,7 @@ use crate::errors::FztError;
 
 const HISTORY_SIZE: usize = 200;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum HistoryGranularity {
     Test,
     File,

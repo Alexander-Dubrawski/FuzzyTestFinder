@@ -110,8 +110,8 @@ impl TestProvider {
         }
     }
 
-    pub fn select_option(&self, select: &SelectGranularity) -> Vec<&str> {
-        match select {
+    pub fn select_option(&self, select_granularity: &SelectGranularity) -> Vec<&str> {
+        match select_granularity {
             SelectGranularity::Test => self
                 .test_selection
                 .keys()
@@ -137,10 +137,10 @@ impl TestProvider {
 
     pub fn runtime_arguments(
         &self,
-        select: &SelectGranularity,
+        select_granularity: &SelectGranularity,
         selection: &[String],
     ) -> Vec<String> {
-        match select {
+        match select_granularity {
             SelectGranularity::Test => selection
                 .iter()
                 .map(|select| self.test_selection[select].clone())
@@ -157,8 +157,8 @@ impl TestProvider {
         }
     }
 
-    pub fn all(&self, select: &SelectGranularity) -> Vec<String> {
-        match select {
+    pub fn all(&self, select_granularity: &SelectGranularity) -> Vec<String> {
+        match select_granularity {
             SelectGranularity::Test => self.test_selection.values().cloned().collect(),
             SelectGranularity::File => self.file_selection.values().flatten().cloned().collect(),
             SelectGranularity::Directory => self
