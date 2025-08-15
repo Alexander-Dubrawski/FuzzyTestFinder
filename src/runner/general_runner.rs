@@ -95,8 +95,10 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
     ) -> Result<Vec<String>, FztError> {
         Ok(match self.config.mode {
             super::RunnerMode::All => test_provider.all(select_granularity),
-            super::RunnerMode::Last => test_provider
-                .runtime_arguments(select_granularity, self.history_provider.last(history_granularity)?.as_slice()),
+            super::RunnerMode::Last => test_provider.runtime_arguments(
+                select_granularity,
+                self.history_provider.last(history_granularity)?.as_slice(),
+            ),
             super::RunnerMode::History => test_provider.runtime_arguments(
                 select_granularity,
                 self.history_provider
@@ -169,45 +171,21 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
             super::RunnerMode::Select => {
                 let mut selection = HashMap::new();
                 loop {
-                    match self
+                    let append = self
                         .search_engine
-                        .appened(append_selection_to_preview(&selection).as_str())?
-                    {
-                        Appened::Test => {
-                            let mut selected_items =
-                                self.select_tests(&SelectGranularity::Test, test_provider, query)?;
-                            selection
-                                .entry(SelectGranularity::Test)
-                                .or_insert(vec![])
-                                .append(&mut selected_items);
-                        }
-                        Appened::File => {
-                            let mut selected_items =
-                                self.select_tests(&SelectGranularity::File, test_provider, query)?;
-                            selection
-                                .entry(SelectGranularity::File)
-                                .or_insert(vec![])
-                                .append(&mut selected_items);
-                        }
-                        Appened::Directory => {
-                            let mut selected_items =
-                                self.select_tests(&SelectGranularity::Directory, test_provider, query)?;
-                            selection
-                                .entry(SelectGranularity::Directory)
-                                .or_insert(vec![])
-                                .append(&mut selected_items);
-                        }
-                        Appened::RunTime => {
-                            let mut selected_items =
-                                self.select_tests(&SelectGranularity::RunTime, test_provider, query)?;
-                            selection
-                                .entry(SelectGranularity::RunTime)
-                                .or_insert(vec![])
-                                .append(&mut selected_items);
-                        }
-                        Appened::Done => break,
+                        .appened(append_selection_to_preview(&selection).as_str())?;
+                    if append == Appened::Done {
+                        break;
                     }
+                    let select_granularity = SelectGranularity::from(append);
+                    let mut selected_items =
+                        self.select_tests(&select_granularity, test_provider, query)?;
+                    selection
+                        .entry(select_granularity)
+                        .or_insert(vec![])
+                        .append(&mut selected_items);
                 }
+
                 let history_update: Vec<String> = selection
                     .iter()
                     .flat_map(|(select, selected_items)| {

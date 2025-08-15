@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt, path::PathBuf, str::FromStr};
 
+use crate::search_engine::Appened;
+
 use super::{Test, Tests};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -31,6 +33,18 @@ impl FromStr for SelectGranularity {
             "directory" => Ok(SelectGranularity::Directory),
             "runtime" => Ok(SelectGranularity::RunTime),
             _ => Err(format!("Invalid selection: {}", s)),
+        }
+    }
+}
+
+impl From<Appened> for SelectGranularity {
+    fn from(value: Appened) -> Self {
+        match value {
+            Appened::Test => SelectGranularity::Test,
+            Appened::File => SelectGranularity::File,
+            Appened::Directory => SelectGranularity::Directory,
+            Appened::RunTime => SelectGranularity::RunTime,
+            _ => panic!("Unsupported Appened variant for SelectGranularity conversion"),
         }
     }
 }
@@ -121,7 +135,11 @@ impl TestProvider {
         }
     }
 
-    pub fn runtime_arguments(&self, select: &SelectGranularity, selection: &[String]) -> Vec<String> {
+    pub fn runtime_arguments(
+        &self,
+        select: &SelectGranularity,
+        selection: &[String],
+    ) -> Vec<String> {
         match select {
             SelectGranularity::Test => selection
                 .iter()
