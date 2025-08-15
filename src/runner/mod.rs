@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::errors::FztError;
 
 pub mod general_runner;
+mod history_provider;
 
 pub trait Runner {
     fn run(&mut self) -> Result<(), FztError>;
@@ -24,6 +25,7 @@ pub struct MetaData {
     pub runtime: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum RunnerMode {
     All,
     Last,
@@ -31,19 +33,23 @@ pub enum RunnerMode {
     Select,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Preview {
     File,
     Test,
     Directory,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum FilterMode {
     Test,
     File,
     Directory,
     RunTime,
+    Append,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RunnerConfig {
     pub clear_cache: bool,
     pub verbose: bool,

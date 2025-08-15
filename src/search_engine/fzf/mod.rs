@@ -1,10 +1,11 @@
 use std::io::Write;
 use std::process::{Command, Output, Stdio};
-use std::str;
+use std::str::{self, FromStr};
 
 use crate::errors::FztError;
 use crate::runner::Preview;
 
+use super::Append;
 use super::SearchEngine;
 
 fn run_fzf(
@@ -69,6 +70,27 @@ fn run_fzf(
     Ok(output)
 }
 
+fn run_fzf_append(input: &str, preview: &str) -> Result<Output, FztError> {
+    let mut command = Command::new("fzf");
+    command
+        .arg("--height")
+        .arg("50%")
+        .arg("--preview")
+        .arg(format!("echo '{}'", preview))
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped());
+    let mut child = command.spawn()?;
+
+    // Write the input (which may contain NUL bytes) to fzf's stdin
+    {
+        let stdin = child.stdin.as_mut().unwrap();
+        stdin.write_all(input.as_bytes())?;
+    }
+
+    let output = child.wait_with_output()?;
+    Ok(output)
+}
+
 #[derive(Default)]
 pub struct FzfSearchEngine {}
 
@@ -119,5 +141,12 @@ impl SearchEngine for FzfSearchEngine {
 
     fn name(&self) -> String {
         String::from("fzf")
+    }
+
+    fn appened(&self, preview: &str) -> Result<Append, FztError> {
+        let output = run_fzf_append("Done\nDirectory\nFile\nRuntime\nTest", preview)?;
+        let mode: String = str::from_utf8(output.stdout.as_slice())?.to_string();
+        Ok(Append::from_str(mode.trim())
+            .expect("THIS IS A BUG. Search engine should return append option"))
     }
 }

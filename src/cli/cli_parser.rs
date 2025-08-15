@@ -43,7 +43,8 @@ struct Cli {
         long,
         default_value_t = false,
         short,
-        help = "Run recently used test command"
+        help = "Run recently used test command. If no '--mode' provided defaults to 'test', \
+        otherwise to the last command run in the corresponding mode."
     )]
     last: bool,
 
@@ -51,7 +52,8 @@ struct Cli {
         long,
         default_value_t = false,
         short,
-        help = "Parse tests commands from history"
+        help = "Parse test items from history. If no '--mode' provided defaults to 'test', \
+        otherwise to the tests from the history of the corresponding mode, can be selected."
     )]
     history: bool,
 
@@ -70,8 +72,8 @@ struct Cli {
         long,
         short,
         help = "Preview test function symbol or file. \
-                If 'granularity' is set to directory, then 'directory' is always used as preview. \
-                preview is not used if '--history' is set, or granularity is 'runtime'.",
+                If 'mode' is set to directory, then 'directory' is always used as preview. \
+                Preview is not used if '--history' is set, or granularity is 'runtime'.",
         value_parser=["file", "test", "directory"])]
     preview: Option<String>,
 
@@ -91,10 +93,11 @@ struct Cli {
                 Can be 'test' for running a single test, \
                 'runtime' for running a single test based on its runtime argument, \
                 'file' for running all tests in a file, \
-                or 'directory' for running all tests in a directory.",
-        value_parser=["directory", "file", "test", "runtime"]
+                'directory' for running all tests in a directory, \
+                'append' for continuing appending to the last selection.",
+        value_parser=["directory", "file", "test", "runtime", "append"]
     )]
-    granularity: String,
+    mode: String,
 
     #[arg(long, short, help = "Start the finder with the given query")]
     query: Option<String>,
@@ -196,14 +199,15 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         None => None,
     };
 
-    let filter_mode = match cli.granularity.as_str() {
+    let filter_mode = match cli.mode.to_lowercase().as_str() {
         "file" => FilterMode::File,
         "test" => FilterMode::Test,
         "directory" => FilterMode::Directory,
         "runtime" => FilterMode::RunTime,
+        "append" => FilterMode::Append,
         _ => {
             return Err(FztError::InvalidArgument(
-                "Invalid filter mode option. Use 'directory', 'file' or 'test'.".to_string(),
+                "Invalid filter mode option. Use 'directory', 'file', 'test', 'runtime', or 'append'.".to_string(),
             ));
         }
     };
