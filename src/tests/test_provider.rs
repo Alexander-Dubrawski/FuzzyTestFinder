@@ -3,33 +3,33 @@ use std::{collections::HashMap, fmt, path::PathBuf, str::FromStr};
 use super::{Test, Tests};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Select {
+pub enum SelectGranularity {
     Test,
     File,
     Directory,
     RunTime,
 }
 
-impl fmt::Display for Select {
+impl fmt::Display for SelectGranularity {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Select::Test => write!(f, "Test"),
-            Select::File => write!(f, "File"),
-            Select::Directory => write!(f, "Directory"),
-            Select::RunTime => write!(f, "RunTime"),
+            SelectGranularity::Test => write!(f, "Test"),
+            SelectGranularity::File => write!(f, "File"),
+            SelectGranularity::Directory => write!(f, "Directory"),
+            SelectGranularity::RunTime => write!(f, "RunTime"),
         }
     }
 }
 
-impl FromStr for Select {
+impl FromStr for SelectGranularity {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "test" => Ok(Select::Test),
-            "file" => Ok(Select::File),
-            "directory" => Ok(Select::Directory),
-            "runtime" => Ok(Select::RunTime),
+            "test" => Ok(SelectGranularity::Test),
+            "file" => Ok(SelectGranularity::File),
+            "directory" => Ok(SelectGranularity::Directory),
+            "runtime" => Ok(SelectGranularity::RunTime),
             _ => Err(format!("Invalid selection: {}", s)),
         }
     }
@@ -96,24 +96,24 @@ impl TestProvider {
         }
     }
 
-    pub fn select_option(&self, select: &Select) -> Vec<&str> {
+    pub fn select_option(&self, select: &SelectGranularity) -> Vec<&str> {
         match select {
-            Select::Test => self
+            SelectGranularity::Test => self
                 .test_selection
                 .keys()
                 .map(|test| test.as_str())
                 .collect(),
-            Select::File => self
+            SelectGranularity::File => self
                 .file_selection
                 .keys()
                 .map(|test| test.as_str())
                 .collect(),
-            Select::Directory => self
+            SelectGranularity::Directory => self
                 .dictionary_selection
                 .keys()
                 .map(|test| test.as_str())
                 .collect(),
-            Select::RunTime => self
+            SelectGranularity::RunTime => self
                 .runtime_selection
                 .iter()
                 .map(|test| test.as_str())
@@ -121,35 +121,35 @@ impl TestProvider {
         }
     }
 
-    pub fn runtime_arguments(&self, select: &Select, selection: &[String]) -> Vec<String> {
+    pub fn runtime_arguments(&self, select: &SelectGranularity, selection: &[String]) -> Vec<String> {
         match select {
-            Select::Test => selection
+            SelectGranularity::Test => selection
                 .iter()
                 .map(|select| self.test_selection[select].clone())
                 .collect(),
-            Select::File => selection
+            SelectGranularity::File => selection
                 .iter()
                 .flat_map(|select| self.file_selection[select].clone())
                 .collect(),
-            Select::Directory => selection
+            SelectGranularity::Directory => selection
                 .iter()
                 .flat_map(|select| self.dictionary_selection[select].clone())
                 .collect(),
-            Select::RunTime => selection.iter().map(|select| select.clone()).collect(),
+            SelectGranularity::RunTime => selection.iter().map(|select| select.clone()).collect(),
         }
     }
 
-    pub fn all(&self, select: &Select) -> Vec<String> {
+    pub fn all(&self, select: &SelectGranularity) -> Vec<String> {
         match select {
-            Select::Test => self.test_selection.values().cloned().collect(),
-            Select::File => self.file_selection.values().flatten().cloned().collect(),
-            Select::Directory => self
+            SelectGranularity::Test => self.test_selection.values().cloned().collect(),
+            SelectGranularity::File => self.file_selection.values().flatten().cloned().collect(),
+            SelectGranularity::Directory => self
                 .dictionary_selection
                 .values()
                 .flatten()
                 .cloned()
                 .collect(),
-            Select::RunTime => self.runtime_selection.clone(),
+            SelectGranularity::RunTime => self.runtime_selection.clone(),
         }
     }
 }

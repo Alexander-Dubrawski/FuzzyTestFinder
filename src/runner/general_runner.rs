@@ -10,13 +10,13 @@ use crate::{
     search_engine::{Appened, SearchEngine},
     tests::{
         Tests,
-        test_provider::{Select, TestProvider},
+        test_provider::{SelectGranularity, TestProvider},
     },
 };
 
 use super::{Preview, history_provider::HistoryProvider};
 
-fn append_selection_to_preview(selection: &HashMap<Select, Vec<String>>) -> String {
+fn append_selection_to_preview(selection: &HashMap<SelectGranularity, Vec<String>>) -> String {
     let mut preview = String::new();
     selection.iter().for_each(|(select, selected_items)| {
         preview.push_str(&format!("{}\n", select));
@@ -62,52 +62,52 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         }
     }
 
-    fn select(
+    fn select_tests(
         &mut self,
-        select: &Select,
+        granularity: &SelectGranularity,
         test_provider: &TestProvider,
         query: &Option<String>,
     ) -> Result<Vec<String>, FztError> {
-        let preview = if select == &Select::Directory {
+        let preview = if granularity == &SelectGranularity::Directory {
             if self.config.preview.is_some() {
                 Some(Preview::Directory)
             } else {
                 None
             }
-        } else if select == &Select::RunTime {
+        } else if granularity == &SelectGranularity::RunTime {
             None
         } else {
             self.config.preview.clone()
         };
         Ok(self.search_engine.get_tests_to_run(
-            test_provider.select_option(select).as_slice(),
+            test_provider.select_option(granularity).as_slice(),
             &preview,
             query,
         )?)
     }
 
-    fn select_tests(
+    fn get_tests_to_run(
         &mut self,
         query: &Option<String>,
         test_provider: &TestProvider,
-        granularity: &HistoryGranularity,
-        select: &Select,
+        history_granularity: &HistoryGranularity,
+        select_granularity: &SelectGranularity,
     ) -> Result<Vec<String>, FztError> {
         Ok(match self.config.mode {
-            super::RunnerMode::All => test_provider.all(select),
+            super::RunnerMode::All => test_provider.all(select_granularity),
             super::RunnerMode::Last => test_provider
-                .runtime_arguments(select, self.history_provider.last(granularity)?.as_slice()),
+                .runtime_arguments(select_granularity, self.history_provider.last(history_granularity)?.as_slice()),
             super::RunnerMode::History => test_provider.runtime_arguments(
-                select,
+                select_granularity,
                 self.history_provider
-                    .history(granularity, &self.search_engine, query)?
+                    .history(history_granularity, &self.search_engine, query)?
                     .as_slice(),
             ),
             super::RunnerMode::Select => {
-                let selected_items = self.select(select, test_provider, query)?;
+                let selected_items = self.select_tests(select_granularity, test_provider, query)?;
                 self.history_provider
-                    .update_history(granularity, selected_items.as_slice())?;
-                test_provider.runtime_arguments(select, selected_items.as_slice())
+                    .update_history(history_granularity, selected_items.as_slice())?;
+                test_provider.runtime_arguments(select_granularity, selected_items.as_slice())
             }
         })
     }
@@ -118,7 +118,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         test_provider: &TestProvider,
     ) -> Result<Vec<String>, FztError> {
         Ok(match self.config.mode {
-            super::RunnerMode::All => test_provider.all(&Select::RunTime),
+            super::RunnerMode::All => test_provider.all(&SelectGranularity::RunTime),
             super::RunnerMode::Last => {
                 let mut selection = HashMap::new();
                 let last = self.history_provider.last(&HistoryGranularity::Append)?;
@@ -128,7 +128,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     let first = parts.next().unwrap();
                     let selected_items = parts.next().unwrap().to_string();
                     // TODO: Error handling
-                    let select = Select::from_str(first).unwrap();
+                    let select = SelectGranularity::from_str(first).unwrap();
                     selection
                         .entry(select)
                         .or_insert(vec![])
@@ -153,7 +153,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     let first = parts.next().unwrap();
                     let selected_items = parts.next().unwrap().to_string();
                     // TODO: Error handling
-                    let select = Select::from_str(first).unwrap();
+                    let select = SelectGranularity::from_str(first).unwrap();
                     selection
                         .entry(select)
                         .or_insert(vec![])
@@ -175,33 +175,33 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     {
                         Appened::Test => {
                             let mut selected_items =
-                                self.select(&Select::Test, test_provider, query)?;
+                                self.select_tests(&SelectGranularity::Test, test_provider, query)?;
                             selection
-                                .entry(Select::Test)
+                                .entry(SelectGranularity::Test)
                                 .or_insert(vec![])
                                 .append(&mut selected_items);
                         }
                         Appened::File => {
                             let mut selected_items =
-                                self.select(&Select::File, test_provider, query)?;
+                                self.select_tests(&SelectGranularity::File, test_provider, query)?;
                             selection
-                                .entry(Select::File)
+                                .entry(SelectGranularity::File)
                                 .or_insert(vec![])
                                 .append(&mut selected_items);
                         }
                         Appened::Directory => {
                             let mut selected_items =
-                                self.select(&Select::Directory, test_provider, query)?;
+                                self.select_tests(&SelectGranularity::Directory, test_provider, query)?;
                             selection
-                                .entry(Select::Directory)
+                                .entry(SelectGranularity::Directory)
                                 .or_insert(vec![])
                                 .append(&mut selected_items);
                         }
                         Appened::RunTime => {
                             let mut selected_items =
-                                self.select(&Select::RunTime, test_provider, query)?;
+                                self.select_tests(&SelectGranularity::RunTime, test_provider, query)?;
                             selection
-                                .entry(Select::RunTime)
+                                .entry(SelectGranularity::RunTime)
                                 .or_insert(vec![])
                                 .append(&mut selected_items);
                         }
@@ -259,29 +259,29 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
         let test_provider = TestProvider::new(&self.tests);
 
         let tests_to_run: Vec<String> = match self.config.filter_mode {
-            super::FilterMode::Test => self.select_tests(
+            super::FilterMode::Test => self.get_tests_to_run(
                 &self.config.query.clone(),
                 &test_provider,
                 &HistoryGranularity::Test,
-                &Select::Test,
+                &SelectGranularity::Test,
             )?,
-            super::FilterMode::File => self.select_tests(
+            super::FilterMode::File => self.get_tests_to_run(
                 &self.config.query.clone(),
                 &test_provider,
                 &HistoryGranularity::File,
-                &Select::File,
+                &SelectGranularity::File,
             )?,
-            super::FilterMode::Directory => self.select_tests(
+            super::FilterMode::Directory => self.get_tests_to_run(
                 &self.config.query.clone(),
                 &test_provider,
                 &HistoryGranularity::Directory,
-                &Select::Directory,
+                &SelectGranularity::Directory,
             )?,
-            super::FilterMode::RunTime => self.select_tests(
+            super::FilterMode::RunTime => self.get_tests_to_run(
                 &self.config.query.clone(),
                 &test_provider,
                 &HistoryGranularity::RunTime,
-                &Select::RunTime,
+                &SelectGranularity::RunTime,
             )?,
             super::FilterMode::Append => {
                 self.select_append(&self.config.query.clone(), &test_provider)?
