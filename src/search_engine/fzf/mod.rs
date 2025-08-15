@@ -146,7 +146,7 @@ impl SearchEngine for FzfSearchEngine {
     fn appened(&self, preview: &str) -> Result<Append, FztError> {
         let output = run_fzf_append("Done\nDirectory\nFile\nRuntime\nTest", preview)?;
         let mode: String = str::from_utf8(output.stdout.as_slice())?.to_string();
-        // TODO: Error handling
-        Ok(Append::from_str(mode.trim()).unwrap())
+        Ok(Append::from_str(mode.trim())
+            .expect("THIS IS A BUG. Search engine should return append option"))
     }
 }
