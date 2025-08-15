@@ -7,7 +7,7 @@ use crate::{
     errors::FztError,
     runner::{MetaData, Runner, RunnerConfig, RunnerName},
     runtime::Runtime,
-    search_engine::{Appened, SearchEngine},
+    search_engine::{Append, SearchEngine},
     tests::{
         Tests,
         test_provider::{SelectGranularity, TestProvider},
@@ -35,10 +35,10 @@ fn parse_append_history(history: Vec<String>) -> HashMap<SelectGranularity, Vec<
         let mut parts = test.splitn(2, ' ');
         let first = parts
             .next()
-            .expect(format!("THIS IS A BUG. History pars should contain two parts").as_str());
+            .expect(format!("THIS IS A BUG. History parts should contain two parts").as_str());
         let selected_items = parts
             .next()
-            .expect(format!("THIS IS A BUG. History pars should contain two parts").as_str())
+            .expect(format!("THIS IS A BUG. History parts should contain two parts").as_str())
             .to_string();
         let select = SelectGranularity::from_str(first)
             .expect(format!("THIS IS A BUG. {first} should map to SelectGranularity").as_str());
@@ -169,7 +169,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     let append = self
                         .search_engine
                         .appened(append_selection_to_preview(&selection).as_str())?;
-                    if append == Appened::Done {
+                    if append == Append::Done {
                         break;
                     }
                     let select_granularity = SelectGranularity::from(append);

@@ -5,7 +5,7 @@ use std::str::{self, FromStr};
 use crate::errors::FztError;
 use crate::runner::Preview;
 
-use super::Appened;
+use super::Append;
 use super::SearchEngine;
 
 fn run_fzf(
@@ -143,10 +143,10 @@ impl SearchEngine for FzfSearchEngine {
         String::from("fzf")
     }
 
-    fn appened(&self, preview: &str) -> Result<Appened, FztError> {
+    fn appened(&self, preview: &str) -> Result<Append, FztError> {
         let output = run_fzf_append("Done\nDirectory\nFile\nRuntime\nTest", preview)?;
         let mode: String = str::from_utf8(output.stdout.as_slice())?.to_string();
         // TODO: Error handling
-        Ok(Appened::from_str(mode.trim()).unwrap())
+        Ok(Append::from_str(mode.trim()).unwrap())
     }
 }

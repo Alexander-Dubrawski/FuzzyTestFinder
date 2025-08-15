@@ -5,7 +5,7 @@ use crate::{errors::FztError, runner::Preview};
 pub mod fzf;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Appened {
+pub enum Append {
     Test,
     File,
     Directory,
@@ -13,16 +13,16 @@ pub enum Appened {
     Done,
 }
 
-impl FromStr for Appened {
+impl FromStr for Append {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "test" => Ok(Appened::Test),
-            "file" => Ok(Appened::File),
-            "directory" => Ok(Appened::Directory),
-            "runtime" => Ok(Appened::RunTime),
-            "done" => Ok(Appened::Done),
+            "test" => Ok(Append::Test),
+            "file" => Ok(Append::File),
+            "directory" => Ok(Append::Directory),
+            "runtime" => Ok(Append::RunTime),
+            "done" => Ok(Append::Done),
             _ => Err(format!("Invalid selection: {}", s)),
         }
     }
@@ -41,5 +41,5 @@ pub trait SearchEngine {
         query: &Option<String>,
     ) -> Result<Vec<String>, FztError>;
     fn name(&self) -> String;
-    fn appened(&self, selected_items: &str) -> Result<Appened, FztError>;
+    fn appened(&self, selected_items: &str) -> Result<Append, FztError>;
 }

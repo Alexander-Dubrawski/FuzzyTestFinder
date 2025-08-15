@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt, path::PathBuf, str::FromStr};
 
-use crate::search_engine::Appened;
+use crate::search_engine::Append;
 
 use super::{Test, Tests};
 
@@ -37,14 +37,14 @@ impl FromStr for SelectGranularity {
     }
 }
 
-impl From<Appened> for SelectGranularity {
-    fn from(value: Appened) -> Self {
+impl From<Append> for SelectGranularity {
+    fn from(value: Append) -> Self {
         match value {
-            Appened::Test => SelectGranularity::Test,
-            Appened::File => SelectGranularity::File,
-            Appened::Directory => SelectGranularity::Directory,
-            Appened::RunTime => SelectGranularity::RunTime,
-            _ => panic!("Unsupported Appened variant for SelectGranularity conversion"),
+            Append::Test => SelectGranularity::Test,
+            Append::File => SelectGranularity::File,
+            Append::Directory => SelectGranularity::Directory,
+            Append::RunTime => SelectGranularity::RunTime,
+            _ => panic!("Unsupported Append variant for SelectGranularity conversion"),
         }
     }
 }
@@ -101,12 +101,12 @@ pub struct TestProvider {
 
 impl TestProvider {
     pub fn new<T: Tests>(tests: &T) -> Self {
-        let aviable_tests = tests.tests();
+        let available_tests = tests.tests();
         Self {
-            test_selection: extract_test_selection(aviable_tests.as_slice()),
-            file_selection: extract_file_section(aviable_tests.as_slice()),
-            dictionary_selection: extract_dictionary_selection(aviable_tests.as_slice()),
-            runtime_selection: extract_runtime_selection(aviable_tests.as_slice()),
+            test_selection: extract_test_selection(available_tests.as_slice()),
+            file_selection: extract_file_section(available_tests.as_slice()),
+            dictionary_selection: extract_dictionary_selection(available_tests.as_slice()),
+            runtime_selection: extract_runtime_selection(available_tests.as_slice()),
         }
     }
 
