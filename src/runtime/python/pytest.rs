@@ -44,6 +44,8 @@ impl Runtime for PytestRuntime {
                     ));
                 }
             }
+        } else {
+            command.env("PYTHONBREAKPOINT", "0");
         }
 
         if verbose {
