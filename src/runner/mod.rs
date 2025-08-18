@@ -49,6 +49,25 @@ pub enum FilterMode {
     Append,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum PythonDebugger {
+    Pdb,
+    Ipdb,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum RustDebugger {}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum JavaDebugger {}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum Debugger {
+    Python(PythonDebugger),
+    Rust(RustDebugger),
+    Java(JavaDebugger),
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RunnerConfig {
     pub clear_cache: bool,
@@ -59,6 +78,7 @@ pub struct RunnerConfig {
     pub preview: Option<Preview>,
     pub filter_mode: FilterMode,
     pub query: Option<String>,
+    pub debugger: Option<Debugger>,
 }
 
 impl RunnerConfig {
@@ -71,6 +91,7 @@ impl RunnerConfig {
         preview: Option<Preview>,
         filter_mode: FilterMode,
         query: Option<String>,
+        debugger: Option<Debugger>,
     ) -> Self {
         Self {
             clear_cache,
@@ -81,6 +102,7 @@ impl RunnerConfig {
             preview,
             filter_mode,
             query,
+            debugger,
         }
     }
 }
