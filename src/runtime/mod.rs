@@ -11,6 +11,7 @@ pub enum PythonDebugger {
     Pdb,
     Ipdb,
     IPython,
+    Pudb,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]

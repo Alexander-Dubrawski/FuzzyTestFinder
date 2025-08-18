@@ -228,9 +228,11 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
             "pdb" => Some(Debugger::Python(PythonDebugger::Pdb)),
             "ipdb" => Some(Debugger::Python(PythonDebugger::Ipdb)),
             "ipython" => Some(Debugger::Python(PythonDebugger::IPython)),
+            "pudb" => Some(Debugger::Python(PythonDebugger::Pudb)),
             _ => {
                 return Err(FztError::InvalidArgument(
-                    "Invalid debugger option. Supported are: Python = [pdb, ipdb]".to_string(),
+                    "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython, pudb]"
+                        .to_string(),
                 ));
             }
         }

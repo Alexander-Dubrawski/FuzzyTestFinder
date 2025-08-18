@@ -37,9 +37,12 @@ impl Runtime for PytestRuntime {
                 Debugger::Python(PythonDebugger::IPython) => {
                     command.env("PYTHONBREAKPOINT", "IPython.terminal.debugger.set_trace");
                 }
+                Debugger::Python(PythonDebugger::Pudb) => {
+                    command.env("PYTHONBREAKPOINT", "pudb.set_trace");
+                }
                 _ => {
                     return Err(FztError::InvalidArgument(
-                        "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython]"
+                        "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython, pudb]"
                             .to_string(),
                     ));
                 }
