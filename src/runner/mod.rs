@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::errors::FztError;
+use crate::{errors::FztError, runtime::Debugger};
 
 pub mod general_runner;
 mod history_provider;
@@ -47,25 +47,6 @@ pub enum FilterMode {
     Directory,
     RunTime,
     Append,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum PythonDebugger {
-    Pdb,
-    Ipdb,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum RustDebugger {}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum JavaDebugger {}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum Debugger {
-    Python(PythonDebugger),
-    Rust(RustDebugger),
-    Java(JavaDebugger),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

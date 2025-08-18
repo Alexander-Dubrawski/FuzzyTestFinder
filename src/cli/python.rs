@@ -3,8 +3,8 @@ use std::env;
 use crate::{
     cache::helper::project_hash,
     errors::FztError,
-    runner::{Debugger, Runner, RunnerConfig, RunnerName, general_runner::GeneralCacheRunner},
-    runtime::python::pytest::PytestRuntime,
+    runner::{Runner, RunnerConfig, RunnerName, general_runner::GeneralCacheRunner},
+    runtime::{Debugger, python::pytest::PytestRuntime},
     search_engine::SearchEngine,
     tests::python::{pytest::tests::PytestTests, rust_python::tests::RustPytonTests},
 };

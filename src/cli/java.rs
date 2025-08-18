@@ -3,8 +3,8 @@ use std::env;
 use crate::{
     cache::helper::project_hash,
     errors::FztError,
-    runner::{Debugger, Runner, RunnerConfig, RunnerName, general_runner::GeneralCacheRunner},
-    runtime::java::gradle::GradleRuntime,
+    runner::{Runner, RunnerConfig, RunnerName, general_runner::GeneralCacheRunner},
+    runtime::{Debugger, java::gradle::GradleRuntime},
     search_engine::SearchEngine,
     tests::java::java_test::JavaTests,
 };

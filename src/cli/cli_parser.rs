@@ -3,7 +3,8 @@ use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 use crate::{
     cache::helper::project_hash,
     errors::FztError,
-    runner::{Debugger, FilterMode, Preview, PythonDebugger, Runner, RunnerConfig, RunnerMode},
+    runner::{FilterMode, Preview, Runner, RunnerConfig, RunnerMode},
+    runtime::{Debugger, PythonDebugger},
     search_engine::fzf::FzfSearchEngine,
 };
 
@@ -42,7 +43,7 @@ struct Cli {
         long,
         short,
         help = "Debugger to use:\n
-        Python: [pdb, ipdb] (set breakpoints with `breakpoint()` in code)\n
+        Python: [pdb, ipdb, IPython] (set breakpoints with `breakpoint()` in code)\n
         Rust: []\n
         Java: []\n
         "
@@ -226,6 +227,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         match debugger.to_lowercase().as_str() {
             "pdb" => Some(Debugger::Python(PythonDebugger::Pdb)),
             "ipdb" => Some(Debugger::Python(PythonDebugger::Ipdb)),
+            "ipython" => Some(Debugger::Python(PythonDebugger::IPython)),
             _ => {
                 return Err(FztError::InvalidArgument(
                     "Invalid debugger option. Supported are: Python = [pdb, ipdb]".to_string(),

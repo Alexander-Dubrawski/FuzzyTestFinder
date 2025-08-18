@@ -3,8 +3,8 @@ use std::env;
 use crate::{
     cache::helper::project_hash,
     errors::FztError,
-    runner::{Debugger, Runner, RunnerConfig, RunnerName, general_runner::GeneralCacheRunner},
-    runtime::rust::cargo::CargoRuntime,
+    runner::{Runner, RunnerConfig, RunnerName, general_runner::GeneralCacheRunner},
+    runtime::{Debugger, rust::cargo::CargoRuntime},
     search_engine::SearchEngine,
     tests::rust::rust_test::RustTests,
 };

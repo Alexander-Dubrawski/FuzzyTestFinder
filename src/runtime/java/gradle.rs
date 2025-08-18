@@ -1,6 +1,9 @@
 use std::process::Command;
 
-use crate::{errors::FztError, runtime::Runtime};
+use crate::{
+    errors::FztError,
+    runtime::{Debugger, Runtime},
+};
 
 #[derive(Default)]
 pub struct GradleRuntime {}
@@ -11,6 +14,7 @@ impl Runtime for GradleRuntime {
         tests: Vec<String>,
         verbose: bool,
         runtime_ags: &[String],
+        _debugger: &Option<Debugger>,
     ) -> Result<(), FztError> {
         let mut command = Command::new("./gradlew");
         runtime_ags.iter().for_each(|arg| {
