@@ -19,6 +19,9 @@ impl Runtime for PytestRuntime {
         let mut command = Command::new("python");
         command.arg("-m");
         command.arg("pytest");
+        if debugger.is_some() {
+            command.arg("-s");
+        }
         runtime_ags.iter().for_each(|arg| {
             command.arg(arg);
         });
@@ -40,9 +43,13 @@ impl Runtime for PytestRuntime {
                 Debugger::Python(PythonDebugger::Pudb) => {
                     command.env("PYTHONBREAKPOINT", "pudb.set_trace");
                 }
+                Debugger::Python(PythonDebugger::WebPdb) => {
+                    println!("web-pdb, visit http://localhost:5555 to debug");
+                    command.env("PYTHONBREAKPOINT", "web_pdb.set_trace");
+                }
                 _ => {
                     return Err(FztError::InvalidArgument(
-                        "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython, pudb]"
+                        "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython, pudb, web-pdb]"
                             .to_string(),
                     ));
                 }

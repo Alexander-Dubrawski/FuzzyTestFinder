@@ -18,7 +18,7 @@ pub fn get_python_runner<SE: SearchEngine + 'static>(
     if let Some(debugger) = config.debugger.as_ref() {
         if !matches!(debugger, Debugger::Python(_)) {
             return Err(FztError::InvalidArgument(
-                "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython, pudb]"
+                "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython, pudb, web-pdb]"
                     .to_string(),
             ));
         }
