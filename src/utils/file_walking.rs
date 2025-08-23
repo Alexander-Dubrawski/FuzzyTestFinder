@@ -8,7 +8,7 @@ use std::{
 };
 use walkdir::{DirEntry, WalkDir};
 
-use crate::errors::FztError;
+use crate::{errors::FztError, utils::path_resolver::get_relative_path};
 
 pub fn filter_out_deleted_files<T>(root_dir: &str, tests: &mut HashMap<String, T>) -> bool {
     let mut tests_to_remove = vec![];
@@ -82,29 +82,22 @@ pub fn collect_tests<T: Eq + Hash>(
             }
 
             let full_path = entry.path().as_os_str().to_str().expect("Is file type");
-            let relative_path = full_path
-                .strip_prefix(root_folder)
-                .map(|path| path.strip_prefix("/"))
-                .flatten()
-                .ok_or(FztError::GeneralParsingError(format!(
-                    "File path could not be parsed: {}",
-                    full_path
-                )))?;
+            let relative_path = get_relative_path(root_folder, &full_path)?;
 
             if let Ok(modified) = metadata.modified() {
                 if modified.duration_since(UNIX_EPOCH)?.as_millis() > *timestamp {
                     let new_tests = collect_tests_from_file(entry.path())?;
-                    if !tests.contains_key(relative_path) {
+                    if !tests.contains_key(relative_path.as_str()) {
                         updated = true;
                         tests.insert(relative_path.to_string(), new_tests);
                         continue;
                     }
-                    if new_tests != tests[relative_path] {
+                    if new_tests != tests[relative_path.as_str()] {
                         if only_check_for_change {
                             return Ok(true);
                         }
                         updated = true;
-                        let entry = tests.get_mut(relative_path).expect("contains key");
+                        let entry = tests.get_mut(relative_path.as_str()).expect("contains key");
                         *entry = new_tests;
                     }
                 }
