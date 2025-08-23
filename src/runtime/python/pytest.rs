@@ -48,7 +48,9 @@ impl Runtime for PytestRuntime {
                     command.env("PYTHONBREAKPOINT", "web_pdb.set_trace");
                 }
                 _ => {
-                    unreachable!("Non-Python debugger passed to PytestRuntime. This should be unreachable due to CLI validation.");
+                    unreachable!(
+                        "Non-Python debugger passed to PytestRuntime. This should be unreachable due to CLI validation."
+                    );
                 }
             }
         } else {

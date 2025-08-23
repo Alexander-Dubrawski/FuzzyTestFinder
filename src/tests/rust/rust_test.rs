@@ -12,6 +12,7 @@ use crate::{
         Test, Tests,
         rust::{ParseRustTest, mod_resolver::get_module_paths, rust_test_parser::RustTestParser},
     },
+    utils::path_resolver::get_relative_path,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -45,7 +46,7 @@ impl RustTests {
             }
         }
         if !up_to_date {
-            self.refull_tests(cargo_tests)?;
+            self.refill_tests(cargo_tests)?;
             self.timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
             Ok(true)
         } else {
@@ -68,7 +69,7 @@ impl RustTests {
         }
     }
 
-    fn refull_tests(&mut self, cargo_tests: Vec<(Vec<String>, String)>) -> Result<(), FztError> {
+    fn refill_tests(&mut self, cargo_tests: Vec<(Vec<String>, String)>) -> Result<(), FztError> {
         let mut path = Path::new(&self.root_folder).to_path_buf();
         if path.join("src").exists() {
             path = path.join("src");
@@ -99,13 +100,14 @@ impl RustTests {
                 module_path: module_path,
                 method_name,
             };
-            let entry = updated_tests.get_mut(&path);
+            let relative_path = get_relative_path(&self.root_folder, &path)?;
+            let entry = updated_tests.get_mut(&relative_path);
             match entry {
                 Some(tests) => {
                     tests.push(rust_test);
                 }
                 None => {
-                    updated_tests.insert(path, vec![rust_test]);
+                    updated_tests.insert(relative_path, vec![rust_test]);
                 }
             }
         }
@@ -208,7 +210,7 @@ mod tests {
             tests: initial_tests.clone(),
         };
         let mut rust_tests =
-            super::RustTests::new_empty("src/tests/rust/test_data/tests/".to_string());
+            super::RustTests::new_empty("src/tests/rust/test_data/tests".to_string());
 
         let expected = RustTest {
             module_path: vec!["a".to_string(), "test_one".to_string()],
@@ -218,10 +220,7 @@ mod tests {
         assert!(rust_tests.update_tests(&mock_parser).unwrap());
 
         assert_eq!(
-            rust_tests
-                .tests
-                .get("src/tests/rust/test_data/tests/a/test_one.rs")
-                .unwrap(),
+            rust_tests.tests.get("a/test_one.rs").unwrap(),
             &vec![expected]
         );
 
@@ -252,14 +251,14 @@ mod tests {
 
         let expected = vec![
             (
-                "src/tests/rust/test_data/tests/a/test_one.rs",
+                "a/test_one.rs",
                 vec![RustTest {
                     module_path: vec!["a".to_string(), "test_one".to_string()],
                     method_name: "one".to_string(),
                 }],
             ),
             (
-                "src/tests/rust/test_data/tests/a/test_two.rs",
+                "a/test_two.rs",
                 vec![
                     RustTest {
                         module_path: vec!["a".to_string(), "test_two".to_string()],
@@ -272,7 +271,7 @@ mod tests {
                 ],
             ),
             (
-                "src/tests/rust/test_data/tests/b/test_three.rs",
+                "b/test_three.rs",
                 vec![RustTest {
                     module_path: vec!["b".to_string(), "test_three".to_string()],
                     method_name: "three".to_string(),
@@ -313,21 +312,21 @@ mod tests {
 
         let expected = vec![
             (
-                "src/tests/rust/test_data/tests/a/test_one.rs",
+                "a/test_one.rs",
                 vec![RustTest {
                     module_path: vec!["a".to_string(), "test_one".to_string()],
                     method_name: "one".to_string(),
                 }],
             ),
             (
-                "src/tests/rust/test_data/tests/a/test_two.rs",
+                "a/test_two.rs",
                 vec![RustTest {
                     module_path: vec!["a".to_string(), "test_two".to_string()],
                     method_name: "twoOne".to_string(),
                 }],
             ),
             (
-                "src/tests/rust/test_data/tests/b/test_three.rs",
+                "b/test_three.rs",
                 vec![RustTest {
                     module_path: vec!["b".to_string(), "test_three".to_string()],
                     method_name: "three".to_string(),
