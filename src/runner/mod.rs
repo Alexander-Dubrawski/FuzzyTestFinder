@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::errors::FztError;
+use crate::{errors::FztError, runtime::Debugger};
 
 pub mod general_runner;
 mod history_provider;
@@ -59,6 +59,7 @@ pub struct RunnerConfig {
     pub preview: Option<Preview>,
     pub filter_mode: FilterMode,
     pub query: Option<String>,
+    pub debugger: Option<Debugger>,
 }
 
 impl RunnerConfig {
@@ -71,6 +72,7 @@ impl RunnerConfig {
         preview: Option<Preview>,
         filter_mode: FilterMode,
         query: Option<String>,
+        debugger: Option<Debugger>,
     ) -> Self {
         Self {
             clear_cache,
@@ -81,6 +83,7 @@ impl RunnerConfig {
             preview,
             filter_mode,
             query,
+            debugger,
         }
     }
 }

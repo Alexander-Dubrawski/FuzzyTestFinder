@@ -4,6 +4,7 @@ use crate::{
     cache::helper::project_hash,
     errors::FztError,
     runner::{FilterMode, Preview, Runner, RunnerConfig, RunnerMode},
+    runtime::{Debugger, PythonDebugger},
     search_engine::fzf::FzfSearchEngine,
 };
 
@@ -33,11 +34,21 @@ struct Cli {
 
     #[arg(
         long,
-        short,
         default_value_t = false,
         help = "Make this runner the default one in the project"
     )]
     default: bool,
+
+    #[arg(
+        long,
+        short,
+        help = "Debugger to use:\n
+        Python: [pdb, ipdb, IPython, pudb, web-pdb] (set breakpoints with `breakpoint()` in code)\n
+        Rust: []\n
+        Java: []\n
+        "
+    )]
+    debugger: Option<String>,
 
     #[arg(
         long,
@@ -212,6 +223,24 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         }
     };
 
+    let debugger = if let Some(debugger) = cli.debugger {
+        match debugger.to_lowercase().as_str() {
+            "pdb" => Some(Debugger::Python(PythonDebugger::Pdb)),
+            "ipdb" => Some(Debugger::Python(PythonDebugger::Ipdb)),
+            "ipython" => Some(Debugger::Python(PythonDebugger::IPython)),
+            "pudb" => Some(Debugger::Python(PythonDebugger::Pudb)),
+            "web-pdb" => Some(Debugger::Python(PythonDebugger::WebPdb)),
+            _ => {
+                return Err(FztError::InvalidArgument(
+                    "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython, pudb, web-pdb]"
+                        .to_string(),
+                ));
+            }
+        }
+    } else {
+        None
+    };
+
     let runner_config = RunnerConfig::new(
         cli.clear_cache,
         cli.verbose,
@@ -221,6 +250,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         preview,
         filter_mode,
         cli.query,
+        debugger,
     );
 
     let runner = match &cli.command {

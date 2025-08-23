@@ -265,6 +265,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
                 tests_to_run,
                 self.config.verbose,
                 &self.config.runtime_args.as_slice(),
+                &self.config.debugger,
             )
         } else {
             Ok(())

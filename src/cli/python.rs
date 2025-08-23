@@ -4,7 +4,7 @@ use crate::{
     cache::helper::project_hash,
     errors::FztError,
     runner::{Runner, RunnerConfig, RunnerName, general_runner::GeneralCacheRunner},
-    runtime::python::pytest::PytestRuntime,
+    runtime::{Debugger, python::pytest::PytestRuntime},
     search_engine::SearchEngine,
     tests::python::{pytest::tests::PytestTests, rust_python::tests::RustPytonTests},
 };
@@ -15,6 +15,15 @@ pub fn get_python_runner<SE: SearchEngine + 'static>(
     config: RunnerConfig,
     search_engine: SE,
 ) -> Result<Box<dyn Runner>, FztError> {
+    if let Some(debugger) = config.debugger.as_ref() {
+        if !matches!(debugger, Debugger::Python(_)) {
+            return Err(FztError::InvalidArgument(
+                "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython, pudb, web-pdb]"
+                    .to_string(),
+            ));
+        }
+    }
+
     let path = env::current_dir()?;
     let path_str = path.to_string_lossy();
     match (

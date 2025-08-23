@@ -1,6 +1,9 @@
 use std::process::Command;
 
-use crate::{errors::FztError, runtime::Runtime};
+use crate::{
+    errors::FztError,
+    runtime::{Debugger, Runtime},
+};
 
 #[derive(Default)]
 pub struct CargoRuntime {}
@@ -11,6 +14,7 @@ impl Runtime for CargoRuntime {
         tests: Vec<String>,
         verbose: bool,
         runtime_ags: &[String],
+        _debugger: &Option<Debugger>,
     ) -> Result<(), FztError> {
         for test in tests {
             let mut command = Command::new("cargo");

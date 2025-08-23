@@ -104,10 +104,6 @@ pub fn collect_tests<T: Eq + Hash>(
                             return Ok(true);
                         }
                         updated = true;
-                        println!(
-                            "Tests updated: {}",
-                            entry.path().as_os_str().to_str().expect("Is file type")
-                        );
                         let entry = tests.get_mut(relative_path).expect("contains key");
                         *entry = new_tests;
                     }
