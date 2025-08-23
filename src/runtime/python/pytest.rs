@@ -48,10 +48,7 @@ impl Runtime for PytestRuntime {
                     command.env("PYTHONBREAKPOINT", "web_pdb.set_trace");
                 }
                 _ => {
-                    return Err(FztError::InvalidArgument(
-                        "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython, pudb, web-pdb]"
-                            .to_string(),
-                    ));
+                    unreachable!("Non-Python debugger passed to PytestRuntime. This should be unreachable due to CLI validation.");
                 }
             }
         } else {
