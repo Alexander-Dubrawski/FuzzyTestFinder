@@ -20,6 +20,14 @@ impl ParseRustTest for RustTestParser {
         let output = std::str::from_utf8(binding.stdout.as_slice())
             .map(|out| out.to_string())
             .map_err(FztError::from)?;
+        if binding.status.success() == false {
+            let err = std::str::from_utf8(binding.stderr.as_slice())
+                .map(|out| out.to_string())
+                .map_err(FztError::from)?;
+            return Err(FztError::RustError(format!(
+                "Failed to run `cargo test -- --list`\n{err}"
+            )));
+        }
         let mut tests = Vec::new();
         for line in output.lines() {
             if line.is_empty() {
