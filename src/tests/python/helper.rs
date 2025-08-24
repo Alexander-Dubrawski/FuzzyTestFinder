@@ -23,6 +23,12 @@ fn collect_tests_from_file(path: &Path) -> Result<HashSet<String>, FztError> {
                             tests.insert(stmt_function_def.name.to_string());
                         }
                     }
+                    rustpython_parser::ast::Stmt::AsyncFunctionDef(stmt_async_function_def) => {
+                        let test_name = stmt_async_function_def.name.to_string();
+                        if test_name.starts_with("test") {
+                            tests.insert(stmt_async_function_def.name.to_string());
+                        }
+                    }
                     _ => continue,
                 }
             }
