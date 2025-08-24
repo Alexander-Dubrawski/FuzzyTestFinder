@@ -24,6 +24,14 @@ fn get_pytests() -> Result<String, FztError> {
         .arg("-q")
         .output()
         .expect("failed to retrieve python tests");
+    if binding.status.success() == false {
+        let err = std::str::from_utf8(binding.stderr.as_slice())
+            .map(|out| out.to_string())
+            .map_err(FztError::from)?;
+        return Err(FztError::PythonError(format!(
+            "Failed to run `python -m pytest --co -q`\n{err}"
+        )));
+    }
     str::from_utf8(binding.stdout.as_slice())
         .map(|out| out.to_string())
         .map_err(FztError::from)

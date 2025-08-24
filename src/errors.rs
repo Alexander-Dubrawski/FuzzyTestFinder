@@ -17,6 +17,8 @@ pub enum FztError {
     PythonParser(String),
     RustParser(syn::Error),
     InvalidArgument(String),
+    RustError(String),
+    PythonError(String),
 }
 
 impl std::error::Error for FztError {}
@@ -37,6 +39,8 @@ impl Display for FztError {
             FztError::PythonParser(error) => write!(f, "{}", error),
             FztError::RustParser(syn_error) => write!(f, "{}", syn_error),
             FztError::InvalidArgument(error) => write!(f, "{}", error),
+            FztError::RustError(error) => write!(f, "{}", error),
+            FztError::PythonError(error) => write!(f, "{}", error),
         }
     }
 }
