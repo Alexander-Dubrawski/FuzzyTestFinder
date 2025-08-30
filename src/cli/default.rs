@@ -13,7 +13,8 @@ pub fn get_default(project_id: &str, config: RunnerConfig) -> Result<Box<dyn Run
         Some(reader) => serde_json::from_reader(reader)?,
         None => {
             return Err(FztError::GeneralParsingError(
-                "Metadata not found".to_string(),
+                "Metadata not found. Did you initialize the project `fzt -d <LANGUAGE>` ?"
+                    .to_string(),
             ));
         }
     };
