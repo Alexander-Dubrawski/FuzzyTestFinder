@@ -8,6 +8,9 @@ use crate::runner::Preview;
 use super::Append;
 use super::SearchEngine;
 
+const BAT_PREVIEW_SCRIPT: &str = include_str!("bat_preview_command.sh");
+const BAT_LINE_PREVIEW_CONTEXT: &i8 = &20;
+
 fn run_fzf(
     input: &str,
     read_null: bool,
@@ -43,10 +46,13 @@ fn run_fzf(
             }
             Preview::Test => {
                 command
-                        .arg("--delimiter")
-                        .arg("::")
-                        .arg("--preview")
-                        .arg(" rg --color=always --line-number --no-heading '{2}' '{1}' --context 5 | bat --style=numbers --color=always");
+                    .arg("--delimiter")
+                    .arg("::")
+                    .arg("--preview")
+                    .arg(format!(
+                        "bash -c '{}' -- {{2}} {{1}} {BAT_LINE_PREVIEW_CONTEXT}",
+                        BAT_PREVIEW_SCRIPT.replace('\'', "'\"'\"'")
+                    ));
             }
             Preview::Directory => {
                 command
