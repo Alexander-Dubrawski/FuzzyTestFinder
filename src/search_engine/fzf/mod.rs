@@ -9,7 +9,7 @@ use super::Append;
 use super::SearchEngine;
 
 const BAT_PREVIEW_SCRIPT: &str = include_str!("bat_preview_command.sh");
-const BAT_LINE_PREVIEW_CONTEXT: &i8 = &20;
+const BAT_LINE_PREVIEW_CONTEXT: i8 = 20;
 
 fn run_fzf(
     input: &str,

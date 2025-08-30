@@ -25,6 +25,6 @@ for line_num in $line_numbers; do
         echo
     fi
 
-    less "$file" | bat -r "$line_num:+$context" --style=numbers --color=always --language="$language"
+    bat -r "$line_num:+$context" --style=numbers --color=always --language="$language" "$file"
 
 done
