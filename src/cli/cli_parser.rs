@@ -105,7 +105,8 @@ struct Cli {
                 'runtime' for running a single test based on its runtime argument, \
                 'file' for running all tests in a file, \
                 'directory' for running all tests in a directory, \
-                'append' for continuing appending to the last selection.",
+                'append' for continuing appending to the last selection, \
+                or filed for running failed tests.",
         value_parser=["directory", "file", "test", "runtime", "append"]
     )]
     mode: String,
@@ -216,6 +217,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         "directory" => FilterMode::Directory,
         "runtime" => FilterMode::RunTime,
         "append" => FilterMode::Append,
+        "failed" => FilterMode::Failed,
         _ => {
             return Err(FztError::InvalidArgument(
                 "Invalid filter mode option. Use 'directory', 'file', 'test', 'runtime', or 'append'.".to_string(),
