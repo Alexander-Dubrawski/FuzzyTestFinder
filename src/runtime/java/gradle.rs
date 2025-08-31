@@ -2,7 +2,7 @@ use std::process::Command;
 
 use crate::{
     errors::FztError,
-    runtime::{utils::run_and_capture, Debugger, Runtime},
+    runtime::{Debugger, Runtime, utils::run_and_capture},
 };
 
 #[derive(Default)]
@@ -16,7 +16,8 @@ impl Runtime for GradleRuntime {
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
     ) -> Result<String, FztError> {
-        let mut command = Command::new("./gradlew");
+        let mut command = Command::new("unbuffer");
+        command.arg("./gradlew");
         runtime_ags.iter().for_each(|arg| {
             command.arg(arg);
         });
@@ -26,19 +27,15 @@ impl Runtime for GradleRuntime {
             command.arg(test);
         });
         if verbose {
-            println!("INFO: Verbose mode enabled, does not capture failed tests");
             let program = command.get_program().to_str().unwrap();
             let args: Vec<String> = command
                 .get_args()
                 .map(|arg| arg.to_str().unwrap().to_string())
                 .collect();
             println!("\n{} {}\n", program, args.as_slice().join(" "));
-            command.status()?;
-            Ok(String::new())
-        } else {
-            let output = run_and_capture(command)?;
-            Ok(output)
         }
+        let output = run_and_capture(command)?;
+        Ok(output)
     }
 
     fn name(&self) -> String {

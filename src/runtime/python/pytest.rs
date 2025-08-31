@@ -1,8 +1,11 @@
-use std::{io::{BufRead, BufReader}, process::{Command, Stdio}};
+use std::{
+    io::{BufRead, BufReader},
+    process::{Command, Stdio},
+};
 
 use crate::{
     errors::FztError,
-    runtime::{utils::run_and_capture, Debugger, PythonDebugger, Runtime},
+    runtime::{Debugger, PythonDebugger, Runtime, utils::run_and_capture},
 };
 
 #[derive(Default)]
@@ -16,11 +19,10 @@ impl Runtime for PytestRuntime {
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
     ) -> Result<String, FztError> {
-        let mut command = Command::new("python");
+        let mut command = Command::new("unbuffer");
+        command.arg("python");
         command.arg("-m");
         command.arg("pytest");
-        command.arg("--color");
-        command.arg("yes");
         if debugger.is_some() {
             command.arg("-s");
         }
@@ -60,19 +62,15 @@ impl Runtime for PytestRuntime {
         }
 
         if verbose {
-            println!("INFO: Verbose mode enabled, does not capture failed tests");
             let program = command.get_program().to_str().unwrap();
             let args: Vec<String> = command
                 .get_args()
                 .map(|arg| arg.to_str().unwrap().to_string())
                 .collect();
             println!("\n{} {}\n", program, args.as_slice().join(" "));
-            command.status()?;
-            Ok(String::new())
-        } else {
-            let output = run_and_capture(command)?;
-            Ok(output)
         }
+        let output = run_and_capture(command)?;
+        Ok(output)
     }
 
     fn name(&self) -> String {
