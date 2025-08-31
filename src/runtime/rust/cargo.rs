@@ -2,7 +2,7 @@ use std::process::Command;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, Runtime},
+    runtime::{utils::run_and_capture, Debugger, Runtime},
 };
 
 #[derive(Default)]
@@ -15,7 +15,11 @@ impl Runtime for CargoRuntime {
         verbose: bool,
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
-    ) -> Result<(), FztError> {
+    ) -> Result<String, FztError> {
+        if verbose {
+            println!("INFO: Verbose mode enabled, does not capture failed tests");
+        }
+        let mut output = String::new();
         for test in tests {
             let mut command = Command::new("cargo");
             command.arg("test");
@@ -31,10 +35,12 @@ impl Runtime for CargoRuntime {
                     .map(|arg| arg.to_str().unwrap().to_string())
                     .collect();
                 println!("\n{} {}\n", program, args.as_slice().join(" "));
+                command.status()?;
+            } else {
+                output.push_str((run_and_capture(command)?).as_str());
             }
-            command.status()?;
         }
-        Ok(())
+        Ok(output)
     }
 
     fn name(&self) -> String {

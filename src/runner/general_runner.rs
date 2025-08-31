@@ -262,12 +262,13 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
             super::FilterMode::Failed => todo!(),
         };
         if !tests_to_run.is_empty() {
-            self.runtime.run_tests(
+            let _output = self.runtime.run_tests(
                 tests_to_run,
                 self.config.verbose,
                 &self.config.runtime_args.as_slice(),
                 &self.config.debugger,
-            )
+            )?;
+            Ok(())
         } else {
             Ok(())
         }

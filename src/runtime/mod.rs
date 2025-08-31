@@ -5,6 +5,7 @@ use crate::errors::FztError;
 pub mod java;
 pub mod python;
 pub mod rust;
+mod utils;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum PythonDebugger {
@@ -35,6 +36,6 @@ pub trait Runtime {
         verbose: bool,
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
-    ) -> Result<(), FztError>;
+    ) -> Result<String, FztError>;
     fn name(&self) -> String;
 }
