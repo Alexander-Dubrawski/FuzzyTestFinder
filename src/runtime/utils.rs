@@ -23,5 +23,7 @@ pub fn run_and_capture(mut cmd: Command) -> Result<String, FztError> {
     }
 
     child.wait()?;
-    Ok(output)
+    let plain_bytes = strip_ansi_escapes::strip(output.as_bytes());
+    // TODO Handle error
+    Ok(String::from_utf8(plain_bytes).unwrap())
 }

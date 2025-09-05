@@ -14,6 +14,7 @@ pub struct JavaTests {
     pub root_folder: String,
     pub timestamp: u128,
     pub tests: HashMap<String, Vec<JavaTest>>,
+    pub failed_tests: HashMap<String, Vec<JavaTest>>
 }
 
 impl JavaTests {
@@ -22,6 +23,7 @@ impl JavaTests {
             root_folder,
             timestamp: 0,
             tests: HashMap::new(),
+            failed_tests: HashMap::new()
         }
     }
 }
@@ -89,11 +91,22 @@ impl Tests for JavaTests {
     }
 
     fn update_failed(&mut self, runtime_output: &str) -> bool {
-        todo!()
+        // TODO Add parsing 
+        false
     }
 
     fn tests_failed(&self) -> Vec<impl Test> {
-        todo!()
+        let mut output = vec![];
+        self.failed_tests.iter().for_each(|(path, tests)| {
+            tests.iter().for_each(|test| {
+                output.push(JavaTestItem::new(
+                    path.clone(),
+                    test.class_path.clone(),
+                    test.method_name.clone(),
+                ));
+            });
+        });
+        output
     }
 }
 

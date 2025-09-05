@@ -228,7 +228,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
             self.cache_manager
                 .add_entry(self.tests.to_json()?.as_str())?;
         }
-
+        // TODO: Construct from failed, add failed flag to get item methods
         let test_provider = TestProvider::new(&self.tests);
 
         let tests_to_run: Vec<String> = match self.config.filter_mode {
