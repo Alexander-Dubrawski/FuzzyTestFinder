@@ -20,6 +20,7 @@ pub struct RustTests {
     pub root_folder: String,
     pub timestamp: u128,
     pub tests: HashMap<String, Vec<RustTest>>,
+    pub failed_tests: HashMap<String, Vec<RustTest>>,
 }
 
 impl RustTests {
@@ -28,6 +29,7 @@ impl RustTests {
             root_folder,
             timestamp: 0,
             tests: HashMap::new(),
+            failed_tests: HashMap::new(),
         }
     }
 
@@ -178,6 +180,30 @@ impl Tests for RustTests {
 
     fn update(&mut self) -> Result<bool, FztError> {
         self.update_tests(&RustTestParser::default())
+    }
+
+    fn update_failed(&mut self, runtime_output: &str) -> bool {
+        // TODO Add parsing
+        false
+    }
+
+    fn tests_failed(&self) -> Vec<impl Test> {
+        self.failed_tests
+            .iter()
+            .map(|(path, tests)| {
+                tests
+                    .iter()
+                    .map(|test| {
+                        RustTestItem::new(
+                            path.clone(),
+                            test.module_path.join("::"),
+                            test.method_name.clone(),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .flatten()
+            .collect()
     }
 }
 

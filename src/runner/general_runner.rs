@@ -69,7 +69,11 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         project_id: String,
         runner_name: RunnerName,
     ) -> Self {
-        let cache_manager = CacheManager::new(project_id);
+        let cache_manager = if config.run_failed {
+            CacheManager::new_failed_tests(project_id)
+        } else {
+            CacheManager::new(project_id)
+        };
         let history_provider = HistoryProvider::new(cache_manager.clone());
 
         Self {
@@ -229,7 +233,11 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
                 .add_entry(self.tests.to_json()?.as_str())?;
         }
 
-        let test_provider = TestProvider::new(&self.tests);
+        let test_provider = if self.config.run_failed {
+            TestProvider::new_failed(&self.tests)
+        } else {
+            TestProvider::new(&self.tests)
+        };
 
         let tests_to_run: Vec<String> = match self.config.filter_mode {
             super::FilterMode::Test => self.get_tests_to_run(
@@ -259,14 +267,22 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
             super::FilterMode::Append => {
                 self.select_append(&self.config.query.clone(), &test_provider)?
             }
+            super::FilterMode::Failed => todo!(),
         };
+        drop(test_provider);
         if !tests_to_run.is_empty() {
-            self.runtime.run_tests(
+            let output = self.runtime.run_tests(
                 tests_to_run,
                 self.config.verbose,
                 &self.config.runtime_args.as_slice(),
                 &self.config.debugger,
-            )
+            )?;
+            // We don't want to update the cache if we are running failed tests only
+            if !self.config.run_failed && self.tests.update_failed(output.as_str()) {
+                self.cache_manager
+                    .add_entry(self.tests.to_json()?.as_str())?;
+            }
+            Ok(())
         } else {
             Ok(())
         }

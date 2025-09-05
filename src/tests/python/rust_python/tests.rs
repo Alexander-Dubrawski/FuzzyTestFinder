@@ -6,7 +6,10 @@ use crate::{
     errors::FztError,
     tests::{
         Test, Tests,
-        python::{helper::update_tests, python_test::PythonTest},
+        python::{
+            helper::{parse_failed_tests, update_tests},
+            python_test::PythonTest,
+        },
     },
     utils::file_walking::filter_out_deleted_files,
 };
@@ -16,6 +19,7 @@ pub struct RustPytonTests {
     pub root_folder: String,
     pub timestamp: u128,
     pub tests: HashMap<String, HashSet<String>>,
+    pub failed_tests: HashMap<String, HashSet<String>>,
 }
 
 impl RustPytonTests {
@@ -28,6 +32,7 @@ impl RustPytonTests {
             root_folder,
             timestamp,
             tests,
+            failed_tests: HashMap::new(),
         }
     }
 
@@ -36,6 +41,7 @@ impl RustPytonTests {
             root_folder,
             timestamp: 0,
             tests: HashMap::new(),
+            failed_tests: HashMap::new(),
         }
     }
 }
@@ -57,13 +63,51 @@ impl Tests for RustPytonTests {
 
     fn update(&mut self) -> Result<bool, FztError> {
         let files_filtered_out = filter_out_deleted_files(&self.root_folder, &mut self.tests);
-        let updated = update_tests(
+        let updated_tests = update_tests(
             self.root_folder.as_str(),
             &mut self.timestamp,
             &mut self.tests,
             false,
         )?;
-        Ok(updated || files_filtered_out)
+        self.failed_tests
+            .retain(|path, _| self.tests.contains_key(path));
+        self.failed_tests
+            .iter_mut()
+            .for_each(|(path, failed_tests)| {
+                let tests = self
+                    .tests
+                    .get(path)
+                    .expect("THIS IS A BUG. Failed tests should be a subset of tests");
+                failed_tests.retain(|test| tests.contains(test));
+            });
+        for (path, tests) in self.failed_tests.iter_mut() {
+            tests.retain(|test| {
+                self.tests
+                    .get(path)
+                    .map_or(false, |existing_tests| existing_tests.contains(test))
+            });
+        }
+        Ok(updated_tests || files_filtered_out)
+    }
+
+    fn update_failed(&mut self, runtime_output: &str) -> bool {
+        let failed_tests = parse_failed_tests(runtime_output);
+        if self.failed_tests == failed_tests {
+            false
+        } else {
+            self.failed_tests = failed_tests;
+            true
+        }
+    }
+
+    fn tests_failed(&self) -> Vec<impl Test> {
+        let mut output = vec![];
+        self.failed_tests.iter().for_each(|(path, tests)| {
+            tests.iter().for_each(|test| {
+                output.push(PythonTest::new(path.clone(), test.clone()));
+            });
+        });
+        output
     }
 }
 

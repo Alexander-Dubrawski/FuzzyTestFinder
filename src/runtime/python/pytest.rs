@@ -2,7 +2,7 @@ use std::process::Command;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, PythonDebugger, Runtime},
+    runtime::{Debugger, PythonDebugger, Runtime, utils::run_and_capture},
 };
 
 #[derive(Default)]
@@ -15,8 +15,9 @@ impl Runtime for PytestRuntime {
         verbose: bool,
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
-    ) -> Result<(), FztError> {
-        let mut command = Command::new("python");
+    ) -> Result<String, FztError> {
+        let mut command = Command::new("unbuffer");
+        command.arg("python");
         command.arg("-m");
         command.arg("pytest");
         if debugger.is_some() {
@@ -65,8 +66,8 @@ impl Runtime for PytestRuntime {
                 .collect();
             println!("\n{} {}\n", program, args.as_slice().join(" "));
         }
-        command.status()?;
-        Ok(())
+        let output = run_and_capture(command)?;
+        Ok(output)
     }
 
     fn name(&self) -> String {

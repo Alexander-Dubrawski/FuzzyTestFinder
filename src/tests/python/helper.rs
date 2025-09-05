@@ -69,6 +69,28 @@ pub fn update_tests(
     )
 }
 
+pub fn parse_failed_tests(output: &str) -> HashMap<String, HashSet<String>> {
+    let mut failed_tests = HashMap::new();
+    output.lines().for_each(|line| {
+        if line.starts_with("FAILED ") {
+            let parts: Vec<&str> = line["FAILED ".len()..].split("::").collect();
+            if parts.len() == 2 {
+                let file_path = parts[0].trim().to_string();
+                let test_name = parts[1].split("-").collect::<Vec<&str>>()[0]
+                    .split("[")
+                    .collect::<Vec<&str>>()[0]
+                    .trim()
+                    .to_string();
+                failed_tests
+                    .entry(file_path)
+                    .or_insert_with(HashSet::new)
+                    .insert(test_name);
+            }
+        }
+    });
+    failed_tests
+}
+
 #[cfg(test)]
 mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -138,5 +160,80 @@ mod tests {
         );
         assert!(update_tests(test_path, &mut time_stamp, &mut tests, false).unwrap());
         assert_eq!(tests, expected_tests);
+    }
+
+    #[test]
+    fn collect_failed_shiny_pytest() {
+        let output = "
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================================================== tests coverage ====================================================================
+___________________________________________________ coverage: platform darwin, python 3.12.8-final-0 ___________________________________________________
+
+Coverage HTML written to dir coverage/html
+=============================================================== short test summary info ================================================================
+FAILED tests/folder_a/folder_b/test_foo.py::test_foo_two[ABCD] - assert False
+FAILED tests/folder_a/folder_b/test_foo.py::test_foo_three - assert False
+FAILED tests/folder_a/folder_c/test_baa.py::test_foo_two - assert False
+
+Results (1.34s):
+       2 passed
+       2 failed
+         - tests/folder_a/folder_b/test_foo.py:46 test_foo_two
+         - tests/folder_a/folder_b/test_foo.py:49 test_foo_three
+         - tests/folder_a/folder_c/test_baa.py:90 test_foo_two
+";
+        let expected: HashMap<String, HashSet<String>> = HashMap::from([
+            (
+                "tests/folder_a/folder_b/test_foo.py".to_string(),
+                HashSet::from_iter(vec![
+                    "test_foo_two".to_string(),
+                    "test_foo_three".to_string(),
+                ]),
+            ),
+            (
+                "tests/folder_a/folder_c/test_baa.py".to_string(),
+                HashSet::from_iter(vec!["test_foo_two".to_string()]),
+            ),
+        ]);
+
+        let result = parse_failed_tests(output);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn collect_failed_pytest() {
+        let output = "
+    def test_food(mocked, tmp_path, mock_datetime_now):
+>       assert False
+E       assert False
+
+tests/folder_a/folder_b/test_foo.py:310: AssertionError
+====================================================================================================================================================== warnings summary =======================================================================================================================================================
+tests/folder_a/folder_b/test_foo.py::test_foo_two[ABC]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================================================================================================================================== short test summary info ===================================================================================================================================================
+FAILED tests/folder_a/folder_b/test_foo.py::test_foo_two[ABC] - assert False
+FAILED tests/folder_a/folder_b/test_foo.py::test_foo_three - assert False
+FAILED tests/folder_a/folder_c/test_baa.py::test_foo_two - assert False
+";
+        let expected: HashMap<String, HashSet<String>> = HashMap::from([
+            (
+                "tests/folder_a/folder_b/test_foo.py".to_string(),
+                HashSet::from_iter(vec![
+                    "test_foo_two".to_string(),
+                    "test_foo_three".to_string(),
+                ]),
+            ),
+            (
+                "tests/folder_a/folder_c/test_baa.py".to_string(),
+                HashSet::from_iter(vec!["test_foo_two".to_string()]),
+            ),
+        ]);
+
+        let result = parse_failed_tests(output);
+
+        assert_eq!(result, expected);
     }
 }

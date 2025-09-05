@@ -8,7 +8,10 @@ use crate::{
     errors::FztError,
     tests::{
         Test, Tests,
-        python::{helper::update_tests, python_test::PythonTest},
+        python::{
+            helper::{parse_failed_tests, update_tests},
+            python_test::PythonTest,
+        },
     },
     utils::file_walking::filter_out_deleted_files,
 };
@@ -42,6 +45,7 @@ pub struct PytestTests {
     pub root_folder: String,
     pub timestamp: u128,
     pub tests: HashMap<String, HashSet<String>>,
+    pub failed_tests: HashMap<String, HashSet<String>>,
 }
 
 impl PytestTests {
@@ -54,6 +58,7 @@ impl PytestTests {
             root_folder,
             timestamp,
             tests,
+            failed_tests: HashMap::new(),
         }
     }
 
@@ -62,6 +67,7 @@ impl PytestTests {
             root_folder,
             timestamp: 0,
             tests: HashMap::new(),
+            failed_tests: HashMap::new(),
         }
     }
 
@@ -117,6 +123,7 @@ impl Tests for PytestTests {
 
     fn update(&mut self) -> Result<bool, FztError> {
         let files_filtered_out = filter_out_deleted_files(&self.root_folder, &mut self.tests);
+        // TODO: also update failed tests, check if entries still exist
         let updated = update_tests(
             self.root_folder.as_str(),
             &mut self.timestamp,
@@ -127,5 +134,25 @@ impl Tests for PytestTests {
             self.parse_python_tests(get_pytests()?.as_str())?;
         }
         Ok(updated || files_filtered_out)
+    }
+
+    fn update_failed(&mut self, runtime_output: &str) -> bool {
+        let failed_tests = parse_failed_tests(runtime_output);
+        if self.failed_tests == failed_tests {
+            false
+        } else {
+            self.failed_tests = failed_tests;
+            true
+        }
+    }
+
+    fn tests_failed(&self) -> Vec<impl Test> {
+        let mut output = vec![];
+        self.failed_tests.iter().for_each(|(path, tests)| {
+            tests.iter().for_each(|test| {
+                output.push(PythonTest::new(path.clone(), test.clone()));
+            });
+        });
+        output
     }
 }

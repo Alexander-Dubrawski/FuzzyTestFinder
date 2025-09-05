@@ -113,6 +113,14 @@ struct Cli {
     #[arg(long, short, help = "Start the finder with the given query")]
     query: Option<String>,
 
+    #[arg(
+        long,
+        short,
+        default_value_t = false,
+        help = "Select from failed tests in the last run"
+    )]
+    failed: bool,
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -216,6 +224,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         "directory" => FilterMode::Directory,
         "runtime" => FilterMode::RunTime,
         "append" => FilterMode::Append,
+        "failed" => FilterMode::Failed,
         _ => {
             return Err(FztError::InvalidArgument(
                 "Invalid filter mode option. Use 'directory', 'file', 'test', 'runtime', or 'append'.".to_string(),
@@ -251,6 +260,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         filter_mode,
         cli.query,
         debugger,
+        cli.failed,
     );
 
     let runner = match &cli.command {

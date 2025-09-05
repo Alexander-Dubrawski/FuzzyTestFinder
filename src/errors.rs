@@ -1,10 +1,11 @@
-use std::{fmt::Display, str::Utf8Error, time::SystemTimeError};
+use std::{fmt::Display, str::Utf8Error, string::FromUtf8Error, time::SystemTimeError};
 
 use rustpython_parser::ParseError;
 
 #[derive(Debug)]
 pub enum FztError {
     IoError(std::io::Error),
+    StringFromUtf8(FromUtf8Error),
     StringParsing(Utf8Error),
     GeneralParsingError(String),
     PythonParsingError(ParseError),
@@ -41,6 +42,7 @@ impl Display for FztError {
             FztError::InvalidArgument(error) => write!(f, "{}", error),
             FztError::RustError(error) => write!(f, "{}", error),
             FztError::PythonError(error) => write!(f, "{}", error),
+            FztError::StringFromUtf8(error) => write!(f, "{}", error),
         }
     }
 }
@@ -90,5 +92,11 @@ impl From<serde_json::Error> for FztError {
 impl From<syn::Error> for FztError {
     fn from(value: syn::Error) -> Self {
         Self::RustParser(value)
+    }
+}
+
+impl From<FromUtf8Error> for FztError {
+    fn from(value: FromUtf8Error) -> Self {
+        Self::StringFromUtf8(value)
     }
 }
