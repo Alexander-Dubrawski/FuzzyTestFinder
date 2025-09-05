@@ -100,6 +100,7 @@ pub struct TestProvider {
 }
 
 impl TestProvider {
+    // TODO add new failed
     pub fn new<T: Tests>(tests: &T) -> Self {
         let available_tests = tests.tests();
         Self {

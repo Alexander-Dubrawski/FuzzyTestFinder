@@ -91,6 +91,10 @@ impl Tests for JavaTests {
     fn update_failed(&mut self, runtime_output: &str) -> bool {
         todo!()
     }
+
+    fn tests_failed(&self) -> Vec<impl Test> {
+        todo!()
+    }
 }
 
 #[cfg(test)]
