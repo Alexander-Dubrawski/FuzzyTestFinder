@@ -261,13 +261,18 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
             }
             super::FilterMode::Failed => todo!(),
         };
+        drop(test_provider);
         if !tests_to_run.is_empty() {
-            let _output = self.runtime.run_tests(
+            let output = self.runtime.run_tests(
                 tests_to_run,
                 self.config.verbose,
                 &self.config.runtime_args.as_slice(),
                 &self.config.debugger,
             )?;
+            if self.tests.update_failed(output.as_str()) {
+                self.cache_manager
+                    .add_entry(self.tests.to_json()?.as_str())?;
+            }
             Ok(())
         } else {
             Ok(())

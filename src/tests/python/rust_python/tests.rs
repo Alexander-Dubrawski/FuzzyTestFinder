@@ -6,7 +6,10 @@ use crate::{
     errors::FztError,
     tests::{
         Test, Tests,
-        python::{helper::update_tests, python_test::PythonTest},
+        python::{
+            helper::{parse_filed_tests, update_tests},
+            python_test::PythonTest,
+        },
     },
     utils::file_walking::filter_out_deleted_files,
 };
@@ -69,8 +72,14 @@ impl Tests for RustPytonTests {
         Ok(updated || files_filtered_out)
     }
 
-    fn update_failed(&mut self) -> Result<(), FztError> {
-        todo!()
+    fn update_failed(&mut self, runtime_output: &str) -> bool {
+        let failed_tests = parse_filed_tests(runtime_output);
+        if self.failed_tests == failed_tests {
+            false
+        } else {
+            self.failed_tests = failed_tests;
+            true
+        }
     }
 }
 

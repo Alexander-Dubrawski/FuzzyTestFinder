@@ -8,7 +8,10 @@ use crate::{
     errors::FztError,
     tests::{
         Test, Tests,
-        python::{helper::update_tests, python_test::PythonTest},
+        python::{
+            helper::{parse_filed_tests, update_tests},
+            python_test::PythonTest,
+        },
     },
     utils::file_walking::filter_out_deleted_files,
 };
@@ -42,6 +45,7 @@ pub struct PytestTests {
     pub root_folder: String,
     pub timestamp: u128,
     pub tests: HashMap<String, HashSet<String>>,
+    pub failed_tests: HashMap<String, HashSet<String>>,
 }
 
 impl PytestTests {
@@ -54,6 +58,7 @@ impl PytestTests {
             root_folder,
             timestamp,
             tests,
+            failed_tests: HashMap::new(),
         }
     }
 
@@ -62,6 +67,7 @@ impl PytestTests {
             root_folder,
             timestamp: 0,
             tests: HashMap::new(),
+            failed_tests: HashMap::new(),
         }
     }
 
@@ -129,7 +135,13 @@ impl Tests for PytestTests {
         Ok(updated || files_filtered_out)
     }
 
-    fn update_failed(&mut self) -> Result<(), FztError> {
-        todo!()
+    fn update_failed(&mut self, runtime_output: &str) -> bool {
+        let failed_tests = parse_filed_tests(runtime_output);
+        if self.failed_tests == failed_tests {
+            false
+        } else {
+            self.failed_tests = failed_tests;
+            true
+        }
     }
 }

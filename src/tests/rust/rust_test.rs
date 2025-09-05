@@ -180,7 +180,7 @@ impl Tests for RustTests {
         self.update_tests(&RustTestParser::default())
     }
 
-    fn update_failed(&mut self) -> Result<(), FztError> {
+    fn update_failed(&mut self, runtime_output: &str) -> bool {
         todo!()
     }
 }
