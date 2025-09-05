@@ -87,6 +87,10 @@ impl Tests for JavaTests {
         let updated = parser.parse_tests(self, false)?;
         Ok(updated)
     }
+
+    fn update_failed(&mut self) -> Result<(), FztError> {
+        todo!()
+    }
 }
 
 #[cfg(test)]

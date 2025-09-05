@@ -128,4 +128,8 @@ impl Tests for PytestTests {
         }
         Ok(updated || files_filtered_out)
     }
+
+    fn update_failed(&mut self) -> Result<(), FztError> {
+        todo!()
+    }
 }

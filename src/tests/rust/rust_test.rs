@@ -179,6 +179,10 @@ impl Tests for RustTests {
     fn update(&mut self) -> Result<bool, FztError> {
         self.update_tests(&RustTestParser::default())
     }
+
+    fn update_failed(&mut self) -> Result<(), FztError> {
+        todo!()
+    }
 }
 
 #[cfg(test)]

@@ -16,6 +16,7 @@ pub struct RustPytonTests {
     pub root_folder: String,
     pub timestamp: u128,
     pub tests: HashMap<String, HashSet<String>>,
+    pub failed_tests: HashMap<String, HashSet<String>>,
 }
 
 impl RustPytonTests {
@@ -28,6 +29,7 @@ impl RustPytonTests {
             root_folder,
             timestamp,
             tests,
+            failed_tests: HashMap::new(),
         }
     }
 
@@ -36,6 +38,7 @@ impl RustPytonTests {
             root_folder,
             timestamp: 0,
             tests: HashMap::new(),
+            failed_tests: HashMap::new(),
         }
     }
 }
@@ -64,6 +67,10 @@ impl Tests for RustPytonTests {
             false,
         )?;
         Ok(updated || files_filtered_out)
+    }
+
+    fn update_failed(&mut self) -> Result<(), FztError> {
+        todo!()
     }
 }
 
