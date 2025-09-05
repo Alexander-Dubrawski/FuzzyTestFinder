@@ -20,7 +20,7 @@ pub struct RustTests {
     pub root_folder: String,
     pub timestamp: u128,
     pub tests: HashMap<String, Vec<RustTest>>,
-    pub failed_tests: HashMap<String, Vec<RustTest>>
+    pub failed_tests: HashMap<String, Vec<RustTest>>,
 }
 
 impl RustTests {
@@ -29,7 +29,7 @@ impl RustTests {
             root_folder,
             timestamp: 0,
             tests: HashMap::new(),
-            failed_tests: HashMap::new()
+            failed_tests: HashMap::new(),
         }
     }
 
@@ -183,7 +183,7 @@ impl Tests for RustTests {
     }
 
     fn update_failed(&mut self, runtime_output: &str) -> bool {
-        // TODO Add parsing 
+        // TODO Add parsing
         false
     }
 

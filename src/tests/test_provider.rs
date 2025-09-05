@@ -100,9 +100,18 @@ pub struct TestProvider {
 }
 
 impl TestProvider {
-    // TODO add new failed
     pub fn new<T: Tests>(tests: &T) -> Self {
         let available_tests = tests.tests();
+        Self {
+            test_selection: extract_test_selection(available_tests.as_slice()),
+            file_selection: extract_file_section(available_tests.as_slice()),
+            dictionary_selection: extract_dictionary_selection(available_tests.as_slice()),
+            runtime_selection: extract_runtime_selection(available_tests.as_slice()),
+        }
+    }
+
+    pub fn new_failed<T: Tests>(tests: &T) -> Self {
+        let available_tests = tests.tests_failed();
         Self {
             test_selection: extract_test_selection(available_tests.as_slice()),
             file_selection: extract_file_section(available_tests.as_slice()),

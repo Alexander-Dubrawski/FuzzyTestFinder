@@ -30,6 +30,16 @@ pub struct CacheManager {
 }
 
 impl CacheManager {
+    pub fn new_failed_tests(project_id: String) -> Self {
+        let mut cache_location = home_dir().expect("Could not find home directory");
+        cache_location.push(".fzt");
+
+        let mut cache_manager = Self::new(format!("{}-failed", project_id));
+        // The test cache file still stays the same
+        cache_manager.cache_file = cache_location.join(format!("{}.json", project_id));
+        cache_manager
+    }
+
     pub fn new(project_id: String) -> Self {
         let mut cache_location = home_dir().expect("Could not find home directory");
         cache_location.push(".fzt");

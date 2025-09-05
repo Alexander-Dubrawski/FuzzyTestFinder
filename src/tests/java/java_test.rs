@@ -14,7 +14,7 @@ pub struct JavaTests {
     pub root_folder: String,
     pub timestamp: u128,
     pub tests: HashMap<String, Vec<JavaTest>>,
-    pub failed_tests: HashMap<String, Vec<JavaTest>>
+    pub failed_tests: HashMap<String, Vec<JavaTest>>,
 }
 
 impl JavaTests {
@@ -23,7 +23,7 @@ impl JavaTests {
             root_folder,
             timestamp: 0,
             tests: HashMap::new(),
-            failed_tests: HashMap::new()
+            failed_tests: HashMap::new(),
         }
     }
 }
@@ -91,7 +91,7 @@ impl Tests for JavaTests {
     }
 
     fn update_failed(&mut self, runtime_output: &str) -> bool {
-        // TODO Add parsing 
+        // TODO Add parsing
         false
     }
 

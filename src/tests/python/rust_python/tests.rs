@@ -91,9 +91,7 @@ impl Tests for RustPytonTests {
     }
 
     fn update_failed(&mut self, runtime_output: &str) -> bool {
-        println!("runtime_output\n\n\n");
         let failed_tests = parse_filed_tests(runtime_output);
-        println!("Failed: {:?}", failed_tests);
         if self.failed_tests == failed_tests {
             false
         } else {
