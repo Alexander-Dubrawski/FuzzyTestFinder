@@ -69,7 +69,7 @@ pub fn update_tests(
     )
 }
 
-pub fn parse_filed_tests(output: &str) -> HashMap<String, HashSet<String>> {
+pub fn parse_failed_tests(output: &str) -> HashMap<String, HashSet<String>> {
     let mut failed_tests = HashMap::new();
     output.lines().for_each(|line| {
         if line.starts_with("FAILED ") {
@@ -196,7 +196,7 @@ Results (1.34s):
             ),
         ]);
 
-        let result = parse_filed_tests(output);
+        let result = parse_failed_tests(output);
 
         assert_eq!(result, expected);
     }
@@ -232,7 +232,7 @@ FAILED tests/folder_a/folder_c/test_baa.py::test_foo_two - assert False
             ),
         ]);
 
-        let result = parse_filed_tests(output);
+        let result = parse_failed_tests(output);
 
         assert_eq!(result, expected);
     }

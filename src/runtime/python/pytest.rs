@@ -1,7 +1,4 @@
-use std::{
-    io::{BufRead, BufReader},
-    process::{Command, Stdio},
-};
+use std::process::Command;
 
 use crate::{
     errors::FztError,

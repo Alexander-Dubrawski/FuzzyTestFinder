@@ -1,8 +1,6 @@
 use std::{
-    io::{BufRead, BufReader, Read, Write},
+    io::{BufRead, BufReader},
     process::{Command, Stdio},
-    sync::{Arc, Mutex},
-    thread,
 };
 
 use crate::errors::FztError;
@@ -24,6 +22,5 @@ pub fn run_and_capture(mut cmd: Command) -> Result<String, FztError> {
 
     child.wait()?;
     let plain_bytes = strip_ansi_escapes::strip(output.as_bytes());
-    // TODO Handle error
-    Ok(String::from_utf8(plain_bytes).unwrap())
+    String::from_utf8(plain_bytes).map_err(|e| FztError::from(e))
 }

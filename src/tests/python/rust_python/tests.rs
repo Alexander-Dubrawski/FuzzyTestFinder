@@ -7,7 +7,7 @@ use crate::{
     tests::{
         Test, Tests,
         python::{
-            helper::{parse_filed_tests, update_tests},
+            helper::{parse_failed_tests, update_tests},
             python_test::PythonTest,
         },
     },
@@ -91,7 +91,7 @@ impl Tests for RustPytonTests {
     }
 
     fn update_failed(&mut self, runtime_output: &str) -> bool {
-        let failed_tests = parse_filed_tests(runtime_output);
+        let failed_tests = parse_failed_tests(runtime_output);
         if self.failed_tests == failed_tests {
             false
         } else {
