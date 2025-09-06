@@ -1,5 +1,6 @@
 use crate::errors::FztError;
 
+mod helper;
 pub mod mod_resolver;
 pub mod rust_test;
 pub mod rust_test_parser;
