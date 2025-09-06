@@ -49,10 +49,10 @@ impl RustTests {
                 break;
             }
         }
-        if !up_to_date {
+        let updated = if !up_to_date {
             self.refill_tests(cargo_tests)?;
             self.timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
-            Ok(true)
+            true
         } else {
             // Filter out old tests
             let cargo_test_set: HashSet<&(Vec<String>, String)> =
@@ -69,8 +69,20 @@ impl RustTests {
                     .map(|rust_test| rust_test.clone())
                     .collect();
             }
-            Ok(false)
-        }
+            false
+        };
+        self.failed_tests
+            .retain(|path, _| self.tests.contains_key(path));
+        self.failed_tests
+            .iter_mut()
+            .for_each(|(path, failed_tests)| {
+                let tests = self
+                    .tests
+                    .get(path)
+                    .expect("THIS IS A BUG. Failed tests should be a subset of tests");
+                failed_tests.retain(|test| tests.contains(test));
+            });
+        Ok(updated)
     }
 
     fn refill_tests(&mut self, cargo_tests: Vec<(Vec<String>, String)>) -> Result<(), FztError> {
