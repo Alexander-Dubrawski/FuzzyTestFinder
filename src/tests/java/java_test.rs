@@ -7,7 +7,7 @@ use crate::{
     tests::{Test, Tests},
 };
 
-use super::parser::JavaParser;
+use super::{helper::parse_failed_tests, parser::JavaParser};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JavaTests {
@@ -87,12 +87,28 @@ impl Tests for JavaTests {
     fn update(&mut self) -> Result<bool, crate::errors::FztError> {
         let parser = JavaParser::new(self.root_folder.clone());
         let updated = parser.parse_tests(self, false)?;
+        self.failed_tests
+            .retain(|path, _| self.tests.contains_key(path));
+        self.failed_tests
+            .iter_mut()
+            .for_each(|(path, failed_tests)| {
+                let tests = self
+                    .tests
+                    .get(path)
+                    .expect("THIS IS A BUG. Failed tests should be a subset of tests");
+                failed_tests.retain(|test| tests.contains(test));
+            });        
         Ok(updated)
     }
 
     fn update_failed(&mut self, runtime_output: &str) -> bool {
-        // TODO Add parsing
-        false
+        let failed_tests = parse_failed_tests(runtime_output, &self.tests);
+        if self.failed_tests == failed_tests {
+            false
+        } else {
+            self.failed_tests = failed_tests;
+            true
+        }
     }
 
     fn tests_failed(&self) -> Vec<impl Test> {
