@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use super::rust_test::RustTest;
 
-static FAILED_TEST_PREFIX: &usize = &"test ".len();
-static FAILED_TEST_SUFIX: &usize = &" ... FAILED".len();
+static FAILED_TEST_PREFIX: usize = "test ".len();
+static FAILED_TEST_SUFFIX: usize = " ... FAILED".len();
 
 pub fn parse_failed_tests(
     output: &str,
@@ -12,7 +12,7 @@ pub fn parse_failed_tests(
     let mut rust_tests = vec![];
     output.lines().for_each(|line| {
         if line.starts_with("test") && line.ends_with("FAILED") {
-            let parts: Vec<&str> = line[*FAILED_TEST_PREFIX..line.len() - *FAILED_TEST_SUFIX]
+            let parts: Vec<&str> = line[FAILED_TEST_PREFIX..line.len() - FAILED_TEST_SUFFIX]
                 .split("::")
                 .collect();
             if parts.len() >= 2 {
