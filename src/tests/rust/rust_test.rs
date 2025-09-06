@@ -15,6 +15,8 @@ use crate::{
     utils::path_resolver::get_relative_path,
 };
 
+use super::helper::parse_failed_tests;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RustTests {
     pub root_folder: String,
@@ -183,8 +185,13 @@ impl Tests for RustTests {
     }
 
     fn update_failed(&mut self, runtime_output: &str) -> bool {
-        // TODO Add parsing
-        false
+        let failed_tests = parse_failed_tests(runtime_output, &self.tests);
+        if self.failed_tests == failed_tests {
+            false
+        } else {
+            self.failed_tests = failed_tests;
+            true
+        }
     }
 
     fn tests_failed(&self) -> Vec<impl Test> {
