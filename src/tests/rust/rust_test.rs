@@ -118,7 +118,7 @@ impl RustTests {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct RustTest {
     pub module_path: Vec<String>,
     pub method_name: String,
