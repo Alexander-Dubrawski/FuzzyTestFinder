@@ -18,6 +18,7 @@ impl Runtime for GradleRuntime {
     ) -> Result<String, FztError> {
         let mut command = Command::new("unbuffer");
         command.arg("./gradlew");
+        command.arg("-i");
         runtime_ags.iter().for_each(|arg| {
             command.arg(arg);
         });

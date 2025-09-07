@@ -75,6 +75,7 @@ class ParserTest {
         assertEquals(testThree.get(0).getMethodName(), "three");
     }
 
+
     @Test void parseEmptyCache() throws IOException {
         final ObjectMapper objectMapper = new ObjectMapper();
         Parser parser = new Parser();

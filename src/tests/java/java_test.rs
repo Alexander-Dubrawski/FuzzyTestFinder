@@ -28,7 +28,7 @@ impl JavaTests {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct JavaTest {
     pub class_path: String,
     pub method_name: String,
@@ -97,7 +97,7 @@ impl Tests for JavaTests {
                     .get(path)
                     .expect("THIS IS A BUG. Failed tests should be a subset of tests");
                 failed_tests.retain(|test| tests.contains(test));
-            });        
+            });
         Ok(updated)
     }
 
