@@ -146,11 +146,13 @@ ParserTest > parseCache() FAILED
         let result = parse_failed_tests(output, &current_tests);
 
         assert_eq!(result.len(), expected.len());
+
         for (tests_path, tests) in &expected {
-            assert_eq!(
-                tests.clone().sort(),
-                result.get(tests_path).unwrap().clone().sort()
-            );
+            let mut expected_sorted = tests.clone();
+            expected_sorted.sort();
+            let mut result_sorted = result.get(tests_path).unwrap().clone();
+            result_sorted.sort();
+            assert_eq!(expected_sorted, result_sorted);
         }
     }
 }
