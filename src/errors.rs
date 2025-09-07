@@ -20,6 +20,7 @@ pub enum FztError {
     InvalidArgument(String),
     RustError(String),
     PythonError(String),
+    InternalError(String),
 }
 
 impl std::error::Error for FztError {}
@@ -43,6 +44,7 @@ impl Display for FztError {
             FztError::RustError(error) => write!(f, "{}", error),
             FztError::PythonError(error) => write!(f, "{}", error),
             FztError::StringFromUtf8(error) => write!(f, "{}", error),
+            FztError::InternalError(error) => write!(f, "{}", error),
         }
     }
 }

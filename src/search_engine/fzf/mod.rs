@@ -76,15 +76,13 @@ fn run_fzf(
     Ok(output)
 }
 
-fn run_fzf_append(input: &str, preview: &str) -> Result<Output, FztError> {
+fn run_fzf_select(input: &str, preview: Option<&str>) -> Result<Output, FztError> {
     let mut command = Command::new("fzf");
-    command
-        .arg("--height")
-        .arg("50%")
-        .arg("--preview")
-        .arg(format!("echo '{}'", preview))
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped());
+    command.arg("--height").arg("50%");
+    if let Some(preview) = preview {
+        command.arg("--preview").arg(format!("echo '{}'", preview));
+    }
+    command.stdin(Stdio::piped()).stdout(Stdio::piped());
     let mut child = command.spawn()?;
 
     // Write the input (which may contain NUL bytes) to fzf's stdin
@@ -150,9 +148,14 @@ impl SearchEngine for FzfSearchEngine {
     }
 
     fn appened(&self, preview: &str) -> Result<Append, FztError> {
-        let output = run_fzf_append("Done\nDirectory\nFile\nRuntime\nTest", preview)?;
+        let output = run_fzf_select("Done\nDirectory\nFile\nRuntime\nTest", Some(preview))?;
         let mode: String = str::from_utf8(output.stdout.as_slice())?.to_string();
         Ok(Append::from_str(mode.trim())
             .expect("THIS IS A BUG. Search engine should return append option"))
+    }
+
+    fn select(&self, selected_items: &[&str]) -> Result<String, FztError> {
+        let output = run_fzf_select(selected_items.join("\n").as_str(), None)?;
+        Ok(str::from_utf8(output.stdout.as_slice())?.to_string())
     }
 }

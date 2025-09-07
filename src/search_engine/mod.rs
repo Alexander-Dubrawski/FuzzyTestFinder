@@ -42,4 +42,5 @@ pub trait SearchEngine {
     ) -> Result<Vec<String>, FztError>;
     fn name(&self) -> String;
     fn appened(&self, selected_items: &str) -> Result<Append, FztError>;
+    fn select(&self, selected_items: &[&str]) -> Result<String, FztError>;
 }

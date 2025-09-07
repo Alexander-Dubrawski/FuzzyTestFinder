@@ -46,6 +46,7 @@ struct Cli {
         Python: [pdb, ipdb, IPython, pudb, web-pdb] (set breakpoints with `breakpoint()` in code)\n
         Rust: []\n
         Java: []\n
+        Open debugger selection menu if `s` or `select` is provided.
         "
     )]
     debugger: Option<String>,
@@ -239,9 +240,10 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
             "ipython" => Some(Debugger::Python(PythonDebugger::IPython)),
             "pudb" => Some(Debugger::Python(PythonDebugger::Pudb)),
             "web-pdb" => Some(Debugger::Python(PythonDebugger::WebPdb)),
+            "s" | "select" => Some(Debugger::Select),
             _ => {
                 return Err(FztError::InvalidArgument(
-                    "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython, pudb, web-pdb]"
+                    "Invalid debugger option. Supported are: Python = [pdb, ipdb, IPython, pudb, web-pdb] or [s, select] for select window."
                         .to_string(),
                 ));
             }

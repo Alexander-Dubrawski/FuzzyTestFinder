@@ -27,6 +27,7 @@ pub enum Debugger {
     Python(PythonDebugger),
     Rust(RustDebugger),
     Java(JavaDebugger),
+    Select,
 }
 
 pub trait Runtime {
