@@ -192,11 +192,13 @@ error: test failed, to rerun pass `--lib
 
         let result = parse_failed_tests(output, &current_tests);
 
-        for (tests_path, tests) in &result {
-            assert_eq!(
-                tests.clone().sort(),
-                expected.get(tests_path).unwrap().clone().sort()
-            );
+        assert_eq!(result.len(), expected.len());
+        for (tests_path, tests) in &expected {
+            let mut expected_sorted = tests.clone();
+            expected_sorted.sort();
+            let mut result_sorted = result.get(tests_path).unwrap().clone();
+            result_sorted.sort();
+            assert_eq!(expected_sorted, result_sorted)
         }
     }
 }

@@ -27,6 +27,9 @@ public class JavaTests {
     String rootFolder;
     Long timestamp;
     HashMap<String, List<JavaTest>> tests;
+    @JsonProperty("failed_tests")
+    HashMap<String, List<JavaTest>> failedTests;
+
     private static final Logger logger = Logger.getLogger(JavaTests.class.getName());
 
     public JavaTests() {
@@ -53,6 +56,13 @@ public class JavaTests {
         this.tests = tests;
     }
 
+    public HashMap<String, List<JavaTest>> getFailedTests() {
+        return failedTests;
+    }
+
+    public void setFailedTests(HashMap<String, List<JavaTest>> failedTests) {
+        this.failedTests = failedTests;
+    }
 
     private Path getRelativePath(Path fullPath) throws Exception {
         try {
