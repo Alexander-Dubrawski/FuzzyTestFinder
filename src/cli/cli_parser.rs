@@ -5,7 +5,7 @@ use crate::{
     errors::FztError,
     runner::{FilterMode, Preview, Runner, RunnerConfig, RunnerMode},
     runtime::{Debugger, PythonDebugger},
-    search_engine::{fzf::FzfSearchEngine, SearchEngine},
+    search_engine::{SearchEngine, fzf::FzfSearchEngine},
 };
 
 use super::{
@@ -28,7 +28,20 @@ fn parse_filter_mode(filter_mode: &str) -> Result<FilterMode, FztError> {
                     "Invalid filter mode option. Use 'directory', 'file', 'test', 'runtime', 'append', 'select', or 's'.".to_string(),
                 ))
             }
-        }   
+        }
+}
+
+fn parse_preview(preview: &str) -> Result<Preview, FztError> {
+    match preview.to_lowercase().as_str() {
+        "file" => Ok(Preview::File),
+        "test" => Ok(Preview::Test),
+        "directory" => Ok(Preview::Directory),
+        _ => {
+            return Err(FztError::InvalidArgument(
+                "Invalid preview option. Use 'file', 'test', or 'directory'.".to_string(),
+            ));
+        }
+    }
 }
 
 #[derive(Parser)]
@@ -101,8 +114,9 @@ struct Cli {
         short,
         help = "Preview test function symbol or file. \
                 If 'mode' is set to directory, then 'directory' is always used as preview. \
-                Preview is not used if '--history' is set, or granularity is 'runtime'.",
-        value_parser=["file", "test", "directory"])]
+                Preview is not used if '--history' is set, or granularity is 'runtime'.\
+                Open selection menu if `s` or `select` is provided.",
+        value_parser=["file", "test", "directory", "s", "select"])]
     preview: Option<String>,
 
     #[arg(
@@ -226,22 +240,20 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
     };
 
     let preview = match cli.preview.as_deref() {
-        Some("file") => Some(Preview::File),
-        Some("test") => Some(Preview::Test),
-        Some("directory") => Some(Preview::Directory),
-        Some(_) => {
-            return Err(FztError::InvalidArgument(
-                "Invalid preview option. Use 'file', 'test', or 'directory'.".to_string(),
-            ));
+        Some("s") | Some("select") => {
+            let selection = search_engine.select(&["file", "test", "directory"])?;
+            Some(parse_preview(selection.as_str())?)
         }
+        Some(preview) => Some(parse_preview(preview)?),
         None => None,
     };
 
     let filter_mode = match cli.mode.to_lowercase().as_str() {
         "s" | "select" => {
-            let selection = search_engine.select(&["directory", "file", "test", "runtime", "append"])?;
+            let selection =
+                search_engine.select(&["directory", "file", "test", "runtime", "append"])?;
             parse_filter_mode(selection.as_str())?
-        },
+        }
         _ => parse_filter_mode(cli.mode.as_str())?,
     };
 
@@ -284,12 +296,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         Some(Commands::Java {
             test_framework,
             runtime,
-        }) => get_java_runner(
-            test_framework,
-            runtime,
-            runner_config,
-            search_engine,
-        ),
+        }) => get_java_runner(test_framework, runtime, runner_config, search_engine),
         Some(Commands::Rust) => get_rust_runner(runner_config, search_engine),
         None => get_default(project_hash()?.as_str(), runner_config),
     }?;
