@@ -46,7 +46,6 @@ pub enum FilterMode {
     File,
     Directory,
     RunTime,
-    Failed,
     Append,
 }
 

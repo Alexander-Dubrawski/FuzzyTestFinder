@@ -22,7 +22,6 @@ fn parse_filter_mode(filter_mode: &str) -> Result<FilterMode, FztError> {
             "directory" => Ok(FilterMode::Directory),
             "runtime" => Ok(FilterMode::RunTime),
             "append" => Ok(FilterMode::Append),
-            "failed" => Ok(FilterMode::Failed),
             _ => {
                 Err(FztError::InvalidArgument(
                     "Invalid filter mode option. Use 'directory', 'file', 'test', 'runtime', 'append', 'select', or 's'.".to_string(),
