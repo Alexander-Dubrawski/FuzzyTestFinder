@@ -20,7 +20,6 @@ pub fn get_python_runner<SE: SearchEngine + 'static>(
             let debugger_selection = search_engine
                 .select(&["pdb", "ipdb", "IPython", "pudb", "web-pdb"])?
                 .to_lowercase()
-                .trim()
                 .to_string();
             *debugger = match debugger_selection.as_str() {
                 "pdb" => Debugger::Python(PythonDebugger::Pdb),

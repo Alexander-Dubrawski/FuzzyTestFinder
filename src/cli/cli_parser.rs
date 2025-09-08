@@ -5,7 +5,7 @@ use crate::{
     errors::FztError,
     runner::{FilterMode, Preview, Runner, RunnerConfig, RunnerMode},
     runtime::{Debugger, PythonDebugger},
-    search_engine::fzf::FzfSearchEngine,
+    search_engine::{fzf::FzfSearchEngine, SearchEngine},
 };
 
 use super::{
@@ -14,6 +14,22 @@ use super::{
     python::get_python_runner,
     rust::get_rust_runner,
 };
+
+fn parse_filter_mode(filter_mode: &str) -> Result<FilterMode, FztError> {
+    match filter_mode.to_lowercase().as_str() {
+            "file" => Ok(FilterMode::File),
+            "test" => Ok(FilterMode::Test),
+            "directory" => Ok(FilterMode::Directory),
+            "runtime" => Ok(FilterMode::RunTime),
+            "append" => Ok(FilterMode::Append),
+            "failed" => Ok(FilterMode::Failed),
+            _ => {
+                Err(FztError::InvalidArgument(
+                    "Invalid filter mode option. Use 'directory', 'file', 'test', 'runtime', 'append', 'select', or 's'.".to_string(),
+                ))
+            }
+        }   
+}
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -106,8 +122,9 @@ struct Cli {
                 'runtime' for running a single test based on its runtime argument, \
                 'file' for running all tests in a file, \
                 'directory' for running all tests in a directory, \
-                'append' for continuing appending to the last selection.",
-        value_parser=["directory", "file", "test", "runtime", "append"]
+                'append' for continuing appending to the last selection. \
+                Open selection menu if `s` or `select` is provided.",
+        value_parser=["directory", "file", "test", "runtime", "append", "s", "select"]
     )]
     mode: String,
 
@@ -196,6 +213,7 @@ fn configure_commands() -> Command {
 pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
     let cmd = configure_commands();
     let (cli, runtime_args) = parse_args(cmd);
+    let search_engine = FzfSearchEngine::default();
 
     let mode = if cli.all {
         RunnerMode::All
@@ -220,17 +238,11 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
     };
 
     let filter_mode = match cli.mode.to_lowercase().as_str() {
-        "file" => FilterMode::File,
-        "test" => FilterMode::Test,
-        "directory" => FilterMode::Directory,
-        "runtime" => FilterMode::RunTime,
-        "append" => FilterMode::Append,
-        "failed" => FilterMode::Failed,
-        _ => {
-            return Err(FztError::InvalidArgument(
-                "Invalid filter mode option. Use 'directory', 'file', 'test', 'runtime', or 'append'.".to_string(),
-            ));
-        }
+        "s" | "select" => {
+            let selection = search_engine.select(&["directory", "file", "test", "runtime", "append"])?;
+            parse_filter_mode(selection.as_str())?
+        },
+        _ => parse_filter_mode(cli.mode.as_str())?,
     };
 
     let debugger = if let Some(debugger) = cli.debugger {
@@ -267,7 +279,7 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
 
     let runner = match &cli.command {
         Some(Commands::Python { parser, runtime }) => {
-            get_python_runner(parser, runtime, runner_config, FzfSearchEngine::default())
+            get_python_runner(parser, runtime, runner_config, search_engine)
         }
         Some(Commands::Java {
             test_framework,
@@ -276,9 +288,9 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
             test_framework,
             runtime,
             runner_config,
-            FzfSearchEngine::default(),
+            search_engine,
         ),
-        Some(Commands::Rust) => get_rust_runner(runner_config, FzfSearchEngine::default()),
+        Some(Commands::Rust) => get_rust_runner(runner_config, search_engine),
         None => get_default(project_hash()?.as_str(), runner_config),
     }?;
     if cli.default {
