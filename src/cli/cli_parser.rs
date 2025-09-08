@@ -5,7 +5,7 @@ use crate::{
     errors::FztError,
     runner::{FilterMode, Preview, Runner, RunnerConfig, RunnerMode},
     runtime::{Debugger, PythonDebugger},
-    search_engine::fzf::FzfSearchEngine,
+    search_engine::{SearchEngine, fzf::FzfSearchEngine},
 };
 
 use super::{
@@ -14,6 +14,35 @@ use super::{
     python::get_python_runner,
     rust::get_rust_runner,
 };
+
+fn parse_filter_mode(filter_mode: &str) -> Result<FilterMode, FztError> {
+    match filter_mode.to_lowercase().as_str() {
+            "file" => Ok(FilterMode::File),
+            "test" => Ok(FilterMode::Test),
+            "directory" => Ok(FilterMode::Directory),
+            "runtime" => Ok(FilterMode::RunTime),
+            "append" => Ok(FilterMode::Append),
+            _ => {
+                Err(FztError::InvalidArgument(
+                    "Invalid filter mode option. Use 'directory', 'file', 'test', 'runtime', 'append', 'select', or 's'.".to_string(),
+                ))
+            }
+        }
+}
+
+fn parse_preview(preview: &str) -> Result<Preview, FztError> {
+    match preview.to_lowercase().as_str() {
+        "file" => Ok(Preview::File),
+        "test" => Ok(Preview::Test),
+        "directory" => Ok(Preview::Directory),
+        _ => {
+            return Err(FztError::InvalidArgument(
+                "Invalid preview option. Use 'file', 'test', 'directory', 'select', or 's'."
+                    .to_string(),
+            ));
+        }
+    }
+}
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -85,8 +114,9 @@ struct Cli {
         short,
         help = "Preview test function symbol or file. \
                 If 'mode' is set to directory, then 'directory' is always used as preview. \
-                Preview is not used if '--history' is set, or granularity is 'runtime'.",
-        value_parser=["file", "test", "directory"])]
+                Preview is not used if '--history' is set, or granularity is 'runtime'.\
+                Open selection menu if `s` or `select` is provided.",
+        value_parser=["file", "test", "directory", "s", "select"])]
     preview: Option<String>,
 
     #[arg(
@@ -106,8 +136,9 @@ struct Cli {
                 'runtime' for running a single test based on its runtime argument, \
                 'file' for running all tests in a file, \
                 'directory' for running all tests in a directory, \
-                'append' for continuing appending to the last selection.",
-        value_parser=["directory", "file", "test", "runtime", "append"]
+                'append' for continuing appending to the last selection. \
+                Open selection menu if `s` or `select` is provided.",
+        value_parser=["directory", "file", "test", "runtime", "append", "s", "select"]
     )]
     mode: String,
 
@@ -196,6 +227,7 @@ fn configure_commands() -> Command {
 pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
     let cmd = configure_commands();
     let (cli, runtime_args) = parse_args(cmd);
+    let search_engine = FzfSearchEngine::default();
 
     let mode = if cli.all {
         RunnerMode::All
@@ -208,29 +240,21 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
     };
 
     let preview = match cli.preview.as_deref() {
-        Some("file") => Some(Preview::File),
-        Some("test") => Some(Preview::Test),
-        Some("directory") => Some(Preview::Directory),
-        Some(_) => {
-            return Err(FztError::InvalidArgument(
-                "Invalid preview option. Use 'file', 'test', or 'directory'.".to_string(),
-            ));
+        Some("s") | Some("select") => {
+            let selection = search_engine.select(&["file", "test", "directory"])?;
+            Some(parse_preview(selection.as_str())?)
         }
+        Some(preview) => Some(parse_preview(preview)?),
         None => None,
     };
 
     let filter_mode = match cli.mode.to_lowercase().as_str() {
-        "file" => FilterMode::File,
-        "test" => FilterMode::Test,
-        "directory" => FilterMode::Directory,
-        "runtime" => FilterMode::RunTime,
-        "append" => FilterMode::Append,
-        "failed" => FilterMode::Failed,
-        _ => {
-            return Err(FztError::InvalidArgument(
-                "Invalid filter mode option. Use 'directory', 'file', 'test', 'runtime', or 'append'.".to_string(),
-            ));
+        "s" | "select" => {
+            let selection =
+                search_engine.select(&["directory", "file", "test", "runtime", "append"])?;
+            parse_filter_mode(selection.as_str())?
         }
+        _ => parse_filter_mode(cli.mode.as_str())?,
     };
 
     let debugger = if let Some(debugger) = cli.debugger {
@@ -267,18 +291,13 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
 
     let runner = match &cli.command {
         Some(Commands::Python { parser, runtime }) => {
-            get_python_runner(parser, runtime, runner_config, FzfSearchEngine::default())
+            get_python_runner(parser, runtime, runner_config, search_engine)
         }
         Some(Commands::Java {
             test_framework,
             runtime,
-        }) => get_java_runner(
-            test_framework,
-            runtime,
-            runner_config,
-            FzfSearchEngine::default(),
-        ),
-        Some(Commands::Rust) => get_rust_runner(runner_config, FzfSearchEngine::default()),
+        }) => get_java_runner(test_framework, runtime, runner_config, search_engine),
+        Some(Commands::Rust) => get_rust_runner(runner_config, search_engine),
         None => get_default(project_hash()?.as_str(), runner_config),
     }?;
     if cli.default {

@@ -267,7 +267,6 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
             super::FilterMode::Append => {
                 self.select_append(&self.config.query.clone(), &test_provider)?
             }
-            super::FilterMode::Failed => todo!(),
         };
         drop(test_provider);
         if !tests_to_run.is_empty() {

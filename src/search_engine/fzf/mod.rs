@@ -156,6 +156,6 @@ impl SearchEngine for FzfSearchEngine {
 
     fn select(&self, selected_items: &[&str]) -> Result<String, FztError> {
         let output = run_fzf_select(selected_items.join("\n").as_str(), None)?;
-        Ok(str::from_utf8(output.stdout.as_slice())?.to_string())
+        Ok(str::from_utf8(output.stdout.as_slice())?.trim().to_string())
     }
 }
