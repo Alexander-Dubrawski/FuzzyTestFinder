@@ -38,7 +38,8 @@ fn parse_preview(preview: &str) -> Result<Preview, FztError> {
         "directory" => Ok(Preview::Directory),
         _ => {
             return Err(FztError::InvalidArgument(
-                "Invalid preview option. Use 'file', 'test', or 'directory'.".to_string(),
+                "Invalid preview option. Use 'file', 'test', 'directory', 'select', or 's'."
+                    .to_string(),
             ));
         }
     }
