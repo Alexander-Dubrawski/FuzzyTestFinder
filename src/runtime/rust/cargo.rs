@@ -2,7 +2,7 @@ use std::process::Command;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, Runtime, utils::run_and_capture},
+    runtime::{Debugger, Runtime, utils::run_and_capture_print},
 };
 
 #[derive(Default)]
@@ -36,7 +36,7 @@ impl Runtime for CargoRuntime {
                     .collect();
                 println!("\n{} {}\n", program, args.as_slice().join(" "));
             }
-            output.push_str((run_and_capture(command)?).as_str());
+            output.push_str((run_and_capture_print(command)?).as_str());
         }
         Ok(output)
     }
