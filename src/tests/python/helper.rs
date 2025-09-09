@@ -72,8 +72,12 @@ pub fn update_tests(
 pub fn parse_failed_tests(output: &str) -> HashMap<String, HashSet<String>> {
     let mut failed_tests = HashMap::new();
     output.lines().for_each(|line| {
-        if line.starts_with("FAILED ") {
-            let parts: Vec<&str> = line["FAILED ".len()..].split("::").collect();
+        if line.starts_with("FAILED ") || line.starts_with("ERROR ") {
+            let parts: Vec<&str> = if line.starts_with("FAILED ") {
+                line["FAILED ".len()..].split("::").collect()
+            } else {
+                line["ERROR ".len()..].split("::").collect()
+            };
             if parts.len() == 2 {
                 let file_path = parts[0].trim().to_string();
                 let test_name = parts[1].split("-").collect::<Vec<&str>>()[0]
@@ -218,6 +222,32 @@ FAILED tests/folder_a/folder_b/test_foo.py::test_foo_two[ABC] - assert False
 FAILED tests/folder_a/folder_b/test_foo.py::test_foo_three - assert False
 FAILED tests/folder_a/folder_c/test_baa.py::test_foo_two - assert False
 ";
+        let expected: HashMap<String, HashSet<String>> = HashMap::from([
+            (
+                "tests/folder_a/folder_b/test_foo.py".to_string(),
+                HashSet::from_iter(vec![
+                    "test_foo_two".to_string(),
+                    "test_foo_three".to_string(),
+                ]),
+            ),
+            (
+                "tests/folder_a/folder_c/test_baa.py".to_string(),
+                HashSet::from_iter(vec!["test_foo_two".to_string()]),
+            ),
+        ]);
+
+        let result = parse_failed_tests(output);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn collect_error_pytest() {
+        let output = "
+ERROR tests/folder_a/folder_b/test_foo.py::test_foo_two[ABC] - polars.exceptions.ColumnNotFoundError: key                                                                                                                                                                                                                                      [ 20%]
+ERROR tests/folder_a/folder_b/test_foo.py::test_foo_three - polars.exceptions.ColumnNotFoundError: key                                                                                                                                                                                                                        [ 40%]
+ERROR tests/folder_a/folder_c/test_baa.py::test_foo_two - polars.exceptions.ColumnNotFoundError: key
+        ";
         let expected: HashMap<String, HashSet<String>> = HashMap::from([
             (
                 "tests/folder_a/folder_b/test_foo.py".to_string(),
