@@ -15,7 +15,7 @@ impl Runtime for GradleRuntime {
         verbose: bool,
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
-    ) -> Result<String, FztError> {
+    ) -> Result<Option<String>, FztError> {
         let mut command = Command::new("unbuffer");
         command.arg("./gradlew");
         command.arg("-i");
@@ -36,7 +36,7 @@ impl Runtime for GradleRuntime {
             println!("\n{} {}\n", program, args.as_slice().join(" "));
         }
         let output = run_and_capture_print(command)?;
-        Ok(output)
+        Ok(Some(output))
     }
 
     fn name(&self) -> String {

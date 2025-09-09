@@ -2,10 +2,7 @@ use std::process::Command;
 
 use crate::{
     errors::FztError,
-    runtime::{
-        Debugger, PythonDebugger, Runtime,
-        utils::{run_and_capture, run_and_capture_print},
-    },
+    runtime::{Debugger, PythonDebugger, Runtime, utils::run_and_capture_print},
 };
 
 #[derive(Default)]
@@ -68,7 +65,7 @@ impl Runtime for PytestRuntime {
         verbose: bool,
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
-    ) -> Result<String, FztError> {
+    ) -> Result<Option<String>, FztError> {
         let command = build_command(tests.as_slice(), runtime_ags, &None);
         let mut debug_command = build_command(tests.as_slice(), runtime_ags, debugger);
 
@@ -83,10 +80,9 @@ impl Runtime for PytestRuntime {
         if debugger.is_some() || runtime_ags.contains(&String::from("--pdb")) {
             // First running with no capturing
             debug_command.status()?;
-            println!("Running tests again to capture failed test output...");
-            Ok(run_and_capture(command)?)
+            Ok(None)
         } else {
-            Ok(run_and_capture_print(command)?)
+            Ok(Some(run_and_capture_print(command)?))
         }
     }
 

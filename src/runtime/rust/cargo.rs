@@ -15,7 +15,7 @@ impl Runtime for CargoRuntime {
         verbose: bool,
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
-    ) -> Result<String, FztError> {
+    ) -> Result<Option<String>, FztError> {
         let mut output = String::new();
         for test in tests {
             let mut command = Command::new("unbuffer");
@@ -38,7 +38,7 @@ impl Runtime for CargoRuntime {
             }
             output.push_str((run_and_capture_print(command)?).as_str());
         }
-        Ok(output)
+        Ok(Some(output))
     }
 
     fn name(&self) -> String {
