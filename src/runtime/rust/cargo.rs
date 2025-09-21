@@ -56,7 +56,7 @@ pub struct CargoFormatter {
 impl CargoFormatter {
     pub fn new(number_tests: usize) -> Self {
         Self {
-            number_tests: number_tests,
+            number_tests,
             failed_tests: vec![],
             passed: 0,
             failed: 0,
@@ -68,7 +68,7 @@ impl CargoFormatter {
 }
 
 impl RuntimeFormatter for CargoFormatter {
-    fn line(&mut self, line: &String) -> Result<(), FztError> {
+    fn line(&mut self, line: &str) -> Result<(), FztError> {
         let plain_bytes = strip_ansi_escapes::strip(line.as_bytes());
         let plain_line = String::from_utf8(plain_bytes).map_err(FztError::from)?;
 
