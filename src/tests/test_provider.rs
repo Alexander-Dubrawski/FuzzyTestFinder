@@ -171,7 +171,7 @@ impl TestProvider {
                 .iter()
                 .filter(|select| {
                     if !self.test_selection.contains_key(*select) {
-                        println!("{select} test could not be found in application. Skipped.");
+                        println!("[SKIPPED] {select} test could not be found in application (was it removed or renamed? This can happen if you use last or history).");
                         false
                     } else {
                         true
@@ -183,7 +183,7 @@ impl TestProvider {
                 .iter()
                 .filter(|select| {
                     if !self.file_selection.contains_key(*select) {
-                        println!("{select} file could not be found in application. Skipped.");
+                        println!("[SKIPPED] {select} file could not be found in application (was it removed or renamed? This can happen if you use last or history).");
                         false
                     } else {
                         true
@@ -195,7 +195,7 @@ impl TestProvider {
                 .iter()
                 .filter(|select| {
                     if !self.file_selection.contains_key(*select) {
-                        println!("{select} directory could not be found in application. Skipped.");
+                        println!("[SKIPPED] {select} directory could not be found in application (was it removed or renamed? This can happen if you use last or history).");
                         false
                     } else {
                         true
@@ -207,7 +207,7 @@ impl TestProvider {
                 .iter()
                 .filter(|select| {
                     if !self.runtime_selection.contains(*select) {
-                        println!("{select} could not be found in application. Skipped.");
+                        println!("[SKIPPED] {select} could not be found in application (was it removed or renamed? This can happen if you use last or history).");
                         false
                     } else {
                         true
