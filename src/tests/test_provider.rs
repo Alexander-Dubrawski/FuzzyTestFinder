@@ -102,7 +102,7 @@ pub struct TestProvider {
     file_selection: HashMap<String, Vec<String>>,
     dictionary_selection: HashMap<String, Vec<String>>,
     runtime_selection: HashSet<String>,
-    // If set runtime arguments are always returned by
+    // If set, runtime arguments are always returned by
     // this test provider. This allows a level of
     // abstraction of selection items and the corresponding
     // runtime arguments that actually exist
