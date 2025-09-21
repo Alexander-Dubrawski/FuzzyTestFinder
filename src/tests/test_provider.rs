@@ -1,6 +1,11 @@
-use std::{collections::HashMap, fmt, path::PathBuf, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+    path::PathBuf,
+    str::FromStr,
+};
 
-use crate::search_engine::Append;
+use crate::{errors::FztError, search_engine::Append};
 
 use super::{Test, Tests};
 
@@ -88,15 +93,20 @@ fn extract_dictionary_selection<T: Test>(tests: &[T]) -> HashMap<String, Vec<Str
     dictionary_selection
 }
 
-fn extract_runtime_selection<T: Test>(tests: &[T]) -> Vec<String> {
-    tests.iter().map(|test| test.runtime_argument()).collect()
+fn extract_runtime_selection<T: Test>(tests: &[T]) -> HashSet<String> {
+    HashSet::from_iter(tests.iter().map(|test| test.runtime_argument()))
 }
 
 pub struct TestProvider {
     test_selection: HashMap<String, String>,
     file_selection: HashMap<String, Vec<String>>,
     dictionary_selection: HashMap<String, Vec<String>>,
-    runtime_selection: Vec<String>,
+    runtime_selection: HashSet<String>,
+    // If set runtime arguments are always returned by
+    // this test provider. This allows a level of
+    // abstraction of selection items and the corresponding
+    // runtime arguments that actually exist
+    default_test_provider: Option<Box<TestProvider>>,
 }
 
 impl TestProvider {
@@ -107,6 +117,7 @@ impl TestProvider {
             file_selection: extract_file_section(available_tests.as_slice()),
             dictionary_selection: extract_dictionary_selection(available_tests.as_slice()),
             runtime_selection: extract_runtime_selection(available_tests.as_slice()),
+            default_test_provider: None,
         }
     }
 
@@ -117,6 +128,7 @@ impl TestProvider {
             file_selection: extract_file_section(available_tests.as_slice()),
             dictionary_selection: extract_dictionary_selection(available_tests.as_slice()),
             runtime_selection: extract_runtime_selection(available_tests.as_slice()),
+            default_test_provider: Some(Box::new(TestProvider::new(tests))),
         }
     }
 
@@ -150,20 +162,59 @@ impl TestProvider {
         select_granularity: &SelectGranularity,
         selection: &[String],
     ) -> Vec<String> {
+        // all_test_provider always takes precedence
+        if let Some(all_test_provider) = self.default_test_provider.as_ref() {
+            return all_test_provider.runtime_arguments(select_granularity, selection);
+        }
         match select_granularity {
             SelectGranularity::Test => selection
                 .iter()
+                .filter(|select| {
+                    if !self.test_selection.contains_key(*select) {
+                        println!("{select} test could not be found in application. Skipped.");
+                        false
+                    } else {
+                        true
+                    }
+                })
                 .map(|select| self.test_selection[select].clone())
                 .collect(),
             SelectGranularity::File => selection
                 .iter()
+                .filter(|select| {
+                    if !self.file_selection.contains_key(*select) {
+                        println!("{select} file could not be found in application. Skipped.");
+                        false
+                    } else {
+                        true
+                    }
+                })
                 .flat_map(|select| self.file_selection[select].clone())
                 .collect(),
             SelectGranularity::Directory => selection
                 .iter()
+                .filter(|select| {
+                    if !self.file_selection.contains_key(*select) {
+                        println!("{select} directory could not be found in application. Skipped.");
+                        false
+                    } else {
+                        true
+                    }
+                })
                 .flat_map(|select| self.dictionary_selection[select].clone())
                 .collect(),
-            SelectGranularity::RunTime => selection.iter().map(|select| select.clone()).collect(),
+            SelectGranularity::RunTime => selection
+                .iter()
+                .filter(|select| {
+                    if !self.runtime_selection.contains(*select) {
+                        println!("{select} could not be found in application. Skipped.");
+                        false
+                    } else {
+                        true
+                    }
+                })
+                .cloned()
+                .collect(),
         }
     }
 
@@ -177,7 +228,7 @@ impl TestProvider {
                 .flatten()
                 .cloned()
                 .collect(),
-            SelectGranularity::RunTime => self.runtime_selection.clone(),
+            SelectGranularity::RunTime => self.runtime_selection.iter().cloned().collect(),
         }
     }
 }
