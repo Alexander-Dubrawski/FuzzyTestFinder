@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::{errors::FztError, search_engine::Append};
+use crate::search_engine::Append;
 
 use super::{Test, Tests};
 

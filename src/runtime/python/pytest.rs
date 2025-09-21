@@ -2,10 +2,7 @@ use std::process::Command;
 
 use crate::{
     errors::FztError,
-    runtime::{
-        Debugger, DefaultFormatter, PythonDebugger, Runtime, RuntimeFormatter,
-        utils::run_and_capture_print,
-    },
+    runtime::{Debugger, DefaultFormatter, PythonDebugger, Runtime, utils::run_and_capture_print},
 };
 
 #[derive(Default)]
