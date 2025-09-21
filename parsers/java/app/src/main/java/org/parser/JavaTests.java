@@ -100,23 +100,29 @@ public class JavaTests {
                     if (modifiedTime > timestamp) {
                         var newTests = getTestMethodsWithClassPaths(file);
                         if (newTests.isEmpty()) {
-                             return FileVisitResult.CONTINUE;
+                            // Remove entry if file exists but now has no tests
+                            if (tests.containsKey(relativePath.toString())) {
+                                tests.remove(relativePath.toString());
+                                logger.info("Removed tests for file: " + relativePath.toString());
+                            }
+                            return FileVisitResult.CONTINUE;
                         }
-                        if (!tests.containsKey(relativePath.toString())) {
-                            tests.put(relativePath.toString(), newTests);
-                        } else {
-                            tests.put(relativePath.toString(), newTests);
-                        }
+                        tests.put(relativePath.toString(), newTests);
                         logger.info("Tests updated: " + relativePath.toString() + " : " + newTests);
                         return FileVisitResult.CONTINUE;
                     }
 
                     FileTime createdTime = attrs.creationTime();
                     if (createdTime.toInstant().toEpochMilli() > timestamp) {
-                        var newTests = getTestMethodsWithClassPaths(relativePath);
+                        var newTests = getTestMethodsWithClassPaths(file);
                         if (!newTests.isEmpty()) {
                             tests.put(relativePath.toString(), newTests);
-                            logger.info("Test created" + relativePath.toString()+ " : " + newTests);
+                            logger.info("Test created " + relativePath.toString() + " : " + newTests);
+                        } else {
+                            if (tests.containsKey(relativePath.toString())) {
+                                tests.remove(relativePath.toString());
+                                logger.info("Removed tests for file: " + relativePath.toString());
+                            }
                         }
                         return FileVisitResult.CONTINUE;
                     }

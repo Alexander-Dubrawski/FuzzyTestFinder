@@ -78,7 +78,6 @@ impl Runtime for PytestRuntime {
             println!("\n{} {}\n", program, args.as_slice().join(" "));
         }
         if debugger.is_some() || runtime_ags.contains(&String::from("--pdb")) {
-            // First running with no capturing
             debug_command.status()?;
             Ok(None)
         } else {
