@@ -65,6 +65,30 @@ impl CargoFormatter {
             seconds: 0f64,
         }
     }
+
+    fn finish(self) {
+        if self.failed_tests.is_empty() {
+            println!(
+                "test result: \x1b[32mok\x1b[0m. {} passed; 0 failed; finished in {:.3}s",
+                self.passed, self.seconds
+            );
+        } else {
+            println!("\nfailures:");
+            for (_, error) in &self.failed_tests {
+                if !error.is_empty() {
+                    println!("{}", error);
+                }
+            }
+            println!("\nfailures:");
+            for (test, _) in &self.failed_tests {
+                println!("    {}", test);
+            }
+            println!(
+                "\ntest result: \x1b[31mFAILED\x1b[0m. {} passed; {} failed; finished in {:.3}s",
+                self.passed, self.failed, self.seconds
+            );
+        }
+    }
 }
 
 impl RuntimeFormatter for CargoFormatter {
@@ -128,30 +152,6 @@ impl RuntimeFormatter for CargoFormatter {
         }
 
         Ok(())
-    }
-
-    fn finish(self) {
-        if self.failed_tests.is_empty() {
-            println!(
-                "test result: \x1b[32mok\x1b[0m. {} passed; 0 failed; finished in {:.3}s",
-                self.passed, self.seconds
-            );
-        } else {
-            println!("\nfailures:");
-            for (_, error) in &self.failed_tests {
-                if !error.is_empty() {
-                    println!("{}", error);
-                }
-            }
-            println!("\nfailures:");
-            for (test, _) in &self.failed_tests {
-                println!("    {}", test);
-            }
-            println!(
-                "\ntest result: \x1b[31mFAILED\x1b[0m. {} passed; {} failed; finished in {:.3}s",
-                self.passed, self.failed, self.seconds
-            );
-        }
     }
 }
 
