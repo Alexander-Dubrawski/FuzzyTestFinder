@@ -223,11 +223,10 @@ impl Runtime for CargoRuntime {
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
     ) -> Result<Option<String>, FztError> {
-        let number_threads = if let Some(threads) = std::env::var("CARGO_TEST_THREADS").ok() {
-            threads.parse::<usize>().unwrap_or(CARGO_THREADS)
-        } else {
-            CARGO_THREADS
-        };
+        let number_threads = std::env::var("CARGO_TEST_THREADS")
+            .ok()
+            .and_then(|t| t.parse::<usize>().ok())
+            .unwrap_or(CARGO_THREADS);
 
         let partitions = partition_tests(&tests, number_threads);
         let mut formatters = vec![CargoFormatter::new(); partitions.len()];
@@ -253,10 +252,10 @@ impl Runtime for CargoRuntime {
         let mut final_formatter = CargoFormatter::new();
         let mut final_output = String::new();
 
-        for (formatter, ouput) in formatters.into_iter().zip(outputs.into_iter()) {
+        for (formatter, output) in formatters.into_iter().zip(outputs.into_iter()) {
             final_formatter.add(formatter);
             final_output.push_str("\n");
-            final_output.push_str(ouput?.as_str());
+            final_output.push_str(output?.as_str());
         }
         if !verbose {
             final_formatter.finish();
