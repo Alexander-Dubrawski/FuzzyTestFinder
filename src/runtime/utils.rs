@@ -38,26 +38,11 @@ pub fn partition_tests(vec: &[String], m: usize) -> Vec<Vec<String>> {
     if n == 0 {
         return vec![];
     }
-    let mut partitions = Vec::new();
+    let mut partitions = vec![vec![]; m];
 
-    if n < m {
-        // Each element gets its own partition
-        for item in vec {
-            partitions.push(vec![item.clone()]);
-        }
-    } else {
-        let base_size = n / m;
-        let remainder = n % m;
-        let mut start = 0;
-
-        for i in 0..m {
-            let mut end = start + base_size;
-            if i < remainder {
-                end += 1;
-            }
-            partitions.push(vec[start..end].to_vec());
-            start = end;
-        }
+    for (i, item) in vec.iter().enumerate() {
+        partitions[i % m].push(item.clone());
     }
-    partitions
+
+    partitions.into_iter().filter(|p| !p.is_empty()).collect()
 }
