@@ -2,7 +2,7 @@ use std::process::Command;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, Runtime, utils::run_and_capture_print},
+    runtime::{Debugger, DefaultFormatter, Runtime, utils::run_and_capture_print},
 };
 
 #[derive(Default)]
@@ -35,7 +35,7 @@ impl Runtime for GradleRuntime {
                 .collect();
             println!("\n{} {}\n", program, args.as_slice().join(" "));
         }
-        let output = run_and_capture_print(command)?;
+        let output = run_and_capture_print(command, &mut DefaultFormatter)?;
         Ok(Some(output))
     }
 
