@@ -37,6 +37,6 @@ pub trait Runtime {
         verbose: bool,
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
-    ) -> Result<String, FztError>;
+    ) -> Result<Option<String>, FztError>;
     fn name(&self) -> String;
 }

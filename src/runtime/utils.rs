@@ -5,7 +5,7 @@ use std::{
 
 use crate::errors::FztError;
 
-pub fn run_and_capture(mut cmd: Command) -> Result<String, FztError> {
+pub fn run_and_capture_print(mut cmd: Command) -> Result<String, FztError> {
     let mut child = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;
 
     let mut output = String::new();

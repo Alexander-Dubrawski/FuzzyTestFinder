@@ -2,7 +2,7 @@ use std::process::Command;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, Runtime, utils::run_and_capture},
+    runtime::{Debugger, Runtime, utils::run_and_capture_print},
 };
 
 #[derive(Default)]
@@ -15,7 +15,7 @@ impl Runtime for GradleRuntime {
         verbose: bool,
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
-    ) -> Result<String, FztError> {
+    ) -> Result<Option<String>, FztError> {
         let mut command = Command::new("unbuffer");
         command.arg("./gradlew");
         command.arg("-i");
@@ -35,8 +35,8 @@ impl Runtime for GradleRuntime {
                 .collect();
             println!("\n{} {}\n", program, args.as_slice().join(" "));
         }
-        let output = run_and_capture(command)?;
-        Ok(output)
+        let output = run_and_capture_print(command)?;
+        Ok(Some(output))
     }
 
     fn name(&self) -> String {
