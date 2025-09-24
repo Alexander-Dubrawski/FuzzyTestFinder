@@ -3,7 +3,8 @@ use std::process::Command;
 use crate::{
     errors::FztError,
     runtime::{
-        Debugger, DefaultFormatter, Runtime, RuntimeFormatter, utils::run_and_capture_print,
+        Debugger, DefaultFormatter, Runtime, RuntimeFormatter,
+        utils::{partition_tests, run_and_capture_print},
     },
 };
 
@@ -11,6 +12,7 @@ const TEST_PREFIX: &str = "test ";
 const TEST_FAILED_SUFFIX: &str = " ... FAILED";
 const FAILURES_HEADER: &str = "failures:";
 const RUNNING_HEADER: &str = "running 1 test";
+const CARGO_THREADS: usize = 8;
 
 fn extract_test_name(line: &str) -> Option<&str> {
     let start_idx = line.find(TEST_PREFIX)? + TEST_PREFIX.len();
@@ -43,26 +45,62 @@ fn parse_cargo_time(line: &str) -> Option<f64> {
     None
 }
 
+#[derive(Clone)]
 pub struct CargoFormatter {
-    number_tests: usize,
     failed_tests: Vec<(String, String)>,
     passed: usize,
     failed: usize,
+    ignored: usize,
+    measured: usize,
     currently_failed: bool,
     running: bool,
     seconds: f64,
 }
 
 impl CargoFormatter {
-    pub fn new(number_tests: usize) -> Self {
+    pub fn new() -> Self {
         Self {
-            number_tests,
             failed_tests: vec![],
             passed: 0,
             failed: 0,
+            ignored: 0,
+            measured: 0,
             currently_failed: false,
             running: false,
             seconds: 0f64,
+        }
+    }
+
+    fn add(&mut self, other: CargoFormatter) {
+        self.failed_tests.extend(other.failed_tests.into_iter());
+        self.passed += other.passed;
+        self.failed += other.failed;
+        self.seconds += other.seconds;
+        self.ignored += other.ignored;
+        self.measured += other.measured;
+    }
+
+    fn finish(self) {
+        if self.failed_tests.is_empty() {
+            println!(
+                "\ntest result: \x1b[32mok\x1b[0m. {} passed; 0 failed; {} measured; {} filtered out; finished in {:.3}s",
+                self.passed, self.measured, self.ignored, self.seconds
+            );
+        } else {
+            println!("\nfailures:");
+            for (_, error) in &self.failed_tests {
+                if !error.is_empty() {
+                    println!("{}", error);
+                }
+            }
+            println!("\nfailures:");
+            for (test, _) in &self.failed_tests {
+                println!("    {}", test);
+            }
+            println!(
+                "\ntest result: \x1b[31mFAILED\x1b[0m. {} passed; {} failed; {} measured; {} filtered out; finished in {:.3}s",
+                self.passed, self.failed, self.measured, self.ignored, self.seconds
+            );
         }
     }
 }
@@ -74,13 +112,7 @@ impl RuntimeFormatter for CargoFormatter {
 
         // Start running
         if plain_line == RUNNING_HEADER && !self.running {
-            println!("Running {} tests", self.number_tests);
             self.running = true;
-            return Ok(());
-        }
-
-        if !self.running {
-            println!("{}", line);
             return Ok(());
         }
 
@@ -88,6 +120,20 @@ impl RuntimeFormatter for CargoFormatter {
         if plain_line.ends_with("... ok") {
             println!("{}", line);
             self.passed += 1;
+            return Ok(());
+        }
+
+        // Test Ignored
+        if plain_line.ends_with("... ignored") {
+            println!("{}", line);
+            self.ignored += 1;
+            return Ok(());
+        }
+
+        // Test measured
+        if plain_line.ends_with("... measured") {
+            println!("{}", line);
+            self.measured += 1;
             return Ok(());
         }
 
@@ -129,30 +175,41 @@ impl RuntimeFormatter for CargoFormatter {
 
         Ok(())
     }
+}
 
-    fn finish(self) {
-        if self.failed_tests.is_empty() {
-            println!(
-                "test result: \x1b[32mok\x1b[0m. {} passed; 0 failed; finished in {:.3}s",
-                self.passed, self.seconds
-            );
+fn run_test_partition(
+    tests: &[String],
+    formatter: &mut CargoFormatter,
+    runtime_ags: &[String],
+    verbose: bool,
+) -> Result<String, FztError> {
+    let mut output = String::new();
+    for test in tests {
+        let mut command = Command::new("unbuffer");
+        command.arg("cargo");
+        command.arg("test");
+        command.arg("--color");
+        command.arg("always");
+        command.arg(test);
+        command.arg("--");
+        runtime_ags.iter().for_each(|arg| {
+            command.arg(arg);
+        });
+        if verbose {
+            let program = command.get_program().to_str().unwrap();
+            let args: Vec<String> = command
+                .get_args()
+                .map(|arg| arg.to_str().unwrap().to_string())
+                .collect();
+            println!("\n{} {}\n", program, args.as_slice().join(" "));
+        }
+        if verbose {
+            output.push_str((run_and_capture_print(command, &mut DefaultFormatter)?).as_str());
         } else {
-            println!("\nfailures:");
-            for (_, error) in &self.failed_tests {
-                if !error.is_empty() {
-                    println!("{}", error);
-                }
-            }
-            println!("\nfailures:");
-            for (test, _) in &self.failed_tests {
-                println!("    {}", test);
-            }
-            println!(
-                "\ntest result: \x1b[31mFAILED\x1b[0m. {} passed; {} failed; finished in {:.3}s",
-                self.passed, self.failed, self.seconds
-            );
+            output.push_str((run_and_capture_print(command, formatter)?).as_str());
         }
     }
+    Ok(output)
 }
 
 #[derive(Default)]
@@ -166,38 +223,44 @@ impl Runtime for CargoRuntime {
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
     ) -> Result<Option<String>, FztError> {
-        let mut output = String::new();
-        let number_tests = tests.len();
-        let mut formatter = CargoFormatter::new(number_tests);
-        for test in tests {
-            let mut command = Command::new("unbuffer");
-            command.arg("cargo");
-            command.arg("test");
-            command.arg("--color");
-            command.arg("always");
-            command.arg(test);
-            command.arg("--");
-            runtime_ags.iter().for_each(|arg| {
-                command.arg(arg);
-            });
-            if verbose {
-                let program = command.get_program().to_str().unwrap();
-                let args: Vec<String> = command
-                    .get_args()
-                    .map(|arg| arg.to_str().unwrap().to_string())
-                    .collect();
-                println!("\n{} {}\n", program, args.as_slice().join(" "));
+        let number_threads = std::env::var("CARGO_TEST_THREADS")
+            .ok()
+            .and_then(|t| t.parse::<usize>().ok())
+            .unwrap_or(CARGO_THREADS);
+
+        let partitions = partition_tests(&tests, number_threads);
+        let mut formatters = vec![CargoFormatter::new(); partitions.len()];
+        let mut outputs: Vec<Result<String, FztError>> =
+            (0..partitions.len()).map(|_| Ok(String::new())).collect();
+
+        Command::new("cargo").arg("build").status()?;
+        println!("\nRunning {} tests", tests.len());
+
+        std::thread::scope(|s| {
+            for ((formatter, output), partition) in formatters
+                .iter_mut()
+                .zip(outputs.iter_mut())
+                .zip(partitions.iter())
+            {
+                s.spawn(|| {
+                    *output =
+                        run_test_partition(partition.as_slice(), formatter, runtime_ags, verbose);
+                });
             }
-            if verbose {
-                output.push_str((run_and_capture_print(command, &mut DefaultFormatter)?).as_str());
-            } else {
-                output.push_str((run_and_capture_print(command, &mut formatter)?).as_str());
-            }
+        });
+
+        let mut final_formatter = CargoFormatter::new();
+        let mut final_output = String::new();
+
+        for (formatter, output) in formatters.into_iter().zip(outputs.into_iter()) {
+            final_formatter.add(formatter);
+            final_output.push_str("\n");
+            final_output.push_str(output?.as_str());
         }
         if !verbose {
-            formatter.finish();
+            final_formatter.finish();
         }
-        Ok(Some(output))
+        Ok(Some(final_output))
     }
 
     fn name(&self) -> String {
