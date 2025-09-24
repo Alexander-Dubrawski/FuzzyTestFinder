@@ -21,7 +21,7 @@ pub enum FztError {
     RustError(String),
     PythonError(String),
     InternalError(String),
-    RuntumeError(String),
+    RuntimeError(String),
 }
 
 impl std::error::Error for FztError {}
@@ -46,7 +46,7 @@ impl Display for FztError {
             FztError::PythonError(error) => write!(f, "{}", error),
             FztError::StringFromUtf8(error) => write!(f, "{}", error),
             FztError::InternalError(error) => write!(f, "{}", error),
-            FztError::RuntumeError(error) => write!(f, "{}", error),
+            FztError::RuntimeError(error) => write!(f, "{}", error),
         }
     }
 }

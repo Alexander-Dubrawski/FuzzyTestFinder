@@ -34,7 +34,7 @@ pub fn run_and_capture_print<F: RuntimeFormatter>(
             error_output.push('\n');
         }
         if !error_output.is_empty() {
-            return Err(FztError::RuntumeError(error_output));
+            return Err(FztError::RuntimeError(error_output));
         }
     }
 
