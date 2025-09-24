@@ -194,7 +194,7 @@ impl TestProvider {
             SelectGranularity::Directory => selection
                 .iter()
                 .filter(|select| {
-                    if !self.file_selection.contains_key(*select) {
+                    if !self.dictionary_selection.contains_key(*select) {
                         println!("[SKIPPED] {select} directory could not be found in application (was it removed or renamed? This can happen if you use last or history).");
                         false
                     } else {
