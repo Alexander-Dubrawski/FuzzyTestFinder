@@ -25,6 +25,19 @@ pub fn run_and_capture_print<F: RuntimeFormatter>(
         }
     }
 
+    if let Some(stderr) = child.stderr.take() {
+        let reader = BufReader::new(stderr);
+        let mut error_output = String::new();
+        for line in reader.lines() {
+            let line = line?;
+            error_output.push_str(&line);
+            error_output.push('\n');
+        }
+        if !error_output.is_empty() {
+            return Err(FztError::RuntumeError(error_output));
+        }
+    }
+
     child.wait()?;
     let plain_bytes = strip_ansi_escapes::strip(output.as_bytes());
     String::from_utf8(plain_bytes).map_err(|e| FztError::from(e))
