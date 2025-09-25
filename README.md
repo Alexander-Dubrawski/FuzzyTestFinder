@@ -17,6 +17,14 @@ Here's an example of using `fuzzy-test-finder`:
 
 ### Installation
 
+First install `fzf`:
+
+```bash
+brew install fzf
+```
+
+Then build the executable:
+
 ```bash
 cargo build --release
 ```
