@@ -1,5 +1,7 @@
 use std::process::Command;
 
+use itertools::Itertools;
+
 use crate::{
     errors::FztError,
     runtime::{Debugger, DefaultFormatter, PythonDebugger, Runtime, utils::run_and_capture_print},
@@ -24,9 +26,18 @@ fn build_command(tests: &[String], runtime_ags: &[String], debugger: &Option<Deb
     runtime_ags.iter().for_each(|arg| {
         command.arg(arg);
     });
-    tests.into_iter().for_each(|test| {
-        command.arg(test);
-    });
+    tests
+        .iter()
+        .sorted_by_key(|name| {
+            let file = name
+                .splitn(2, "::")
+                .next()
+                .expect(format!("{name} is an invalid test name").as_str());
+            file.to_string()
+        })
+        .for_each(|test| {
+            command.arg(test);
+        });
 
     if let Some(debugger_selection) = debugger {
         match debugger_selection {
