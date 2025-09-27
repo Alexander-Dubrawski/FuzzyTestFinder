@@ -1,6 +1,15 @@
-use FzT::{cli::cli_parser::parse_cli, errors::FztError};
+use FzT::{
+    cache::{helper::project_hash, manager::CacheManager},
+    cli::cli_parser::parse_cli,
+    errors::FztError,
+};
 
 fn main() -> Result<(), FztError> {
-    let mut runner = parse_cli()?;
+    let config = parse_cli()?;
+    let default = config.default;
+    let mut runner = config.runner_config.into_runner()?;
+    if default {
+        CacheManager::save_meta(project_hash()?.as_str(), runner.meta_data()?.as_str())?;
+    }
     runner.run()
 }

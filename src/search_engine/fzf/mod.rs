@@ -3,7 +3,7 @@ use std::process::{Command, Output, Stdio};
 use std::str::{self, FromStr};
 
 use crate::errors::FztError;
-use crate::runner::Preview;
+use crate::runner::config::Preview;
 
 use super::Append;
 use super::SearchEngine;

@@ -3,21 +3,23 @@ use std::env;
 use crate::{
     cache::helper::project_hash,
     errors::FztError,
-    runner::{Runner, RunnerConfig, RunnerName, general_runner::GeneralCacheRunner},
+    runner::{RunnerName, general_runner::GeneralCacheRunner},
     runtime::{Debugger, PythonDebugger, python::pytest::PytestRuntime},
     search_engine::SearchEngine,
     tests::python::{pytest::tests::PytestTests, rust_python::tests::RustPytonTests},
 };
 
+use super::{Runner, config::RunnerConfig};
+
 pub fn get_python_runner<SE: SearchEngine + 'static>(
     parser: &str,
     runtime: &str,
-    mut config: RunnerConfig,
-    search_engine: SE,
+    mut config: RunnerConfig<SE>,
 ) -> Result<Box<dyn Runner>, FztError> {
     if let Some(debugger) = config.debugger.as_mut() {
         if debugger == &Debugger::Select {
-            let debugger_selection = search_engine
+            let debugger_selection = config
+                .search_engine
                 .select(&["pdb", "ipdb", "IPython", "pudb", "web-pdb"])?
                 .to_lowercase()
                 .to_string();
@@ -53,7 +55,6 @@ pub fn get_python_runner<SE: SearchEngine + 'static>(
         runtime.to_lowercase().as_str(),
     ) {
         ("rustpython", "pytest") => Ok(Box::new(GeneralCacheRunner::new(
-            search_engine,
             PytestRuntime::default(),
             config,
             RustPytonTests::new_empty(path_str.to_string()),
@@ -61,7 +62,6 @@ pub fn get_python_runner<SE: SearchEngine + 'static>(
             RunnerName::RustPythonRunner,
         ))),
         ("pytest", "pytest") => Ok(Box::new(GeneralCacheRunner::new(
-            search_engine,
             PytestRuntime::default(),
             config,
             PytestTests::new_empty(path_str.to_string()),

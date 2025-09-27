@@ -3,17 +3,12 @@ use clap::{Command, CommandFactory, FromArgMatches, Parser, Subcommand};
 use crate::{
     cache::helper::project_hash,
     errors::FztError,
-    runner::{FilterMode, Preview, Runner, RunnerConfig, RunnerMode},
+    runner::config::{FilterMode, Language, Preview, RunnerConfig, RunnerMode},
     runtime::{Debugger, PythonDebugger},
     search_engine::{SearchEngine, fzf::FzfSearchEngine},
 };
 
-use super::{
-    default::{get_default, set_default},
-    java::get_java_runner,
-    python::get_python_runner,
-    rust::get_rust_runner,
-};
+use super::{Config, default::get_default};
 
 fn parse_filter_mode(filter_mode: &str) -> Result<FilterMode, FztError> {
     match filter_mode.to_lowercase().as_str() {
@@ -224,7 +219,7 @@ fn configure_commands() -> Command {
     cmd
 }
 
-pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
+pub fn parse_cli() -> Result<Config, FztError> {
     let cmd = configure_commands();
     let (cli, runtime_args) = parse_args(cmd);
     let search_engine = FzfSearchEngine::default();
@@ -276,6 +271,19 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         None
     };
 
+    let language = match cli.command {
+        Some(Commands::Python { parser, runtime }) => Language::Python { parser, runtime },
+        Some(Commands::Java {
+            test_framework,
+            runtime,
+        }) => Language::Java {
+            test_framework,
+            runtime,
+        },
+        Some(Commands::Rust) => Language::Rust,
+        None => get_default(project_hash()?.as_str())?,
+    };
+
     let runner_config = RunnerConfig::new(
         cli.clear_cache,
         cli.verbose,
@@ -287,21 +295,12 @@ pub fn parse_cli() -> Result<Box<dyn Runner>, FztError> {
         cli.query,
         debugger,
         cli.failed,
+        language,
+        search_engine,
     );
 
-    let runner = match &cli.command {
-        Some(Commands::Python { parser, runtime }) => {
-            get_python_runner(parser, runtime, runner_config, search_engine)
-        }
-        Some(Commands::Java {
-            test_framework,
-            runtime,
-        }) => get_java_runner(test_framework, runtime, runner_config, search_engine),
-        Some(Commands::Rust) => get_rust_runner(runner_config, search_engine),
-        None => get_default(project_hash()?.as_str(), runner_config),
-    }?;
-    if cli.default {
-        set_default(project_hash()?.as_str(), runner.meta_data()?.as_str())?;
-    }
-    Ok(runner)
+    Ok(Config {
+        runner_config,
+        default: cli.default,
+    })
 }

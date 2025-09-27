@@ -5,7 +5,7 @@ use serde::de::DeserializeOwned;
 use crate::{
     cache::manager::{CacheManager, HistoryGranularity},
     errors::FztError,
-    runner::{MetaData, Runner, RunnerConfig, RunnerName},
+    runner::{MetaData, Runner, RunnerName},
     runtime::Runtime,
     search_engine::{Append, SearchEngine},
     tests::{
@@ -14,7 +14,10 @@ use crate::{
     },
 };
 
-use super::{Preview, history_provider::HistoryProvider};
+use super::{
+    config::{FilterMode, Preview, RunnerConfig, RunnerMode},
+    history_provider::HistoryProvider,
+};
 
 fn append_selection_to_preview(selection: &HashMap<SelectGranularity, Vec<String>>) -> String {
     let mut preview = String::new();
@@ -50,21 +53,19 @@ fn parse_append_history(history: Vec<String>) -> HashMap<SelectGranularity, Vec<
     selection
 }
 
-pub struct GeneralCacheRunner<SE: SearchEngine, RT: Runtime, T: Tests> {
+pub struct GeneralCacheRunner<SE: SearchEngine + 'static, RT: Runtime, T: Tests> {
     tests: T,
     cache_manager: CacheManager,
-    search_engine: SE,
     runtime: RT,
-    config: RunnerConfig,
+    config: RunnerConfig<SE>,
     runner_name: RunnerName,
     history_provider: HistoryProvider,
 }
 
 impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
     pub fn new(
-        search_engine: SE,
         runtime: RT,
-        config: RunnerConfig,
+        config: RunnerConfig<SE>,
         tests: T,
         project_id: String,
         runner_name: RunnerName,
@@ -79,7 +80,6 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         Self {
             tests,
             cache_manager,
-            search_engine,
             runtime,
             config,
             runner_name,
@@ -104,7 +104,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         } else {
             self.config.preview.clone()
         };
-        Ok(self.search_engine.get_tests_to_run(
+        Ok(self.config.search_engine.get_tests_to_run(
             test_provider.select_option(granularity).as_slice(),
             &preview,
             query,
@@ -119,18 +119,18 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         select_granularity: &SelectGranularity,
     ) -> Result<Vec<String>, FztError> {
         Ok(match self.config.mode {
-            super::RunnerMode::All => test_provider.all(select_granularity),
-            super::RunnerMode::Last => test_provider.runtime_arguments(
+            RunnerMode::All => test_provider.all(select_granularity),
+            RunnerMode::Last => test_provider.runtime_arguments(
                 select_granularity,
                 self.history_provider.last(history_granularity)?.as_slice(),
             ),
-            super::RunnerMode::History => test_provider.runtime_arguments(
+            RunnerMode::History => test_provider.runtime_arguments(
                 select_granularity,
                 self.history_provider
-                    .history(history_granularity, &self.search_engine, query)?
+                    .history(history_granularity, &self.config.search_engine, query)?
                     .as_slice(),
             ),
-            super::RunnerMode::Select => {
+            RunnerMode::Select => {
                 let selected_items = self.select_tests(select_granularity, test_provider, query)?;
                 self.history_provider
                     .update_history(history_granularity, selected_items.as_slice())?;
@@ -145,8 +145,8 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
         test_provider: &TestProvider,
     ) -> Result<Vec<String>, FztError> {
         Ok(match self.config.mode {
-            super::RunnerMode::All => test_provider.all(&SelectGranularity::RunTime),
-            super::RunnerMode::Last => {
+            RunnerMode::All => test_provider.all(&SelectGranularity::RunTime),
+            RunnerMode::Last => {
                 parse_append_history(self.history_provider.last(&HistoryGranularity::Append)?)
                     .iter()
                     .flat_map(|(select, selected_items)| {
@@ -154,10 +154,10 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     })
                     .collect()
             }
-            super::RunnerMode::History => {
+            RunnerMode::History => {
                 let history = self.history_provider.history(
                     &HistoryGranularity::Append,
-                    &self.search_engine,
+                    &self.config.search_engine,
                     query,
                 )?;
                 parse_append_history(history)
@@ -167,10 +167,11 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
                     })
                     .collect()
             }
-            super::RunnerMode::Select => {
+            RunnerMode::Select => {
                 let mut selection = HashMap::new();
                 loop {
                     let append = self
+                        .config
                         .search_engine
                         .appened(append_selection_to_preview(&selection).as_str())?;
                     if append == Append::Done {
@@ -240,33 +241,31 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
         };
 
         let tests_to_run: Vec<String> = match self.config.filter_mode {
-            super::FilterMode::Test => self.get_tests_to_run(
+            FilterMode::Test => self.get_tests_to_run(
                 &self.config.query.clone(),
                 &test_provider,
                 &HistoryGranularity::Test,
                 &SelectGranularity::Test,
             )?,
-            super::FilterMode::File => self.get_tests_to_run(
+            FilterMode::File => self.get_tests_to_run(
                 &self.config.query.clone(),
                 &test_provider,
                 &HistoryGranularity::File,
                 &SelectGranularity::File,
             )?,
-            super::FilterMode::Directory => self.get_tests_to_run(
+            FilterMode::Directory => self.get_tests_to_run(
                 &self.config.query.clone(),
                 &test_provider,
                 &HistoryGranularity::Directory,
                 &SelectGranularity::Directory,
             )?,
-            super::FilterMode::RunTime => self.get_tests_to_run(
+            FilterMode::RunTime => self.get_tests_to_run(
                 &self.config.query.clone(),
                 &test_provider,
                 &HistoryGranularity::RunTime,
                 &SelectGranularity::RunTime,
             )?,
-            super::FilterMode::Append => {
-                self.select_append(&self.config.query.clone(), &test_provider)?
-            }
+            FilterMode::Append => self.select_append(&self.config.query.clone(), &test_provider)?,
         };
         drop(test_provider);
         if !tests_to_run.is_empty() {
@@ -291,7 +290,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
     fn meta_data(&self) -> Result<String, FztError> {
         let meta_data = MetaData {
             runner_name: self.runner_name.clone(),
-            search_engine: self.search_engine.name(),
+            search_engine: self.config.search_engine.name(),
             runtime: self.runtime.name(),
         };
         let json = serde_json::to_string(&meta_data)?;
