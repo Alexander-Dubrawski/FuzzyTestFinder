@@ -21,7 +21,8 @@ First install `fzf` and expect:
 
 ```bash
 brew install fzf
-brew install expect 
+brew install expect
+brew install bat
 ```
 
 Then build the executable:
