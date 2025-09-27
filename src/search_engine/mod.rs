@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{errors::FztError, runner::Preview};
+use crate::{errors::FztError, runner::config::Preview};
 
 pub mod fzf;
 

@@ -1,15 +1,15 @@
 use crate::{
-    cache::manager::{CacheManager, HistoryGranularity},
+    cache::{Cache, manager::HistoryGranularity},
     errors::FztError,
     search_engine::SearchEngine,
 };
 
-pub struct HistoryProvider {
-    cache_manager: CacheManager,
+pub struct HistoryProvider<CM: Cache> {
+    cache_manager: CM,
 }
 
-impl HistoryProvider {
-    pub fn new(cache_manager: CacheManager) -> Self {
+impl<CM: Cache> HistoryProvider<CM> {
+    pub fn new(cache_manager: CM) -> Self {
         Self { cache_manager }
     }
 
