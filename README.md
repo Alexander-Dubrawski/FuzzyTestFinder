@@ -17,10 +17,11 @@ Here's an example of using `fuzzy-test-finder`:
 
 ### Installation
 
-First install `fzf`:
+First install `fzf` and expect:
 
 ```bash
 brew install fzf
+brew install expect 
 ```
 
 Then build the executable:
