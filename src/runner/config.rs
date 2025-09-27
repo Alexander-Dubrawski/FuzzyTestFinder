@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    cache::{helper::project_hash, manager::CacheManager},
+    cache::{helper::project_hash, manager::LocalCacheManager},
     errors::FztError,
     runtime::Debugger,
     search_engine::SearchEngine,
@@ -93,11 +93,11 @@ impl<SE: SearchEngine> RunnerConfig<SE> {
         }
     }
 
-    fn build_cache_manager(&self, project_id: &str) -> CacheManager {
+    fn build_cache_manager(&self, project_id: &str) -> LocalCacheManager {
         if self.run_failed {
-            CacheManager::new_failed_tests(project_id)
+            LocalCacheManager::new_failed_tests(project_id)
         } else {
-            CacheManager::new(project_id)
+            LocalCacheManager::new(project_id)
         }
     }
 

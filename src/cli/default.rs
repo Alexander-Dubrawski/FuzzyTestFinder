@@ -1,11 +1,11 @@
 use crate::{
-    cache::manager::CacheManager,
+    cache::manager::LocalCacheManager,
     errors::FztError,
     runner::{MetaData, RunnerName, config::Language},
 };
 
 pub fn get_default(project_id: &str) -> Result<Language, FztError> {
-    let reader = CacheManager::get_meta(project_id)?;
+    let reader = LocalCacheManager::get_meta(project_id)?;
     let meta_data: MetaData = match reader {
         Some(reader) => serde_json::from_reader(reader)?,
         None => {
