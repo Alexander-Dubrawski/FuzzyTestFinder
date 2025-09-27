@@ -17,12 +17,13 @@ Here's an example of using `fuzzy-test-finder`:
 
 ### Installation
 
-First install `fzf` and expect:
+First install the following dependencies:
 
 ```bash
 brew install fzf
 brew install expect
 brew install bat
+brew install ripgrep
 ```
 
 Then build the executable:
