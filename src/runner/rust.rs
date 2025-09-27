@@ -1,7 +1,7 @@
 use std::env;
 
 use crate::{
-    cache::helper::project_hash,
+    cache::Cache,
     errors::FztError,
     runner::{RunnerName, general_runner::GeneralCacheRunner},
     runtime::{Debugger, rust::cargo::CargoRuntime},
@@ -11,8 +11,9 @@ use crate::{
 
 use super::{Runner, config::RunnerConfig};
 
-pub fn get_rust_runner<SE: SearchEngine + 'static>(
+pub fn get_rust_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static>(
     config: RunnerConfig<SE>,
+    cache_manager: CM,
 ) -> Result<Box<dyn Runner>, FztError> {
     if let Some(debugger) = config.debugger.as_ref() {
         if !matches!(debugger, Debugger::Rust(_)) {
@@ -27,7 +28,7 @@ pub fn get_rust_runner<SE: SearchEngine + 'static>(
         CargoRuntime::default(),
         config,
         RustTests::new_empty(path_str.to_string()),
-        format!("{}-rust-cargo", project_hash()?),
         RunnerName::RustCargoRunner,
+        cache_manager,
     )))
 }

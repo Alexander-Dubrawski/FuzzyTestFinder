@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::FztError, runtime::Debugger, search_engine::SearchEngine};
+use crate::{
+    cache::{helper::project_hash, manager::CacheManager},
+    errors::FztError,
+    runtime::Debugger,
+    search_engine::SearchEngine,
+};
 
 use super::{Runner, java::get_java_runner, python::get_python_runner, rust::get_rust_runner};
 
@@ -88,16 +93,44 @@ impl<SE: SearchEngine> RunnerConfig<SE> {
         }
     }
 
+    fn build_cache_manager(&self, project_id: &str) -> CacheManager {
+        if self.run_failed {
+            CacheManager::new_failed_tests(project_id)
+        } else {
+            CacheManager::new(project_id)
+        }
+    }
+
     pub fn into_runner(self) -> Result<Box<dyn Runner>, FztError> {
+        let project_hash = project_hash()?;
         match self.language.clone() {
             Language::Python { parser, runtime } => {
-                get_python_runner(parser.as_str(), runtime.as_str(), self)
+                let project_id = if parser == "rustpython" {
+                    format!("{}-rust-python", project_hash)
+                } else {
+                    format!("{}-pytest", project_hash)
+                };
+                let cache_manager = self.build_cache_manager(project_id.as_str());
+                get_python_runner(parser.as_str(), runtime.as_str(), self, cache_manager)
             }
             Language::Java {
                 test_framework,
                 runtime,
-            } => get_java_runner(test_framework.as_str(), runtime.as_str(), self),
-            Language::Rust => get_rust_runner(self),
+            } => {
+                let cache_manager =
+                    self.build_cache_manager(format!("{}-java-junit5", project_hash).as_str());
+                get_java_runner(
+                    test_framework.as_str(),
+                    runtime.as_str(),
+                    self,
+                    cache_manager,
+                )
+            }
+            Language::Rust => {
+                let cache_manager =
+                    self.build_cache_manager(format!("{}-rust-cargo", project_hash).as_str());
+                get_rust_runner(self, cache_manager)
+            }
         }
     }
 }

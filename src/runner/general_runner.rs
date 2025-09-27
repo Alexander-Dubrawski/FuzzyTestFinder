@@ -3,7 +3,7 @@ use std::{collections::HashMap, str::FromStr};
 use serde::de::DeserializeOwned;
 
 use crate::{
-    cache::manager::{CacheManager, HistoryGranularity},
+    cache::{Cache, manager::HistoryGranularity},
     errors::FztError,
     runner::{MetaData, Runner, RunnerName},
     runtime::Runtime,
@@ -53,28 +53,24 @@ fn parse_append_history(history: Vec<String>) -> HashMap<SelectGranularity, Vec<
     selection
 }
 
-pub struct GeneralCacheRunner<SE: SearchEngine + 'static, RT: Runtime, T: Tests> {
+pub struct GeneralCacheRunner<SE: SearchEngine + 'static, RT: Runtime, T: Tests, CM: Cache + Clone>
+{
     tests: T,
-    cache_manager: CacheManager,
+    cache_manager: CM,
     runtime: RT,
     config: RunnerConfig<SE>,
     runner_name: RunnerName,
-    history_provider: HistoryProvider,
+    history_provider: HistoryProvider<CM>,
 }
 
-impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
+impl<SE: SearchEngine, RT: Runtime, T: Tests, CM: Cache + Clone> GeneralCacheRunner<SE, RT, T, CM> {
     pub fn new(
         runtime: RT,
         config: RunnerConfig<SE>,
         tests: T,
-        project_id: String,
         runner_name: RunnerName,
+        cache_manager: CM,
     ) -> Self {
-        let cache_manager = if config.run_failed {
-            CacheManager::new_failed_tests(project_id)
-        } else {
-            CacheManager::new(project_id)
-        };
         let history_provider = HistoryProvider::new(cache_manager.clone());
 
         Self {
@@ -209,8 +205,8 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests> GeneralCacheRunner<SE, RT, T> {
     }
 }
 
-impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned> Runner
-    for GeneralCacheRunner<SE, RT, T>
+impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clone> Runner
+    for GeneralCacheRunner<SE, RT, T, CM>
 {
     fn run(&mut self) -> Result<(), FztError> {
         if self.config.clear_cache || self.config.clear_history {

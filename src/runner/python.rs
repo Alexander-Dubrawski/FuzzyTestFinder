@@ -1,7 +1,7 @@
 use std::env;
 
 use crate::{
-    cache::helper::project_hash,
+    cache::Cache,
     errors::FztError,
     runner::{RunnerName, general_runner::GeneralCacheRunner},
     runtime::{Debugger, PythonDebugger, python::pytest::PytestRuntime},
@@ -11,10 +11,11 @@ use crate::{
 
 use super::{Runner, config::RunnerConfig};
 
-pub fn get_python_runner<SE: SearchEngine + 'static>(
+pub fn get_python_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static>(
     parser: &str,
     runtime: &str,
     mut config: RunnerConfig<SE>,
+    cache_manager: CM,
 ) -> Result<Box<dyn Runner>, FztError> {
     if let Some(debugger) = config.debugger.as_mut() {
         if debugger == &Debugger::Select {
@@ -58,15 +59,15 @@ pub fn get_python_runner<SE: SearchEngine + 'static>(
             PytestRuntime::default(),
             config,
             RustPytonTests::new_empty(path_str.to_string()),
-            format!("{}-rust-python", project_hash()?),
             RunnerName::RustPythonRunner,
+            cache_manager,
         ))),
         ("pytest", "pytest") => Ok(Box::new(GeneralCacheRunner::new(
             PytestRuntime::default(),
             config,
             PytestTests::new_empty(path_str.to_string()),
-            format!("{}-pytest", project_hash()?),
             RunnerName::PytestRunner,
+            cache_manager,
         ))),
         _ => {
             return Err(FztError::GeneralParsingError(format!(
