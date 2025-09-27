@@ -1,19 +1,21 @@
 use std::env;
 
 use crate::{
-    cache::helper::project_hash,
+    cache::Cache,
     errors::FztError,
-    runner::{Runner, RunnerConfig, RunnerName, general_runner::GeneralCacheRunner},
+    runner::{RunnerName, general_runner::GeneralCacheRunner},
     runtime::{Debugger, java::gradle::GradleRuntime},
     search_engine::SearchEngine,
     tests::java::java_test::JavaTests,
 };
 
-pub fn get_java_runner<SE: SearchEngine + 'static>(
+use super::{Runner, config::RunnerConfig};
+
+pub fn get_java_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static>(
     test_framework: &str,
     runtime: &str,
-    config: RunnerConfig,
-    search_engine: SE,
+    config: RunnerConfig<SE>,
+    cache_manager: CM,
 ) -> Result<Box<dyn Runner>, FztError> {
     if let Some(debugger) = config.debugger.as_ref() {
         if !matches!(debugger, Debugger::Java(_)) {
@@ -29,12 +31,11 @@ pub fn get_java_runner<SE: SearchEngine + 'static>(
         runtime.to_lowercase().as_str(),
     ) {
         ("junit5", "gradle") => Ok(Box::new(GeneralCacheRunner::new(
-            search_engine,
             GradleRuntime::default(),
             config,
             JavaTests::new_empty(path_str.to_string()),
-            format!("{}-java-junit5", project_hash()?),
             RunnerName::JavaJunit5Runner,
+            cache_manager,
         ))),
         _ => {
             return Err(FztError::GeneralParsingError(format!(

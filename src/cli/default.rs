@@ -1,14 +1,11 @@
 use crate::{
-    cache::manager::CacheManager,
+    cache::manager::LocalCacheManager,
     errors::FztError,
-    runner::{MetaData, Runner, RunnerConfig, RunnerName},
-    search_engine::fzf::FzfSearchEngine,
+    runner::{MetaData, RunnerName, config::Language},
 };
 
-use super::{java::get_java_runner, python::get_python_runner, rust::get_rust_runner};
-
-pub fn get_default(project_id: &str, config: RunnerConfig) -> Result<Box<dyn Runner>, FztError> {
-    let reader = CacheManager::get_meta(project_id)?;
+pub fn get_default(project_id: &str) -> Result<Language, FztError> {
+    let reader = LocalCacheManager::get_meta(project_id)?;
     let meta_data: MetaData = match reader {
         Some(reader) => serde_json::from_reader(reader)?,
         None => {
@@ -19,29 +16,19 @@ pub fn get_default(project_id: &str, config: RunnerConfig) -> Result<Box<dyn Run
         }
     };
 
-    match meta_data.runner_name {
-        RunnerName::RustPythonRunner => get_python_runner(
-            "rustpython",
-            meta_data.runtime.as_str(),
-            config,
-            FzfSearchEngine::default(),
-        ),
-        RunnerName::PytestRunner => get_python_runner(
-            "pytest",
-            meta_data.runtime.as_str(),
-            config,
-            FzfSearchEngine::default(),
-        ),
-        RunnerName::JavaJunit5Runner => get_java_runner(
-            "junit5",
-            meta_data.runtime.as_str(),
-            config,
-            FzfSearchEngine::default(),
-        ),
-        RunnerName::RustCargoRunner => get_rust_runner(config, FzfSearchEngine::default()),
-    }
-}
-
-pub fn set_default(project_id: &str, meta_data: &str) -> Result<(), FztError> {
-    CacheManager::save_meta(project_id, meta_data)
+    Ok(match meta_data.runner_name {
+        RunnerName::RustPythonRunner => Language::Python {
+            parser: "rustpython".to_string(),
+            runtime: meta_data.runtime,
+        },
+        RunnerName::PytestRunner => Language::Python {
+            parser: "pytest".to_string(),
+            runtime: meta_data.runtime,
+        },
+        RunnerName::JavaJunit5Runner => Language::Java {
+            test_framework: "junit5".to_string(),
+            runtime: meta_data.runtime,
+        },
+        RunnerName::RustCargoRunner => Language::Rust,
+    })
 }

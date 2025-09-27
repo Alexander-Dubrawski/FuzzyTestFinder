@@ -8,6 +8,8 @@ use std::{
 
 use crate::errors::FztError;
 
+use super::Cache;
+
 const HISTORY_SIZE: usize = 200;
 
 #[derive(Clone, PartialEq)]
@@ -20,7 +22,7 @@ pub enum HistoryGranularity {
 }
 
 #[derive(Clone)]
-pub struct CacheManager {
+pub struct LocalCacheManager {
     cache_file: PathBuf,
     history_test_granularity: PathBuf,
     history_file_granularity: PathBuf,
@@ -29,18 +31,18 @@ pub struct CacheManager {
     history_continues_append_granularity: PathBuf,
 }
 
-impl CacheManager {
-    pub fn new_failed_tests(project_id: String) -> Self {
+impl LocalCacheManager {
+    pub fn new_failed_tests(project_id: &str) -> Self {
         let mut cache_location = home_dir().expect("Could not find home directory");
         cache_location.push(".fzt");
 
-        let mut cache_manager = Self::new(format!("{}-failed", project_id));
+        let mut cache_manager = Self::new(format!("{}-failed", project_id).as_str());
         // The test cache file still stays the same
         cache_manager.cache_file = cache_location.join(format!("{}.json", project_id));
         cache_manager
     }
 
-    pub fn new(project_id: String) -> Self {
+    pub fn new(project_id: &str) -> Self {
         let mut cache_location = home_dir().expect("Could not find home directory");
         cache_location.push(".fzt");
         let cache_file = cache_location.join(format!("{}.json", project_id));
@@ -56,6 +58,24 @@ impl CacheManager {
             "{}-history-continues-append-granularity.json",
             project_id
         ));
+        Self {
+            cache_file,
+            history_test_granularity,
+            history_file_granularity,
+            history_directory_granularity,
+            history_runtime_granularity,
+            history_continues_append_granularity,
+        }
+    }
+
+    pub fn new_from_path(
+        cache_file: PathBuf,
+        history_test_granularity: PathBuf,
+        history_file_granularity: PathBuf,
+        history_directory_granularity: PathBuf,
+        history_runtime_granularity: PathBuf,
+        history_continues_append_granularity: PathBuf,
+    ) -> Self {
         Self {
             cache_file,
             history_test_granularity,
@@ -90,25 +110,19 @@ impl CacheManager {
         }
     }
 
-    pub fn new_from_path(
-        cache_file: PathBuf,
-        history_test_granularity: PathBuf,
-        history_file_granularity: PathBuf,
-        history_directory_granularity: PathBuf,
-        history_runtime_granularity: PathBuf,
-        history_continues_append_granularity: PathBuf,
-    ) -> Self {
-        Self {
-            cache_file,
-            history_test_granularity,
-            history_file_granularity,
-            history_directory_granularity,
-            history_runtime_granularity,
-            history_continues_append_granularity,
+    fn get_history_file(&self, granularity: &HistoryGranularity) -> &PathBuf {
+        match granularity {
+            HistoryGranularity::Test => &self.history_test_granularity,
+            HistoryGranularity::File => &self.history_file_granularity,
+            HistoryGranularity::Directory => &self.history_directory_granularity,
+            HistoryGranularity::RunTime => &self.history_runtime_granularity,
+            HistoryGranularity::Append => &self.history_continues_append_granularity,
         }
     }
+}
 
-    pub fn get_entry(&self) -> Result<Option<BufReader<File>>, FztError> {
+impl Cache for LocalCacheManager {
+    fn get_entry(&self) -> Result<Option<BufReader<File>>, FztError> {
         if !Path::new(&self.cache_file).exists() {
             Ok(None)
         } else {
@@ -117,21 +131,21 @@ impl CacheManager {
         }
     }
 
-    pub fn add_entry(&self, entry: &str) -> Result<(), FztError> {
+    fn add_entry(&self, entry: &str) -> Result<(), FztError> {
         let file = File::create(&self.cache_file)?;
         let mut writer = BufWriter::new(file);
         writer.write(entry.as_bytes())?;
         Ok(())
     }
 
-    pub fn clear_cache(&self) -> Result<(), FztError> {
+    fn clear_cache(&self) -> Result<(), FztError> {
         if Path::new(&self.cache_file).exists() {
             std::fs::remove_file(&self.cache_file)?;
         }
         Ok(())
     }
 
-    pub fn clear_history(&self) -> Result<(), FztError> {
+    fn clear_history(&self) -> Result<(), FztError> {
         if Path::new(&self.history_test_granularity).exists() {
             std::fs::remove_file(&self.history_test_granularity)?;
         }
@@ -150,17 +164,7 @@ impl CacheManager {
         Ok(())
     }
 
-    fn get_history_file(&self, granularity: &HistoryGranularity) -> &PathBuf {
-        match granularity {
-            HistoryGranularity::Test => &self.history_test_granularity,
-            HistoryGranularity::File => &self.history_file_granularity,
-            HistoryGranularity::Directory => &self.history_directory_granularity,
-            HistoryGranularity::RunTime => &self.history_runtime_granularity,
-            HistoryGranularity::Append => &self.history_continues_append_granularity,
-        }
-    }
-
-    pub fn update_history(
+    fn update_history(
         &self,
         selection: &[String],
         granularity: &HistoryGranularity,
@@ -189,7 +193,7 @@ impl CacheManager {
         Ok(())
     }
 
-    pub fn recent_history_command(
+    fn recent_history_command(
         &self,
         granularity: &HistoryGranularity,
     ) -> Result<Vec<String>, FztError> {
@@ -205,7 +209,7 @@ impl CacheManager {
         }
     }
 
-    pub fn history(&self, granularity: &HistoryGranularity) -> Result<Vec<Vec<String>>, FztError> {
+    fn history(&self, granularity: &HistoryGranularity) -> Result<Vec<Vec<String>>, FztError> {
         let history_file = self.get_history_file(granularity);
 
         if !Path::new(history_file).exists() {
@@ -230,7 +234,7 @@ mod tests {
     #[test]
     fn get_non_existing_entry() {
         let path = PathBuf::from("/ifhoeowhfoew/oihsoehwofihwoih.json");
-        let manager = CacheManager::new_from_path(
+        let manager = LocalCacheManager::new_from_path(
             path,
             PathBuf::from("file.path()"),
             PathBuf::from(""),
@@ -246,7 +250,7 @@ mod tests {
     fn get_existing_entry() {
         let file = NamedTempFile::new().unwrap();
         let path = PathBuf::from(file.path());
-        let manager = CacheManager::new_from_path(
+        let manager = LocalCacheManager::new_from_path(
             path,
             PathBuf::from("file.path()"),
             PathBuf::from(""),
@@ -265,7 +269,7 @@ mod tests {
         let mut file = NamedTempFile::new().unwrap();
         writeln!(file, "Old").unwrap();
         let path = PathBuf::from(file.path());
-        let manager = CacheManager::new_from_path(
+        let manager = LocalCacheManager::new_from_path(
             path.clone(),
             PathBuf::from("file.path()"),
             PathBuf::from(""),
