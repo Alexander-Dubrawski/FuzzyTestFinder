@@ -9,7 +9,7 @@ use crate::{
 
 use super::{Runner, java::get_java_runner, python::get_python_runner, rust::get_rust_runner};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum RunnerMode {
     All,
     Last,

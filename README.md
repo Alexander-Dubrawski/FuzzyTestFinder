@@ -131,6 +131,12 @@ fzt -v
 
 # Parse arguments to runtime
 fzt --all -- --locked ...
+
+# Watch mode
+# Run fzt in watch mode. It will re-run the last command when a file changes.
+fzt --w
+fzt --w -m directory
+fzt -w --all
 ```
 
 ## Supported languages
