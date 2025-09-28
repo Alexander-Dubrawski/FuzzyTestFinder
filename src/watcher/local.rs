@@ -26,6 +26,7 @@ pub fn watch<SE: SearchEngine + Clone + Send>(config: RunnerConfig<SE>) -> Resul
         let mut local_config = config.clone();
         if !init_run {
             local_config.mode = crate::RunnerMode::Last;
+            local_config.update_history = false;
         } else {
             if local_config.mode != crate::RunnerMode::All {
                 init_run = false;
