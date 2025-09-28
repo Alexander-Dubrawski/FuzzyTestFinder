@@ -18,8 +18,8 @@ pub struct CaptureOutput {
 impl StringReceiver for StdReceiver<String> {
     type TryError = StdTryRecvError;
 
-    fn try_recv(&self) -> Result<String, StdTryRecvError> {
-        self.try_recv()
+    fn try_recv(&self) -> Result<String, Self::TryError> {
+        StdReceiver::try_recv(self)
     }
     fn is_empty_error(e: &Self::TryError) -> bool {
         matches!(e, std::sync::mpsc::TryRecvError::Empty)
@@ -32,7 +32,7 @@ impl StringReceiver for StdReceiver<String> {
 impl StringReceiver for CrossbeamReceiver<String> {
     type TryError = CrossbeamTryRecvError;
     fn try_recv(&self) -> Result<String, Self::TryError> {
-        self.try_recv()
+        CrossbeamReceiver::try_recv(self)
     }
     fn is_empty_error(e: &Self::TryError) -> bool {
         matches!(e, crossbeam_channel::TryRecvError::Empty)

@@ -186,7 +186,7 @@ fn run_test_partition(
     formatter: &mut CargoFormatter,
     runtime_ags: &[String],
     verbose: bool,
-    reciver: CrossbeamReceiver<String>,
+    receiver: CrossbeamReceiver<String>,
 ) -> Result<Vec<CaptureOutput>, FztError> {
     let mut output = vec![];
     for test in tests {
@@ -212,13 +212,13 @@ fn run_test_partition(
             output.push(run_and_capture_print(
                 command,
                 &mut DefaultFormatter,
-                Some(reciver.clone()),
+                Some(receiver.clone()),
             )?);
         } else {
             output.push(run_and_capture_print(
                 command,
                 formatter,
-                Some(reciver.clone()),
+                Some(receiver.clone()),
             )?);
         }
     }

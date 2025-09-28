@@ -197,9 +197,10 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests, CM: Cache + Clone> GeneralCacheRun
                             .collect::<Vec<String>>()
                     })
                     .collect();
-                self.history_provider
-                    .update_history(&HistoryGranularity::Append, history_update.as_slice())?;
-
+                if self.config.update_history {
+                    self.history_provider
+                        .update_history(&HistoryGranularity::Append, history_update.as_slice())?;
+                }
                 selection
                     .iter()
                     .flat_map(|(select, selected_items)| {
