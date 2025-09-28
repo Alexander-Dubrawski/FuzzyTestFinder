@@ -99,6 +99,18 @@ impl From<syn::Error> for FztError {
     }
 }
 
+impl From<std::sync::mpsc::RecvError> for FztError {
+    fn from(value: std::sync::mpsc::RecvError) -> Self {
+        Self::InternalError(value.to_string())
+    }
+}
+
+impl From<notify::Error> for FztError {
+    fn from(value: notify::Error) -> Self {
+        Self::InternalError(value.to_string())
+    }
+}
+
 impl From<FromUtf8Error> for FztError {
     fn from(value: FromUtf8Error) -> Self {
         Self::StringFromUtf8(value)

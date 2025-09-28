@@ -2,7 +2,7 @@ use crossbeam_channel::unbounded;
 use std::process::Command;
 
 use crossbeam_channel::Receiver as CrossbeamReceiver;
-use std::sync::mpsc::{Receiver as StdReceiver, Sender as StdSender};
+use std::sync::mpsc::Receiver as StdReceiver;
 
 use crate::{
     errors::FztError,
@@ -235,7 +235,7 @@ impl Runtime for CargoRuntime {
         verbose: bool,
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
-        channels: Option<(StdSender<String>, StdReceiver<String>)>,
+        receiver: Option<StdReceiver<String>>,
     ) -> Result<Option<String>, FztError> {
         let number_threads = std::env::var("CARGO_TEST_THREADS")
             .ok()
@@ -252,7 +252,7 @@ impl Runtime for CargoRuntime {
 
         let (cross_tx, cross_rx) = unbounded();
 
-        if let Some((_, rx)) = channels {
+        if let Some(rx) = receiver {
             // Bridge thread: listen on std receiver, broadcast on crossbeam
             std::thread::spawn({
                 let cross_tx = cross_tx.clone();

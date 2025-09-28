@@ -95,7 +95,7 @@ fn run_fzf_select(input: &str, preview: Option<&str>) -> Result<Output, FztError
     Ok(output)
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug)]
 pub struct FzfSearchEngine {}
 
 impl SearchEngine for FzfSearchEngine {

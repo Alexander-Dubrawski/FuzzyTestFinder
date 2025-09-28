@@ -36,6 +36,7 @@ pub fn get_java_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static>(
             JavaTests::new_empty(path_str.to_string()),
             RunnerName::JavaJunit5Runner,
             cache_manager,
+            path_str.to_string(),
         ))),
         _ => {
             return Err(FztError::GeneralParsingError(format!(

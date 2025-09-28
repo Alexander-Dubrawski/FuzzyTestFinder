@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    str::FromStr,
-    sync::mpsc::{Receiver, Sender},
-};
+use std::{collections::HashMap, str::FromStr, sync::mpsc::Receiver};
 
 use serde::de::DeserializeOwned;
 
@@ -57,6 +53,7 @@ fn parse_append_history(history: Vec<String>) -> HashMap<SelectGranularity, Vec<
     selection
 }
 
+#[derive(Clone)]
 pub struct GeneralCacheRunner<SE: SearchEngine + 'static, RT: Runtime, T: Tests, CM: Cache + Clone>
 {
     tests: T,
@@ -65,6 +62,7 @@ pub struct GeneralCacheRunner<SE: SearchEngine + 'static, RT: Runtime, T: Tests,
     config: RunnerConfig<SE>,
     runner_name: RunnerName,
     history_provider: HistoryProvider<CM>,
+    root_path: String,
 }
 
 impl<SE: SearchEngine, RT: Runtime, T: Tests, CM: Cache + Clone> GeneralCacheRunner<SE, RT, T, CM> {
@@ -74,6 +72,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests, CM: Cache + Clone> GeneralCacheRun
         tests: T,
         runner_name: RunnerName,
         cache_manager: CM,
+        root_path: String,
     ) -> Self {
         let history_provider = HistoryProvider::new(cache_manager.clone());
 
@@ -84,6 +83,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests, CM: Cache + Clone> GeneralCacheRun
             config,
             runner_name,
             history_provider,
+            root_path: root_path.to_string(),
         }
     }
 
@@ -214,10 +214,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests, CM: Cache + Clone> GeneralCacheRun
 impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clone> Runner
     for GeneralCacheRunner<SE, RT, T, CM>
 {
-    fn run(
-        &mut self,
-        channels: Option<(Sender<String>, Receiver<String>)>,
-    ) -> Result<(), FztError> {
+    fn run(&mut self, receiver: Option<Receiver<String>>) -> Result<(), FztError> {
         if self.config.clear_cache || self.config.clear_history {
             if self.config.clear_cache {
                 self.cache_manager.clear_cache()?;
@@ -279,7 +276,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clo
                 self.config.verbose,
                 &self.config.runtime_args.as_slice(),
                 &self.config.debugger,
-                channels,
+                receiver,
             )? {
                 // We don't want to update the cache if we are running failed tests only
                 if !self.config.run_failed && self.tests.update_failed(output.as_str()) {
@@ -301,5 +298,9 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clo
         };
         let json = serde_json::to_string(&meta_data)?;
         Ok(json)
+    }
+
+    fn root_path(&self) -> &str {
+        &self.root_path
     }
 }

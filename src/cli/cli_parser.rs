@@ -295,6 +295,7 @@ pub fn parse_cli() -> Result<Config, FztError> {
         cli.query,
         debugger,
         cli.failed,
+        true,
         language,
         search_engine,
     );

@@ -6,6 +6,7 @@ mod runtime;
 mod search_engine;
 mod tests;
 mod utils;
+pub mod watcher;
 
 pub use cache::Cache;
 pub use cache::manager::LocalCacheManager;
@@ -50,3 +51,5 @@ pub use tests::test_provider::TestProvider;
 pub use utils::file_walking::collect_tests;
 pub use utils::file_walking::filter_out_deleted_files;
 pub use utils::path_resolver::get_relative_path;
+
+pub use watcher::local::watch;
