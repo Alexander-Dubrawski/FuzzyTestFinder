@@ -1,4 +1,7 @@
-use std::process::Command;
+use std::{
+    process::Command,
+    sync::mpsc::{Receiver, Sender},
+};
 
 use crate::{
     errors::FztError,
@@ -15,6 +18,7 @@ impl Runtime for GradleRuntime {
         verbose: bool,
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
+        channels: Option<(Sender<String>, Receiver<String>)>,
     ) -> Result<Option<String>, FztError> {
         let mut command = Command::new("unbuffer");
         command.arg("./gradlew");
@@ -35,8 +39,17 @@ impl Runtime for GradleRuntime {
                 .collect();
             println!("\n{} {}\n", program, args.as_slice().join(" "));
         }
-        let output = run_and_capture_print(command, &mut DefaultFormatter)?;
-        Ok(Some(output))
+        let reciver = if let Some((_, reciver)) = channels {
+            Some(reciver)
+        } else {
+            None
+        };
+        let output = run_and_capture_print(command, &mut DefaultFormatter, reciver)?;
+        if output.stopped {
+            Ok(None)
+        } else {
+            Ok(Some(output.message))
+        }
     }
 
     fn name(&self) -> String {

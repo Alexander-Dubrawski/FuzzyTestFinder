@@ -1,4 +1,8 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    collections::HashMap,
+    str::FromStr,
+    sync::mpsc::{Receiver, Sender},
+};
 
 use serde::de::DeserializeOwned;
 
@@ -128,8 +132,10 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests, CM: Cache + Clone> GeneralCacheRun
             ),
             RunnerMode::Select => {
                 let selected_items = self.select_tests(select_granularity, test_provider, query)?;
-                self.history_provider
-                    .update_history(history_granularity, selected_items.as_slice())?;
+                if self.config.update_history {
+                    self.history_provider
+                        .update_history(history_granularity, selected_items.as_slice())?;
+                }
                 test_provider.runtime_arguments(select_granularity, selected_items.as_slice())
             }
         })
@@ -208,7 +214,10 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests, CM: Cache + Clone> GeneralCacheRun
 impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clone> Runner
     for GeneralCacheRunner<SE, RT, T, CM>
 {
-    fn run(&mut self) -> Result<(), FztError> {
+    fn run(
+        &mut self,
+        channels: Option<(Sender<String>, Receiver<String>)>,
+    ) -> Result<(), FztError> {
         if self.config.clear_cache || self.config.clear_history {
             if self.config.clear_cache {
                 self.cache_manager.clear_cache()?;
@@ -270,6 +279,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clo
                 self.config.verbose,
                 &self.config.runtime_args.as_slice(),
                 &self.config.debugger,
+                channels,
             )? {
                 // We don't want to update the cache if we are running failed tests only
                 if !self.config.run_failed && self.tests.update_failed(output.as_str()) {

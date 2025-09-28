@@ -1,10 +1,14 @@
+use crossbeam_channel::unbounded;
 use std::process::Command;
+
+use crossbeam_channel::Receiver as CrossbeamReceiver;
+use std::sync::mpsc::{Receiver as StdReceiver, Sender as StdSender};
 
 use crate::{
     errors::FztError,
     runtime::{
         Debugger, DefaultFormatter, Runtime, RuntimeFormatter,
-        utils::{partition_tests, run_and_capture_print},
+        utils::{CaptureOutput, partition_tests, run_and_capture_print},
     },
 };
 
@@ -182,8 +186,9 @@ fn run_test_partition(
     formatter: &mut CargoFormatter,
     runtime_ags: &[String],
     verbose: bool,
-) -> Result<String, FztError> {
-    let mut output = String::new();
+    reciver: CrossbeamReceiver<String>,
+) -> Result<Vec<CaptureOutput>, FztError> {
+    let mut output = vec![];
     for test in tests {
         let mut command = Command::new("unbuffer");
         command.arg("cargo");
@@ -204,9 +209,17 @@ fn run_test_partition(
             println!("\n{} {}\n", program, args.as_slice().join(" "));
         }
         if verbose {
-            output.push_str((run_and_capture_print(command, &mut DefaultFormatter)?).as_str());
+            output.push(run_and_capture_print(
+                command,
+                &mut DefaultFormatter,
+                Some(reciver.clone()),
+            )?);
         } else {
-            output.push_str((run_and_capture_print(command, formatter)?).as_str());
+            output.push(run_and_capture_print(
+                command,
+                formatter,
+                Some(reciver.clone()),
+            )?);
         }
     }
     Ok(output)
@@ -222,6 +235,7 @@ impl Runtime for CargoRuntime {
         verbose: bool,
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
+        channels: Option<(StdSender<String>, StdReceiver<String>)>,
     ) -> Result<Option<String>, FztError> {
         let number_threads = std::env::var("CARGO_TEST_THREADS")
             .ok()
@@ -230,11 +244,25 @@ impl Runtime for CargoRuntime {
 
         let partitions = partition_tests(&tests, number_threads);
         let mut formatters = vec![CargoFormatter::new(); partitions.len()];
-        let mut outputs: Vec<Result<String, FztError>> =
-            (0..partitions.len()).map(|_| Ok(String::new())).collect();
+        let mut outputs: Vec<Result<Vec<CaptureOutput>, FztError>> =
+            (0..partitions.len()).map(|_| Ok(vec![])).collect();
 
         Command::new("cargo").arg("build").status()?;
         println!("\nRunning {} tests", tests.len());
+
+        let (cross_tx, cross_rx) = unbounded();
+
+        if let Some((_, rx)) = channels {
+            // Bridge thread: listen on std receiver, broadcast on crossbeam
+            std::thread::spawn({
+                let cross_tx = cross_tx.clone();
+                move || {
+                    if let Ok(msg) = rx.recv() {
+                        let _ = cross_tx.send(msg); // Broadcast to all worker threads
+                    }
+                }
+            });
+        }
 
         std::thread::scope(|s| {
             for ((formatter, output), partition) in formatters
@@ -243,8 +271,13 @@ impl Runtime for CargoRuntime {
                 .zip(partitions.iter())
             {
                 s.spawn(|| {
-                    *output =
-                        run_test_partition(partition.as_slice(), formatter, runtime_ags, verbose);
+                    *output = run_test_partition(
+                        partition.as_slice(),
+                        formatter,
+                        runtime_ags,
+                        verbose,
+                        cross_rx.clone(),
+                    );
                 });
             }
         });
@@ -252,10 +285,16 @@ impl Runtime for CargoRuntime {
         let mut final_formatter = CargoFormatter::new();
         let mut final_output = String::new();
 
-        for (formatter, output) in formatters.into_iter().zip(outputs.into_iter()) {
+        for (formatter, output_result) in formatters.into_iter().zip(outputs.into_iter()) {
+            let output = output_result?;
+            if output.iter().any(|capture_output| capture_output.stopped) {
+                return Ok(None);
+            }
             final_formatter.add(formatter);
             final_output.push_str("\n");
-            final_output.push_str(output?.as_str());
+            output.iter().for_each(|capture_output| {
+                final_output.push_str(capture_output.message.as_str());
+            });
         }
         if !verbose {
             final_formatter.finish();

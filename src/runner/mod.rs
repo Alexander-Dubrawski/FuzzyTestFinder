@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::sync::mpsc::{Receiver, Sender};
 
 use crate::errors::FztError;
 
@@ -11,7 +12,8 @@ pub mod rust;
 mod history_provider;
 
 pub trait Runner {
-    fn run(&mut self) -> Result<(), FztError>;
+    fn run(&mut self, channels: Option<(Sender<String>, Receiver<String>)>)
+    -> Result<(), FztError>;
     fn meta_data(&self) -> Result<String, FztError>;
 }
 

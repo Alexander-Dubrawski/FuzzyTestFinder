@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::sync::mpsc::{Receiver, Sender};
 
 use crate::errors::FztError;
 
@@ -49,6 +50,7 @@ pub trait Runtime {
         verbose: bool,
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
+        channels: Option<(Sender<String>, Receiver<String>)>,
     ) -> Result<Option<String>, FztError>;
     fn name(&self) -> String;
 }

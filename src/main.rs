@@ -11,5 +11,5 @@ fn main() -> Result<(), FztError> {
     if default {
         LocalCacheManager::save_meta(project_hash()?.as_str(), runner.meta_data()?.as_str())?;
     }
-    runner.run()
+    runner.run(None)
 }
