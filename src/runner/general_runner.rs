@@ -272,12 +272,18 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clo
         };
         drop(test_provider);
         if !tests_to_run.is_empty() {
+            let mut coverage = if self.config.smart_test {
+                Some(HashMap::new())
+            } else {
+                None
+            };
             if let Some(output) = self.runtime.run_tests(
                 tests_to_run,
                 self.config.verbose,
                 &self.config.runtime_args.as_slice(),
                 &self.config.debugger,
                 receiver,
+                &mut coverage
             )? {
                 // We don't want to update the cache if we are running failed tests only
                 if !self.config.run_failed && self.tests.update_failed(output.as_str()) {

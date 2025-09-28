@@ -155,4 +155,8 @@ impl Tests for PytestTests {
         });
         output
     }
+
+    fn update_file_coverage(&mut self, coverage: &HashMap<String, Vec<String>>) -> Result<bool, FztError> {
+        todo!()
+    }
 }

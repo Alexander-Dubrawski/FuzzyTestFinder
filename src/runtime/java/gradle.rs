@@ -1,4 +1,4 @@
-use std::{process::Command, sync::mpsc::Receiver};
+use std::{collections::HashMap, process::Command, sync::mpsc::Receiver};
 
 use crate::{
     errors::FztError,
@@ -16,6 +16,7 @@ impl Runtime for GradleRuntime {
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
         receiver: Option<Receiver<String>>,
+        _coverage: &mut Option<HashMap<String, Vec<String>>>,
     ) -> Result<Option<String>, FztError> {
         let mut command = Command::new("unbuffer");
         command.arg("./gradlew");
