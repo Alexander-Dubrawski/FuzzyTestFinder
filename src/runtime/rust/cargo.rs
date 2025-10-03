@@ -4,6 +4,9 @@ use std::{collections::HashMap, process::Command};
 use crossbeam_channel::Receiver as CrossbeamReceiver;
 use std::sync::mpsc::Receiver as StdReceiver;
 
+use crossbeam_channel::Receiver as CrossbeamReceiver;
+use std::sync::mpsc::Receiver as StdReceiver;
+
 use crate::{
     errors::FztError,
     runtime::{
