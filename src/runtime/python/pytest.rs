@@ -1,4 +1,4 @@
-use std::{process::Command, sync::mpsc::Receiver};
+use std::{collections::HashMap, process::Command, sync::mpsc::Receiver};
 
 use itertools::Itertools;
 
@@ -77,6 +77,7 @@ impl Runtime for PytestRuntime {
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
         receiver: Option<Receiver<String>>,
+        _coverage: &mut Option<HashMap<String, Vec<String>>>,
     ) -> Result<Option<String>, FztError> {
         let command = build_command(tests.as_slice(), runtime_ags, &None);
         let mut debug_command = build_command(tests.as_slice(), runtime_ags, debugger);

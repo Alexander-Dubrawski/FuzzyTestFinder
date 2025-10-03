@@ -36,7 +36,7 @@ Create an alias for easier access:
 
 ```sh
 # Example in .zshrc
-alias fzt="<PATH>/FuzzyTestFinder/target/release/FuzzyTestFinder"
+alias fzt="<PATH>/FuzzyTestFinder/target/release/FzT"
 ```
 
 Create a `.fzt` folder in `~/`

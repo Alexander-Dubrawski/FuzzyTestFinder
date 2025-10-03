@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Receiver;
 
@@ -51,6 +53,7 @@ pub trait Runtime {
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
         receiver: Option<Receiver<String>>,
+        coverage: &mut Option<HashMap<String, Vec<String>>>,
     ) -> Result<Option<String>, FztError>;
     fn name(&self) -> String;
 }

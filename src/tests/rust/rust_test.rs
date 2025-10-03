@@ -21,8 +21,23 @@ use super::helper::parse_failed_tests;
 pub struct RustTests {
     pub root_folder: String,
     pub timestamp: u128,
+    pub timestamp_coverage: u128,
     pub tests: HashMap<String, Vec<RustTest>>,
     pub failed_tests: HashMap<String, Vec<RustTest>>,
+    // TODO
+    // When structure exist, only update if:
+    // - File changes (re run corresponding tests)
+    // - Test change (re-run tests) Should be done from outside and coverage report should be used to update this struct
+    // - New file added (rerun all changed tests, or added once, if another file calls the new file it was changes and by that we re-run the tests)
+    // The order should be:
+    // 1. Check for changed tests
+    // 2. Check for new tests
+    // 3. Check for changed files
+    // Return test set of these test and get coverage from runtime and update this struct
+    //
+    // If this struct is empty, all tests should be returned, but then all test should be new
+    // add update file_coverage to trait
+    pub file_coverage: HashMap<String, (String, Vec<RustTest>)>,
 }
 
 impl RustTests {
@@ -30,8 +45,10 @@ impl RustTests {
         Self {
             root_folder,
             timestamp: 0,
+            timestamp_coverage: 0,
             tests: HashMap::new(),
             failed_tests: HashMap::new(),
+            file_coverage: HashMap::new(),
         }
     }
 
@@ -223,6 +240,10 @@ impl Tests for RustTests {
             })
             .flatten()
             .collect()
+    }
+
+    fn update_file_coverage(&mut self, coverage: &HashMap<String, Vec<String>>) -> Result<bool, FztError> {
+        todo!()
     }
 }
 

@@ -156,6 +156,14 @@ struct Cli {
     )]
     failed: bool,
 
+    #[arg(
+        long,
+        short,
+        default_value_t = false,
+        help = "Tests that cover changed files"
+    )]
+    smart_test: bool,    
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -306,6 +314,7 @@ pub fn parse_cli() -> Result<Config, FztError> {
         true,
         language,
         search_engine,
+        cli.smart_test
     );
 
     Ok(Config {
