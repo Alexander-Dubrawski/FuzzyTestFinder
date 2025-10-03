@@ -30,5 +30,6 @@ pub fn get_rust_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static>(
         RustTests::new_empty(path_str.to_string()),
         RunnerName::RustCargoRunner,
         cache_manager,
+        path_str.to_string(),
     )))
 }

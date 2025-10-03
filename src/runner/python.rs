@@ -61,6 +61,7 @@ pub fn get_python_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static
             RustPytonTests::new_empty(path_str.to_string()),
             RunnerName::RustPythonRunner,
             cache_manager,
+            path_str.to_string(),
         ))),
         ("pytest", "pytest") => Ok(Box::new(GeneralCacheRunner::new(
             PytestRuntime::default(),
@@ -68,6 +69,7 @@ pub fn get_python_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static
             PytestTests::new_empty(path_str.to_string()),
             RunnerName::PytestRunner,
             cache_manager,
+            path_str.to_string(),
         ))),
         _ => {
             return Err(FztError::GeneralParsingError(format!(

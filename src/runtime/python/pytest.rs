@@ -1,4 +1,4 @@
-use std::process::Command;
+use std::{process::Command, sync::mpsc::Receiver};
 
 use itertools::Itertools;
 
@@ -76,6 +76,7 @@ impl Runtime for PytestRuntime {
         verbose: bool,
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
+        receiver: Option<Receiver<String>>,
     ) -> Result<Option<String>, FztError> {
         let command = build_command(tests.as_slice(), runtime_ags, &None);
         let mut debug_command = build_command(tests.as_slice(), runtime_ags, debugger);
@@ -92,7 +93,12 @@ impl Runtime for PytestRuntime {
             debug_command.status()?;
             Ok(None)
         } else {
-            Ok(Some(run_and_capture_print(command, &mut DefaultFormatter)?))
+            let output = run_and_capture_print(command, &mut DefaultFormatter, receiver)?;
+            if output.stopped {
+                Ok(None)
+            } else {
+                Ok(Some(output.message))
+            }
         }
     }
 

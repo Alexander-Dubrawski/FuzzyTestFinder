@@ -9,7 +9,7 @@ use crate::{
 
 use super::{Runner, java::get_java_runner, python::get_python_runner, rust::get_rust_runner};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum RunnerMode {
     All,
     Last,
@@ -58,6 +58,7 @@ pub struct RunnerConfig<SE: SearchEngine + 'static> {
     pub query: Option<String>,
     pub debugger: Option<Debugger>,
     pub run_failed: bool,
+    pub update_history: bool,
     pub language: Language,
     pub search_engine: SE,
 }
@@ -74,6 +75,7 @@ impl<SE: SearchEngine> RunnerConfig<SE> {
         query: Option<String>,
         debugger: Option<Debugger>,
         run_failed: bool,
+        update_history: bool,
         language: Language,
         search_engine: SE,
     ) -> Self {
@@ -88,6 +90,7 @@ impl<SE: SearchEngine> RunnerConfig<SE> {
             query,
             debugger,
             run_failed,
+            update_history,
             language,
             search_engine,
         }

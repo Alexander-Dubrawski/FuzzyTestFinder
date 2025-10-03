@@ -4,6 +4,7 @@ use crate::{
     search_engine::SearchEngine,
 };
 
+#[derive(Clone)]
 pub struct HistoryProvider<CM: Cache> {
     cache_manager: CM,
 }

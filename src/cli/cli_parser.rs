@@ -137,6 +137,14 @@ struct Cli {
     )]
     mode: String,
 
+    #[arg(
+        long,
+        default_value_t = false,
+        short,
+        help = "Re-runs test selection when a file in your project changes"
+    )]
+    watch: bool,
+
     #[arg(long, short, help = "Start the finder with the given query")]
     query: Option<String>,
 
@@ -295,6 +303,7 @@ pub fn parse_cli() -> Result<Config, FztError> {
         cli.query,
         debugger,
         cli.failed,
+        true,
         language,
         search_engine,
     );
@@ -302,5 +311,6 @@ pub fn parse_cli() -> Result<Config, FztError> {
     Ok(Config {
         runner_config,
         default: cli.default,
+        watch: cli.watch,
     })
 }
