@@ -18,6 +18,10 @@ pub trait Tests {
     fn tests(&self) -> Vec<impl Test>;
     fn tests_failed(&self) -> Vec<impl Test>;
     fn update(&mut self) -> Result<bool, FztError>;
-    fn update_file_coverage(&mut self, coverage: &HashMap<String, Vec<String>>) -> Result<bool, FztError>;
+    fn update_file_coverage(
+        &mut self,
+        coverage: &HashMap<String, Vec<String>>,
+    ) -> Result<bool, FztError>;
+    fn get_covered_tests(&mut self) -> Vec<impl Test>;
     fn update_failed(&mut self, runtime_output: &str) -> bool;
 }

@@ -283,7 +283,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clo
                 &self.config.runtime_args.as_slice(),
                 &self.config.debugger,
                 receiver,
-                &mut coverage
+                &mut coverage,
             )? {
                 // We don't want to update the cache if we are running failed tests only
                 if !self.config.run_failed && self.tests.update_failed(output.as_str()) {

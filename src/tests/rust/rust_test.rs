@@ -37,7 +37,10 @@ pub struct RustTests {
     //
     // If this struct is empty, all tests should be returned, but then all test should be new
     // add update file_coverage to trait
-    pub file_coverage: HashMap<String, (String, Vec<RustTest>)>,
+    pub file_coverage: HashMap<String, CoverageRustTests>,
+    /// Includes changed and newly added test files
+    /// Since last coverage run
+    pub changed_test_files_since_last_coverage: HashSet<String>,
 }
 
 impl RustTests {
@@ -49,6 +52,7 @@ impl RustTests {
             tests: HashMap::new(),
             failed_tests: HashMap::new(),
             file_coverage: HashMap::new(),
+            changed_test_files_since_last_coverage: HashSet::new(),
         }
     }
 
@@ -135,6 +139,16 @@ impl RustTests {
             };
             let relative_path = get_relative_path(&self.root_folder, &path)?;
             let entry = updated_tests.get_mut(&relative_path);
+            if std::fs::metadata(path.as_str())?
+                .modified()
+                .unwrap()
+                .duration_since(UNIX_EPOCH)?
+                .as_millis()
+                > self.timestamp
+                || self.tests.contains_key(&relative_path) == false
+            {
+                self.changed_test_files_since_last_coverage.insert(relative_path.clone());
+            }
             match entry {
                 Some(tests) => {
                     tests.push(rust_test);
@@ -153,6 +167,12 @@ impl RustTests {
 pub struct RustTest {
     pub module_path: Vec<String>,
     pub method_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub struct CoverageRustTests {
+    pub path: String,
+    pub tests: Vec<RustTest>,
 }
 
 pub struct RustTestItem {
@@ -242,8 +262,56 @@ impl Tests for RustTests {
             .collect()
     }
 
-    fn update_file_coverage(&mut self, coverage: &HashMap<String, Vec<String>>) -> Result<bool, FztError> {
+    fn update_file_coverage(
+        &mut self,
+        coverage: &HashMap<String, Vec<String>>,
+    ) -> Result<bool, FztError> {
+        // reset coverage
+        self.changed_test_files_since_last_coverage = HashSet::new();
+        // merge coverage with existing coverage
         todo!()
+    }
+
+    fn get_covered_tests(&mut self) -> Vec<impl Test> {
+        let mut coverage_tests: Vec<RustTestItem> = self
+            .changed_test_files_since_last_coverage
+            .iter()
+            .flat_map(|path| {
+                self.tests
+                    .get(path)
+                    .unwrap()
+                    .iter()
+                    .map(|test| {
+                        RustTestItem::new(
+                            path.clone(),
+                            test.module_path.join("::"),
+                            test.method_name.clone(),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+
+        self.file_coverage.iter().for_each(|(path, cov_tests)| {
+            if std::fs::metadata(path.as_str())
+                .unwrap()
+                .modified()
+                .unwrap()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis()
+                > self.timestamp
+            {
+                cov_tests.tests.iter().for_each(|test| {
+                    coverage_tests.push(RustTestItem::new(
+                        cov_tests.path.clone(),
+                        test.module_path.join("::"),
+                        test.method_name.clone(),
+                    ));
+                });
+            }
+        });
+        coverage_tests
     }
 }
 

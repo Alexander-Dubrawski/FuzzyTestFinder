@@ -52,6 +52,7 @@ fn parse_cargo_time(line: &str) -> Option<f64> {
     None
 }
 
+// TODO: Add tests for formatter
 #[derive(Clone)]
 pub struct CargoFormatter {
     failed_tests: Vec<(String, String)>,
@@ -62,7 +63,7 @@ pub struct CargoFormatter {
     currently_failed: bool,
     running: bool,
     seconds: f64,
-    coverage: Vec<String>
+    coverage: Vec<String>,
 }
 
 impl CargoFormatter {
@@ -76,7 +77,7 @@ impl CargoFormatter {
             currently_failed: false,
             running: false,
             seconds: 0f64,
-            coverage: vec![]
+            coverage: vec![],
         }
     }
 
@@ -135,7 +136,7 @@ impl RuntimeFormatter for CargoFormatter {
                     let numbers = numbers.trim();
                     // Split at '/'
                     if let Some(coverage) = numbers.split('/').next() {
-                        if coverage.trim() != "0" && coverage.trim().len() == 1{
+                        if coverage.trim() != "0" && coverage.trim().len() == 1 {
                             self.coverage.push(path.to_string());
                         }
                     }
@@ -213,7 +214,7 @@ struct CargoOutput {
 impl CargoOutput {
     pub fn new_empty() -> Self {
         Self {
-            output: CaptureOutput{
+            output: CaptureOutput {
                 stopped: false,
                 message: String::new(),
             },
@@ -229,7 +230,7 @@ fn run_test_partition(
     runtime_ags: &[String],
     verbose: bool,
     receiver: CrossbeamReceiver<String>,
-    coverage: bool
+    coverage: bool,
 ) -> Result<Vec<CargoOutput>, FztError> {
     let mut output = vec![];
     for test in tests {
@@ -261,26 +262,19 @@ fn run_test_partition(
             println!("\n{} {}\n", program, args.as_slice().join(" "));
         }
         if verbose {
-            let captured = run_and_capture_print(
-                command,
-                &mut DefaultFormatter,
-                Some(receiver.clone()),
-            )?;
-            output.push(CargoOutput{
+            let captured =
+                run_and_capture_print(command, &mut DefaultFormatter, Some(receiver.clone()))?;
+            output.push(CargoOutput {
                 output: captured,
                 test: test.clone(),
                 covered: vec![],
             });
         } else {
-            let captured = run_and_capture_print(
-                command,
-                formatter,
-                Some(receiver.clone()),
-            )?;
+            let captured = run_and_capture_print(command, formatter, Some(receiver.clone()))?;
             let covered = formatter.coverage.clone();
             // Refactor, do reset instead
             formatter.coverage = vec![];
-            output.push(CargoOutput{
+            output.push(CargoOutput {
                 output: captured,
                 test: test.clone(),
                 covered: covered,
@@ -289,8 +283,6 @@ fn run_test_partition(
     }
     Ok(output)
 }
-
-
 
 #[derive(Default)]
 pub struct CargoRuntime {}
@@ -345,7 +337,7 @@ impl Runtime for CargoRuntime {
                         runtime_ags,
                         verbose,
                         cross_rx.clone(),
-                        coverage.is_some()
+                        coverage.is_some(),
                     );
                 });
             }
@@ -356,7 +348,10 @@ impl Runtime for CargoRuntime {
 
         for (formatter, output_result) in formatters.into_iter().zip(outputs.into_iter()) {
             let output = output_result?;
-            if output.iter().any(|capture_output| capture_output.output.stopped) {
+            if output
+                .iter()
+                .any(|capture_output| capture_output.output.stopped)
+            {
                 return Ok(None);
             }
             final_formatter.add(formatter);
@@ -365,7 +360,9 @@ impl Runtime for CargoRuntime {
                 if let Some(cov) = coverage {
                     capture_output.covered.iter().for_each(|path| {
                         // TODO Refactor
-                        cov.entry(path.to_string()).and_modify(|tests| tests.push(capture_output.test.clone())).or_insert(vec![capture_output.test.clone()]);
+                        cov.entry(path.to_string())
+                            .and_modify(|tests| tests.push(capture_output.test.clone()))
+                            .or_insert(vec![capture_output.test.clone()]);
                     });
                 }
                 final_output.push_str(capture_output.output.message.as_str());

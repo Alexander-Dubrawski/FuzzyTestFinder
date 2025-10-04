@@ -95,7 +95,7 @@ impl<SE: SearchEngine> RunnerConfig<SE> {
             update_history,
             language,
             search_engine,
-            smart_test
+            smart_test,
         }
     }
 
