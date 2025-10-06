@@ -38,9 +38,6 @@ pub struct RustTests {
     // If this struct is empty, all tests should be returned, but then all test should be new
     // add update file_coverage to trait
     pub file_coverage: HashMap<String, CoverageRustTests>,
-    /// Includes changed and newly added test files
-    /// Since last coverage run
-    pub changed_test_files_since_last_coverage: HashSet<String>,
 }
 
 impl RustTests {
@@ -52,7 +49,6 @@ impl RustTests {
             tests: HashMap::new(),
             failed_tests: HashMap::new(),
             file_coverage: HashMap::new(),
-            changed_test_files_since_last_coverage: HashSet::new(),
         }
     }
 
@@ -139,16 +135,6 @@ impl RustTests {
             };
             let relative_path = get_relative_path(&self.root_folder, &path)?;
             let entry = updated_tests.get_mut(&relative_path);
-            if std::fs::metadata(path.as_str())?
-                .modified()
-                .unwrap()
-                .duration_since(UNIX_EPOCH)?
-                .as_millis()
-                > self.timestamp
-                || self.tests.contains_key(&relative_path) == false
-            {
-                self.changed_test_files_since_last_coverage.insert(relative_path.clone());
-            }
             match entry {
                 Some(tests) => {
                     tests.push(rust_test);
@@ -266,20 +252,34 @@ impl Tests for RustTests {
         &mut self,
         coverage: &HashMap<String, Vec<String>>,
     ) -> Result<bool, FztError> {
-        // reset coverage
-        self.changed_test_files_since_last_coverage = HashSet::new();
+        // resolve cargo runtime to test item
+        // Refactor refill_tests to use its logic to map to Rust test
+
+        // Reset
+        //self.changed_test_files_since_last_coverage = HashMap::new();
+
         // merge coverage with existing coverage
         todo!()
     }
 
     fn get_covered_tests(&mut self) -> Vec<impl Test> {
+        // Get changed tests:
         let mut coverage_tests: Vec<RustTestItem> = self
-            .changed_test_files_since_last_coverage
+            .tests
             .iter()
-            .flat_map(|path| {
-                self.tests
-                    .get(path)
+            .filter(|(path, tests)| {
+                // consider changed or new test files
+                std::fs::metadata(path.as_str())
                     .unwrap()
+                    .modified()
+                    .unwrap()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis()
+                    > self.timestamp_coverage
+            })
+            .map(|(path, tests)| {
+                tests
                     .iter()
                     .map(|test| {
                         RustTestItem::new(
@@ -290,6 +290,7 @@ impl Tests for RustTests {
                     })
                     .collect::<Vec<_>>()
             })
+            .flatten()
             .collect();
 
         self.file_coverage.iter().for_each(|(path, cov_tests)| {
