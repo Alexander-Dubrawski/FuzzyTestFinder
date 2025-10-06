@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    path::Path,
+    path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -24,6 +24,9 @@ pub struct RustTests {
     pub timestamp_coverage: u128,
     pub tests: HashMap<String, Vec<RustTest>>,
     pub failed_tests: HashMap<String, Vec<RustTest>>,
+    #[serde(skip_serializing)]
+    pub module_paths: HashMap<Vec<String>, PathBuf>,
+
     // TODO
     // When structure exist, only update if:
     // - File changes (re run corresponding tests)
@@ -49,6 +52,7 @@ impl RustTests {
             tests: HashMap::new(),
             failed_tests: HashMap::new(),
             file_coverage: HashMap::new(),
+            module_paths: HashMap::new(),
         }
     }
 
@@ -67,6 +71,7 @@ impl RustTests {
             }
         }
         let updated = if !up_to_date {
+            self.resolve_module_paths()?;
             self.refill_tests(cargo_tests)?;
             self.timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
             true
@@ -102,7 +107,7 @@ impl RustTests {
         Ok(updated)
     }
 
-    fn refill_tests(&mut self, cargo_tests: Vec<(Vec<String>, String)>) -> Result<(), FztError> {
+    fn resolve_module_paths(&mut self) -> Result<(), FztError> {
         let mut path = Path::new(&self.root_folder).to_path_buf();
         if path.join("src").exists() {
             path = path.join("src");
@@ -119,15 +124,20 @@ impl RustTests {
                 path
             )));
         }
-        let module_paths = get_module_paths(&path)?;
+        self.module_paths = get_module_paths(&path)?;
+        Ok(())
+    }
+
+    fn refill_tests(&mut self, cargo_tests: Vec<(Vec<String>, String)>) -> Result<(), FztError> {
         let mut updated_tests: HashMap<String, Vec<RustTest>> = HashMap::new();
         for (module_path, method_name) in cargo_tests.into_iter() {
-            let test_path = module_paths
-                .get(&module_path)
-                .ok_or(FztError::GeneralParsingError(format!(
-                    "No module path found for test: {:?} -> {}",
-                    module_path, method_name
-                )))?;
+            let test_path =
+                self.module_paths
+                    .get(&module_path)
+                    .ok_or(FztError::GeneralParsingError(format!(
+                        "No module path found for test: {:?} -> {}",
+                        module_path, method_name
+                    )))?;
             let path = test_path.to_str().expect("Path needs to exist").to_string();
             let rust_test = RustTest {
                 module_path: module_path,
@@ -155,10 +165,11 @@ pub struct RustTest {
     pub method_name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+
 pub struct CoverageRustTests {
     pub path: String,
-    pub tests: Vec<RustTest>,
+    pub tests: HashSet<RustTest>,
 }
 
 pub struct RustTestItem {
@@ -252,22 +263,62 @@ impl Tests for RustTests {
         &mut self,
         coverage: &HashMap<String, Vec<String>>,
     ) -> Result<bool, FztError> {
-        // resolve cargo runtime to test item
-        // Refactor refill_tests to use its logic to map to Rust test
+        if self.module_paths.is_empty() {
+            self.resolve_module_paths()?;
+        }
+        let mut updated = false;
 
-        // Reset
-        //self.changed_test_files_since_last_coverage = HashMap::new();
+        for (path, tests) in coverage.iter() {
+            let relative_path = get_relative_path(&self.root_folder, &path)?;
+            let entry = self.file_coverage.get_mut(&relative_path);
+            match entry {
+                Some(cov_tests) => {
+                    tests.iter().for_each(|test| {
+                        updated = true;
+                        // TODO Refactor to use RustTestParser logic
+                        let mut module_path = test
+                            .split("::")
+                            .map(|s| s.to_string())
+                            .collect::<Vec<String>>();
+                        let test_name = module_path.pop().expect("Test needs to exist");
+                        cov_tests.tests.insert(RustTest {
+                            module_path: module_path,
+                            method_name: test_name,
+                        });
+                    });
+                }
+                None => {
+                    updated = true;
+                    let cov_tests = CoverageRustTests {
+                        path: relative_path.clone(),
+                        tests: HashSet::from_iter(tests.iter().map(|test| {
+                            // TODO Refactor to use RustTestParser logic
+                            let mut module_path = test
+                                .split("::")
+                                .map(|s| s.to_string())
+                                .collect::<Vec<String>>();
+                            let test_name = module_path.pop().expect("Test needs to exist");
+                            RustTest {
+                                module_path: module_path,
+                                method_name: test_name,
+                            }
+                        })),
+                    };
+                    self.file_coverage.insert(relative_path, cov_tests);
+                }
+            }
+        }
 
-        // merge coverage with existing coverage
-        todo!()
+        self.file_coverage
+            .retain(|path, _| Path::new(path).exists());
+        Ok(updated)
     }
 
     fn get_covered_tests(&mut self) -> Vec<impl Test> {
-        // Get changed tests:
         let mut coverage_tests: Vec<RustTestItem> = self
             .tests
             .iter()
-            .filter(|(path, tests)| {
+            .filter(|(path, _)| {
                 // consider changed or new test files
                 std::fs::metadata(path.as_str())
                     .unwrap()
@@ -294,6 +345,7 @@ impl Tests for RustTests {
             .collect();
 
         self.file_coverage.iter().for_each(|(path, cov_tests)| {
+            // TODO: Skip file if it does not exist
             if std::fs::metadata(path.as_str())
                 .unwrap()
                 .modified()
