@@ -286,9 +286,15 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clo
                 &mut coverage,
             )? {
                 // We don't want to update the cache if we are running failed tests only
-                if !self.config.run_failed && self.tests.update_failed(output.as_str()) {
-                    self.cache_manager
-                        .add_entry(self.tests.to_json()?.as_str())?;
+                if !self.config.run_failed {
+                    let mut updated = self.tests.update_failed(output.as_str());
+                    if let Some(coverage) = &coverage {
+                        updated = updated || self.tests.update_file_coverage(coverage)?;
+                    }
+                    if updated {
+                        self.cache_manager
+                            .add_entry(self.tests.to_json()?.as_str())?;
+                    }
                 }
             }
             Ok(())

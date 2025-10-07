@@ -4,9 +4,6 @@ use std::{collections::HashMap, process::Command};
 use crossbeam_channel::Receiver as CrossbeamReceiver;
 use std::sync::mpsc::Receiver as StdReceiver;
 
-use crossbeam_channel::Receiver as CrossbeamReceiver;
-use std::sync::mpsc::Receiver as StdReceiver;
-
 use crate::{
     errors::FztError,
     runtime::{
@@ -126,8 +123,8 @@ impl RuntimeFormatter for CargoFormatter {
             return Ok(());
         }
 
-        if plain_line.starts_with("|| ") {
-            let line = plain_line.trim_start_matches('|').trim();
+        if plain_line.trim().starts_with("|| ") {
+            let line = plain_line.trim_start_matches("||").trim();
             // Split at ':'
             let mut parts = line.splitn(2, ':');
             if let Some(coverage_report) = parts.next() {
@@ -136,7 +133,7 @@ impl RuntimeFormatter for CargoFormatter {
                     let numbers = numbers.trim();
                     // Split at '/'
                     if let Some(coverage) = numbers.split('/').next() {
-                        if coverage.trim() != "0" && coverage.trim().len() == 1 {
+                        if coverage.trim().parse::<usize>().is_ok_and(|v| v > 0) {
                             self.coverage.push(path.to_string());
                         }
                     }
@@ -253,6 +250,7 @@ fn run_test_partition(
                 command.arg(arg);
             });
         }
+
         if verbose {
             let program = command.get_program().to_str().unwrap();
             let args: Vec<String> = command
@@ -260,8 +258,6 @@ fn run_test_partition(
                 .map(|arg| arg.to_str().unwrap().to_string())
                 .collect();
             println!("\n{} {}\n", program, args.as_slice().join(" "));
-        }
-        if verbose {
             let captured =
                 run_and_capture_print(command, &mut DefaultFormatter, Some(receiver.clone()))?;
             output.push(CargoOutput {
@@ -323,7 +319,6 @@ impl Runtime for CargoRuntime {
                 }
             });
         }
-
         std::thread::scope(|s| {
             for ((formatter, output), partition) in formatters
                 .iter_mut()

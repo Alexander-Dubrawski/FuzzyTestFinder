@@ -164,6 +164,7 @@ impl Tests for PytestTests {
     }
 
     fn get_covered_tests(&mut self) -> Vec<impl Test> {
-        todo!()
+        todo!();
+        Vec::<PythonTest>::new()
     }
 }

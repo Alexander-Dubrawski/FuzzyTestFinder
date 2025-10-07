@@ -133,7 +133,8 @@ impl Tests for JavaTests {
     }
 
     fn get_covered_tests(&mut self) -> Vec<impl Test> {
-        todo!()
+        todo!();
+        return Vec::<JavaTestItem>::new();
     }
 }
 

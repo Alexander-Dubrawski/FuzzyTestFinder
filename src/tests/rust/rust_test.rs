@@ -24,22 +24,8 @@ pub struct RustTests {
     pub timestamp_coverage: u128,
     pub tests: HashMap<String, Vec<RustTest>>,
     pub failed_tests: HashMap<String, Vec<RustTest>>,
-    #[serde(skip_serializing)]
+    #[serde(skip_serializing, skip_deserializing)]
     pub module_paths: HashMap<Vec<String>, PathBuf>,
-
-    // TODO
-    // When structure exist, only update if:
-    // - File changes (re run corresponding tests)
-    // - Test change (re-run tests) Should be done from outside and coverage report should be used to update this struct
-    // - New file added (rerun all changed tests, or added once, if another file calls the new file it was changes and by that we re-run the tests)
-    // The order should be:
-    // 1. Check for changed tests
-    // 2. Check for new tests
-    // 3. Check for changed files
-    // Return test set of these test and get coverage from runtime and update this struct
-    //
-    // If this struct is empty, all tests should be returned, but then all test should be new
-    // add update file_coverage to trait
     pub file_coverage: HashMap<String, CoverageRustTests>,
 }
 
@@ -267,7 +253,7 @@ impl Tests for RustTests {
             self.resolve_module_paths()?;
         }
         let mut updated = false;
-
+        println!("INSIDE");
         for (path, tests) in coverage.iter() {
             let relative_path = get_relative_path(&self.root_folder, &path)?;
             let entry = self.file_coverage.get_mut(&relative_path);
