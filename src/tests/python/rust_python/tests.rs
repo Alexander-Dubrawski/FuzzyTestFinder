@@ -117,7 +117,7 @@ impl Tests for RustPytonTests {
         todo!()
     }
 
-    fn get_covered_tests(&mut self) -> Vec<impl Test> {
+    fn get_covered_tests(&self) -> Vec<impl Test> {
         todo!();
         Vec::<PythonTest>::new()
     }

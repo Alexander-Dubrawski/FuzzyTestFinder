@@ -288,17 +288,19 @@ impl Tests for RustTests {
                             }
                         })),
                     };
-                    self.file_coverage.insert(relative_path.to_string(), cov_tests);
+                    self.file_coverage
+                        .insert(relative_path.to_string(), cov_tests);
                 }
             }
         }
 
         self.file_coverage
             .retain(|path, _| Path::new(path).exists());
+        self.timestamp_coverage = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
         Ok(updated)
     }
 
-    fn get_covered_tests(&mut self) -> Vec<impl Test> {
+    fn get_covered_tests(&self) -> Vec<impl Test> {
         let mut coverage_tests: Vec<RustTestItem> = self
             .tests
             .iter()

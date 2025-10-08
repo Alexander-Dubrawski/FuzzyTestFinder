@@ -239,6 +239,8 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clo
 
         let test_provider = if self.config.run_failed {
             TestProvider::new_failed(&self.tests)
+        } else if self.config.covered {
+            TestProvider::new_covered_tests(&self.tests)
         } else {
             TestProvider::new(&self.tests)
         };
@@ -272,7 +274,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clo
         };
         drop(test_provider);
         if !tests_to_run.is_empty() {
-            let mut coverage = if self.config.smart_test {
+            let mut coverage = if self.config.covered {
                 Some(HashMap::new())
             } else {
                 None

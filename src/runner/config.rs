@@ -61,7 +61,7 @@ pub struct RunnerConfig<SE: SearchEngine + 'static> {
     pub update_history: bool,
     pub language: Language,
     pub search_engine: SE,
-    pub smart_test: bool,
+    pub covered: bool,
 }
 
 impl<SE: SearchEngine> RunnerConfig<SE> {
@@ -79,7 +79,7 @@ impl<SE: SearchEngine> RunnerConfig<SE> {
         update_history: bool,
         language: Language,
         search_engine: SE,
-        smart_test: bool,
+        covered: bool,
     ) -> Self {
         Self {
             clear_cache,
@@ -95,7 +95,7 @@ impl<SE: SearchEngine> RunnerConfig<SE> {
             update_history,
             language,
             search_engine,
-            smart_test,
+            covered,
         }
     }
 

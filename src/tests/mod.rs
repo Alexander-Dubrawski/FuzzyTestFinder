@@ -22,6 +22,6 @@ pub trait Tests {
         &mut self,
         coverage: &HashMap<String, Vec<String>>,
     ) -> Result<bool, FztError>;
-    fn get_covered_tests(&mut self) -> Vec<impl Test>;
+    fn get_covered_tests(&self) -> Vec<impl Test>;
     fn update_failed(&mut self, runtime_output: &str) -> bool;
 }
