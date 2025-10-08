@@ -253,10 +253,8 @@ impl Tests for RustTests {
             self.resolve_module_paths()?;
         }
         let mut updated = false;
-        println!("INSIDE");
-        for (path, tests) in coverage.iter() {
-            let relative_path = get_relative_path(&self.root_folder, &path)?;
-            let entry = self.file_coverage.get_mut(&relative_path);
+        for (relative_path, tests) in coverage.iter() {
+            let entry = self.file_coverage.get_mut(relative_path);
             match entry {
                 Some(cov_tests) => {
                     tests.iter().for_each(|test| {
@@ -290,7 +288,7 @@ impl Tests for RustTests {
                             }
                         })),
                     };
-                    self.file_coverage.insert(relative_path, cov_tests);
+                    self.file_coverage.insert(relative_path.to_string(), cov_tests);
                 }
             }
         }
