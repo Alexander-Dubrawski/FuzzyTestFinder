@@ -27,6 +27,7 @@ pub struct RustTests {
     #[serde(skip_serializing, skip_deserializing)]
     pub module_paths: HashMap<Vec<String>, PathBuf>,
     pub file_coverage: HashMap<String, CoverageRustTests>,
+    pub uncovered_tests: HashSet<RustTestItem>
 }
 
 impl RustTests {
@@ -39,6 +40,7 @@ impl RustTests {
             failed_tests: HashMap::new(),
             file_coverage: HashMap::new(),
             module_paths: HashMap::new(),
+            uncovered_tests: HashSet::new(),
         }
     }
 
@@ -91,6 +93,60 @@ impl RustTests {
                 failed_tests.retain(|test| tests.contains(test));
             });
         Ok(updated)
+    }
+
+    fn update_coverage(&mut self) {
+        let mut coverage_tests: Vec<RustTestItem> = self
+            .tests
+            .iter()
+            .filter(|(path, _)| {
+                // consider changed or new test files
+                std::fs::metadata(path.as_str())
+                    .unwrap()
+                    .modified()
+                    .unwrap()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis()
+                    > self.timestamp_coverage
+            })
+            .map(|(path, tests)| {
+                tests
+                    .iter()
+                    .map(|test| {
+                        RustTestItem::new(
+                            path.clone(),
+                            test.module_path.join("::"),
+                            test.method_name.clone(),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .flatten()
+            .collect();
+
+        self.file_coverage.iter().for_each(|(path, cov_tests)| {
+            // TODO: Skip file if it does not exist
+            if std::fs::metadata(path.as_str())
+                .unwrap()
+                .modified()
+                .unwrap()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis()
+                > self.timestamp_coverage
+            {
+                cov_tests.tests.iter().for_each(|test| {
+                    coverage_tests.push(                        RustTestItem::new(
+                            path.clone(),
+                            test.module_path.join("::"),
+                            test.method_name.clone(),
+                        ));
+                });
+            }
+        });
+        self.uncovered_tests.extend(coverage_tests);
+        self.timestamp_coverage = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
     }
 
     fn resolve_module_paths(&mut self) -> Result<(), FztError> {
@@ -158,6 +214,7 @@ pub struct CoverageRustTests {
     pub tests: HashSet<RustTest>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct RustTestItem {
     pub path: String,
     pub module_path: String,
@@ -213,7 +270,9 @@ impl Tests for RustTests {
     }
 
     fn update(&mut self) -> Result<bool, FztError> {
-        self.update_tests(&RustTestParser::default())
+        let updated = self.update_tests(&RustTestParser::default())?;
+        self.update_coverage();
+        Ok(updated)
     }
 
     fn update_failed(&mut self, runtime_output: &str) -> bool {
@@ -252,6 +311,7 @@ impl Tests for RustTests {
         if self.module_paths.is_empty() {
             self.resolve_module_paths()?;
         }
+        // TODO: Update uncovered_tests, remove tests
         let mut updated = false;
         for (relative_path, tests) in coverage.iter() {
             let entry = self.file_coverage.get_mut(relative_path);
@@ -301,56 +361,7 @@ impl Tests for RustTests {
     }
 
     fn get_covered_tests(&self) -> Vec<impl Test> {
-        let mut coverage_tests: Vec<RustTestItem> = self
-            .tests
-            .iter()
-            .filter(|(path, _)| {
-                // consider changed or new test files
-                std::fs::metadata(path.as_str())
-                    .unwrap()
-                    .modified()
-                    .unwrap()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis()
-                    > self.timestamp_coverage
-            })
-            .map(|(path, tests)| {
-                tests
-                    .iter()
-                    .map(|test| {
-                        RustTestItem::new(
-                            path.clone(),
-                            test.module_path.join("::"),
-                            test.method_name.clone(),
-                        )
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .flatten()
-            .collect();
-
-        self.file_coverage.iter().for_each(|(path, cov_tests)| {
-            // TODO: Skip file if it does not exist
-            if std::fs::metadata(path.as_str())
-                .unwrap()
-                .modified()
-                .unwrap()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis()
-                > self.timestamp_coverage
-            {
-                cov_tests.tests.iter().for_each(|test| {
-                    coverage_tests.push(RustTestItem::new(
-                        cov_tests.path.clone(),
-                        test.module_path.join("::"),
-                        test.method_name.clone(),
-                    ));
-                });
-            }
-        });
-        coverage_tests
+        self.uncovered_tests.iter().cloned().collect()
     }
 }
 
