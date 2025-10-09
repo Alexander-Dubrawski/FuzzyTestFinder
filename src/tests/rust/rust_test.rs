@@ -339,7 +339,7 @@ impl Tests for RustTests {
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_millis()
-                > self.timestamp
+                > self.timestamp_coverage
             {
                 cov_tests.tests.iter().for_each(|test| {
                     coverage_tests.push(RustTestItem::new(
