@@ -237,7 +237,6 @@ fn run_test_partition(
             command.arg("tarpaulin");
             command.arg("--skip-clean");
             command.arg("--");
-            command.arg("--nocapture");
             command.arg(test);
         } else {
             command.arg("cargo");
