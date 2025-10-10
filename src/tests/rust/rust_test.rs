@@ -27,7 +27,7 @@ pub struct RustTests {
     #[serde(skip_serializing, skip_deserializing)]
     pub module_paths: HashMap<Vec<String>, PathBuf>,
     pub file_coverage: HashMap<String, CoverageRustTests>,
-    pub uncovered_tests: HashSet<RustTestItem>
+    pub uncovered_tests: HashSet<RustTestItem>,
 }
 
 impl RustTests {
@@ -137,16 +137,15 @@ impl RustTests {
                 > self.timestamp_coverage
             {
                 cov_tests.tests.iter().for_each(|test| {
-                    coverage_tests.push(                        RustTestItem::new(
-                            path.clone(),
-                            test.module_path.join("::"),
-                            test.method_name.clone(),
-                        ));
+                    coverage_tests.push(test.clone());
                 });
             }
         });
         self.uncovered_tests.extend(coverage_tests);
-        self.timestamp_coverage = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
+        self.timestamp_coverage = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
     }
 
     fn resolve_module_paths(&mut self) -> Result<(), FztError> {
@@ -211,7 +210,7 @@ pub struct RustTest {
 
 pub struct CoverageRustTests {
     pub path: String,
-    pub tests: HashSet<RustTest>,
+    pub tests: HashSet<RustTestItem>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
@@ -325,10 +324,24 @@ impl Tests for RustTests {
                             .map(|s| s.to_string())
                             .collect::<Vec<String>>();
                         let test_name = module_path.pop().expect("Test needs to exist");
-                        cov_tests.tests.insert(RustTest {
-                            module_path: module_path,
-                            method_name: test_name,
-                        });
+                        let test_path = self
+                            .module_paths
+                            .get(&module_path)
+                            .ok_or(FztError::GeneralParsingError(format!(
+                                "No module path found for test: {:?} -> {}",
+                                module_path, test_name
+                            )))
+                            .unwrap();
+                        let path = test_path.to_str().expect("Path needs to exist").to_string();
+                        let relative_path = get_relative_path(&self.root_folder, &path).unwrap();
+                        let item = RustTestItem::new(
+                            relative_path,
+                            // TODO: DO not join again?
+                            module_path.join("::"),
+                            test_name,
+                        );
+                        self.uncovered_tests.remove(&item);
+                        cov_tests.tests.insert(item);
                     });
                 }
                 None => {
@@ -337,15 +350,31 @@ impl Tests for RustTests {
                         path: relative_path.clone(),
                         tests: HashSet::from_iter(tests.iter().map(|test| {
                             // TODO Refactor to use RustTestParser logic
+                            // TODO Add function to extract RustTestItem from cargo line
                             let mut module_path = test
                                 .split("::")
                                 .map(|s| s.to_string())
                                 .collect::<Vec<String>>();
                             let test_name = module_path.pop().expect("Test needs to exist");
-                            RustTest {
-                                module_path: module_path,
-                                method_name: test_name,
-                            }
+                            let test_path = self
+                                .module_paths
+                                .get(&module_path)
+                                .ok_or(FztError::GeneralParsingError(format!(
+                                    "No module path found for test: {:?} -> {}",
+                                    module_path, test_name
+                                )))
+                                .unwrap();
+                            let path = test_path.to_str().expect("Path needs to exist").to_string();
+                            let relative_path =
+                                get_relative_path(&self.root_folder, &path).unwrap();
+                            let item = RustTestItem::new(
+                                relative_path,
+                                // TODO: DO not join again?
+                                module_path.join("::"),
+                                test_name,
+                            );
+                            self.uncovered_tests.remove(&item);
+                            item
                         })),
                     };
                     self.file_coverage
