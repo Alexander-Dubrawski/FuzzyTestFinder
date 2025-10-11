@@ -12,10 +12,79 @@ use crate::{
         Test, Tests,
         rust::{ParseRustTest, mod_resolver::get_module_paths, rust_test_parser::RustTestParser},
     },
-    utils::path_resolver::get_relative_path,
+    utils::{file::get_file_modification_timestamp, path_resolver::get_relative_path},
 };
 
 use super::helper::parse_failed_tests;
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub struct RustTest {
+    pub module_path: Vec<String>,
+    pub method_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+
+pub struct CoverageRustTests {
+    pub path: String,
+    pub tests: HashSet<RustTestItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub struct RustTestItem {
+    pub path: String,
+    pub module_path: String,
+    pub test: String,
+}
+
+impl RustTestItem {
+    pub fn new(path: String, module_path: String, test: String) -> Self {
+        Self {
+            path,
+            module_path,
+            test,
+        }
+    }
+
+    pub fn try_from_cargo_test(
+        test: &str,
+        module_paths: &HashMap<Vec<String>, PathBuf>,
+        root_folder: &str,
+    ) -> Result<Self, FztError> {
+        let mut module_path = test
+            .split("::")
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>();
+        let test_name = module_path.pop().expect("Test needs to exist");
+        let test_path = module_paths
+            .get(&module_path)
+            .ok_or(FztError::GeneralParsingError(format!(
+                "No module path found for test: {:?} -> {}",
+                module_path, test_name
+            )))?;
+        let path = test_path.to_str().expect("Path needs to exist").to_string();
+        let relative_path = get_relative_path(root_folder, &path)?;
+        Ok(RustTestItem::new(
+            relative_path,
+            module_path.join("::"),
+            test_name,
+        ))
+    }
+}
+
+impl Test for RustTestItem {
+    fn runtime_argument(&self) -> String {
+        format!("{}::{}", self.module_path, self.test)
+    }
+
+    fn name(&self) -> String {
+        format!("{}::{}", self.path, self.test)
+    }
+
+    fn file_path(&self) -> String {
+        self.path.clone()
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RustTests {
@@ -95,20 +164,19 @@ impl RustTests {
         Ok(updated)
     }
 
-    fn update_coverage(&mut self) {
+    fn update_uncovered_tests(&mut self) {
+        // Remove test related to deleted files
+        self.file_coverage
+            .retain(|path, _| Path::new(path).exists());
+        self.uncovered_tests
+            .retain(|test| Path::new(&test.path).exists());
+
         let mut coverage_tests: Vec<RustTestItem> = self
             .tests
             .iter()
             .filter(|(path, _)| {
                 // consider changed or new test files
-                std::fs::metadata(path.as_str())
-                    .unwrap()
-                    .modified()
-                    .unwrap()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_millis()
-                    > self.timestamp_coverage
+                get_file_modification_timestamp(path.as_str()) > self.timestamp_coverage
             })
             .map(|(path, tests)| {
                 tests
@@ -126,16 +194,7 @@ impl RustTests {
             .collect();
 
         self.file_coverage.iter().for_each(|(path, cov_tests)| {
-            // TODO: Skip file if it does not exist
-            if std::fs::metadata(path.as_str())
-                .unwrap()
-                .modified()
-                .unwrap()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis()
-                > self.timestamp_coverage
-            {
+            if get_file_modification_timestamp(path.as_str()) > self.timestamp_coverage {
                 cov_tests.tests.iter().for_each(|test| {
                     coverage_tests.push(test.clone());
                 });
@@ -144,7 +203,7 @@ impl RustTests {
         self.uncovered_tests.extend(coverage_tests);
         self.timestamp_coverage = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("System clock may have gone backwards")
             .as_millis();
     }
 
@@ -200,50 +259,6 @@ impl RustTests {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct RustTest {
-    pub module_path: Vec<String>,
-    pub method_name: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-
-pub struct CoverageRustTests {
-    pub path: String,
-    pub tests: HashSet<RustTestItem>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct RustTestItem {
-    pub path: String,
-    pub module_path: String,
-    pub test: String,
-}
-
-impl RustTestItem {
-    pub fn new(path: String, module_path: String, test: String) -> Self {
-        Self {
-            path,
-            module_path,
-            test,
-        }
-    }
-}
-
-impl Test for RustTestItem {
-    fn runtime_argument(&self) -> String {
-        format!("{}::{}", self.module_path, self.test)
-    }
-
-    fn name(&self) -> String {
-        format!("{}::{}", self.path, self.test)
-    }
-
-    fn file_path(&self) -> String {
-        self.path.clone()
-    }
-}
-
 impl Tests for RustTests {
     fn to_json(&self) -> Result<String, FztError> {
         serde_json::to_string(&self).map_err(FztError::from)
@@ -270,7 +285,7 @@ impl Tests for RustTests {
 
     fn update(&mut self) -> Result<bool, FztError> {
         let updated = self.update_tests(&RustTestParser::default())?;
-        self.update_coverage();
+        self.update_uncovered_tests();
         Ok(updated)
     }
 
@@ -310,72 +325,43 @@ impl Tests for RustTests {
         if self.module_paths.is_empty() {
             self.resolve_module_paths()?;
         }
-        // TODO: Update uncovered_tests, remove tests
         let mut updated = false;
         for (relative_path, tests) in coverage.iter() {
             let entry = self.file_coverage.get_mut(relative_path);
             match entry {
                 Some(cov_tests) => {
-                    tests.iter().for_each(|test| {
+                    tests.iter().try_for_each(|test| {
                         updated = true;
-                        // TODO Refactor to use RustTestParser logic
-                        let mut module_path = test
-                            .split("::")
-                            .map(|s| s.to_string())
-                            .collect::<Vec<String>>();
-                        let test_name = module_path.pop().expect("Test needs to exist");
-                        let test_path = self
-                            .module_paths
-                            .get(&module_path)
-                            .ok_or(FztError::GeneralParsingError(format!(
-                                "No module path found for test: {:?} -> {}",
-                                module_path, test_name
-                            )))
-                            .unwrap();
-                        let path = test_path.to_str().expect("Path needs to exist").to_string();
-                        let relative_path = get_relative_path(&self.root_folder, &path).unwrap();
-                        let item = RustTestItem::new(
-                            relative_path,
-                            // TODO: DO not join again?
-                            module_path.join("::"),
-                            test_name,
-                        );
+                        let item = RustTestItem::try_from_cargo_test(
+                            test,
+                            &self.module_paths,
+                            &self.root_folder,
+                        )?;
                         self.uncovered_tests.remove(&item);
                         cov_tests.tests.insert(item);
-                    });
+                        Ok::<(), FztError>(())
+                    })?;
                 }
                 None => {
                     updated = true;
+                    let tests = HashSet::from_iter(
+                        tests
+                            .iter()
+                            .map(|test| {
+                                let item = RustTestItem::try_from_cargo_test(
+                                    test,
+                                    &self.module_paths,
+                                    &self.root_folder,
+                                )?;
+                                self.uncovered_tests.remove(&item);
+                                Ok(item)
+                            })
+                            .collect::<Result<Vec<RustTestItem>, FztError>>()?
+                            .into_iter(),
+                    );
                     let cov_tests = CoverageRustTests {
                         path: relative_path.clone(),
-                        tests: HashSet::from_iter(tests.iter().map(|test| {
-                            // TODO Refactor to use RustTestParser logic
-                            // TODO Add function to extract RustTestItem from cargo line
-                            let mut module_path = test
-                                .split("::")
-                                .map(|s| s.to_string())
-                                .collect::<Vec<String>>();
-                            let test_name = module_path.pop().expect("Test needs to exist");
-                            let test_path = self
-                                .module_paths
-                                .get(&module_path)
-                                .ok_or(FztError::GeneralParsingError(format!(
-                                    "No module path found for test: {:?} -> {}",
-                                    module_path, test_name
-                                )))
-                                .unwrap();
-                            let path = test_path.to_str().expect("Path needs to exist").to_string();
-                            let relative_path =
-                                get_relative_path(&self.root_folder, &path).unwrap();
-                            let item = RustTestItem::new(
-                                relative_path,
-                                // TODO: DO not join again?
-                                module_path.join("::"),
-                                test_name,
-                            );
-                            self.uncovered_tests.remove(&item);
-                            item
-                        })),
+                        tests: tests,
                     };
                     self.file_coverage
                         .insert(relative_path.to_string(), cov_tests);
