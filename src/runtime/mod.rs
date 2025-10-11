@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Receiver;
 
@@ -31,18 +33,6 @@ pub enum Debugger {
     Select,
 }
 
-pub trait RuntimeFormatter {
-    fn line(&mut self, line: &str) -> Result<(), FztError>;
-}
-
-pub struct DefaultFormatter;
-impl RuntimeFormatter for DefaultFormatter {
-    fn line(&mut self, line: &str) -> Result<(), FztError> {
-        println!("{}", line);
-        Ok(())
-    }
-}
-
 pub trait Runtime {
     fn run_tests(
         &self,
@@ -51,6 +41,7 @@ pub trait Runtime {
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
         receiver: Option<Receiver<String>>,
+        coverage: &mut Option<HashMap<String, Vec<String>>>,
     ) -> Result<Option<String>, FztError>;
     fn name(&self) -> String;
 }

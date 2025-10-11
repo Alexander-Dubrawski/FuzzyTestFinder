@@ -93,7 +93,7 @@ struct Cli {
     )]
     history: bool,
 
-    #[arg(long, default_value_t = false, short, help = "Clear history")]
+    #[arg(long, default_value_t = false, help = "Clear history")]
     clear_history: bool,
 
     #[arg(
@@ -155,6 +155,14 @@ struct Cli {
         help = "Select from failed tests in the last run"
     )]
     failed: bool,
+
+    #[arg(
+        long,
+        short,
+        default_value_t = false,
+        help = "Tests that cover changed files, since last run with this option"
+    )]
+    covered: bool,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -306,6 +314,7 @@ pub fn parse_cli() -> Result<Config, FztError> {
         true,
         language,
         search_engine,
+        cli.covered,
     );
 
     Ok(Config {

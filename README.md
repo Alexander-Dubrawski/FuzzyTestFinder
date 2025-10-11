@@ -137,6 +137,12 @@ fzt --all -- --locked ...
 fzt --w
 fzt --w -m directory
 fzt -w --all
+
+
+# See all test related to changed files
+# Will pick up tests covering changed file since last run with -c or --covered
+fzt -c
+fzt --covered
 ```
 
 ## Supported languages

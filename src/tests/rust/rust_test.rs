@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    path::Path,
+    path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -12,17 +12,91 @@ use crate::{
         Test, Tests,
         rust::{ParseRustTest, mod_resolver::get_module_paths, rust_test_parser::RustTestParser},
     },
-    utils::path_resolver::get_relative_path,
+    utils::{file::get_file_modification_timestamp, path_resolver::get_relative_path},
 };
 
 use super::helper::parse_failed_tests;
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub struct RustTest {
+    pub module_path: Vec<String>,
+    pub method_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+
+pub struct CoverageRustTests {
+    pub path: String,
+    pub tests: HashSet<RustTestItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub struct RustTestItem {
+    pub path: String,
+    pub module_path: String,
+    pub test: String,
+}
+
+impl RustTestItem {
+    pub fn new(path: String, module_path: String, test: String) -> Self {
+        Self {
+            path,
+            module_path,
+            test,
+        }
+    }
+
+    pub fn try_from_cargo_test(
+        test: &str,
+        module_paths: &HashMap<Vec<String>, PathBuf>,
+        root_folder: &str,
+    ) -> Result<Self, FztError> {
+        let mut module_path = test
+            .split("::")
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>();
+        let test_name = module_path.pop().expect("Test needs to exist");
+        let test_path = module_paths
+            .get(&module_path)
+            .ok_or(FztError::GeneralParsingError(format!(
+                "No module path found for test: {:?} -> {}",
+                module_path, test_name
+            )))?;
+        let path = test_path.to_str().expect("Path needs to exist").to_string();
+        let relative_path = get_relative_path(root_folder, &path)?;
+        Ok(RustTestItem::new(
+            relative_path,
+            module_path.join("::"),
+            test_name,
+        ))
+    }
+}
+
+impl Test for RustTestItem {
+    fn runtime_argument(&self) -> String {
+        format!("{}::{}", self.module_path, self.test)
+    }
+
+    fn name(&self) -> String {
+        format!("{}::{}", self.path, self.test)
+    }
+
+    fn file_path(&self) -> String {
+        self.path.clone()
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RustTests {
     pub root_folder: String,
     pub timestamp: u128,
+    pub timestamp_coverage: u128,
     pub tests: HashMap<String, Vec<RustTest>>,
     pub failed_tests: HashMap<String, Vec<RustTest>>,
+    #[serde(skip_serializing, skip_deserializing)]
+    pub module_paths: HashMap<Vec<String>, PathBuf>,
+    pub file_coverage: HashMap<String, CoverageRustTests>,
+    pub uncovered_tests: HashSet<RustTestItem>,
 }
 
 impl RustTests {
@@ -30,8 +104,12 @@ impl RustTests {
         Self {
             root_folder,
             timestamp: 0,
+            timestamp_coverage: 0,
             tests: HashMap::new(),
             failed_tests: HashMap::new(),
+            file_coverage: HashMap::new(),
+            module_paths: HashMap::new(),
+            uncovered_tests: HashSet::new(),
         }
     }
 
@@ -50,6 +128,7 @@ impl RustTests {
             }
         }
         let updated = if !up_to_date {
+            self.resolve_module_paths()?;
             self.refill_tests(cargo_tests)?;
             self.timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
             true
@@ -85,7 +164,50 @@ impl RustTests {
         Ok(updated)
     }
 
-    fn refill_tests(&mut self, cargo_tests: Vec<(Vec<String>, String)>) -> Result<(), FztError> {
+    fn update_uncovered_tests(&mut self) {
+        // Remove test related to deleted files
+        self.file_coverage
+            .retain(|path, _| Path::new(path).exists());
+        self.uncovered_tests
+            .retain(|test| Path::new(&test.path).exists());
+
+        let mut coverage_tests: Vec<RustTestItem> = self
+            .tests
+            .iter()
+            .filter(|(path, _)| {
+                // consider changed or new test files
+                get_file_modification_timestamp(path.as_str()) > self.timestamp_coverage
+            })
+            .map(|(path, tests)| {
+                tests
+                    .iter()
+                    .map(|test| {
+                        RustTestItem::new(
+                            path.clone(),
+                            test.module_path.join("::"),
+                            test.method_name.clone(),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .flatten()
+            .collect();
+
+        self.file_coverage.iter().for_each(|(path, cov_tests)| {
+            if get_file_modification_timestamp(path.as_str()) > self.timestamp_coverage {
+                cov_tests.tests.iter().for_each(|test| {
+                    coverage_tests.push(test.clone());
+                });
+            }
+        });
+        self.uncovered_tests.extend(coverage_tests);
+        self.timestamp_coverage = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("System clock may have gone backwards")
+            .as_millis();
+    }
+
+    fn resolve_module_paths(&mut self) -> Result<(), FztError> {
         let mut path = Path::new(&self.root_folder).to_path_buf();
         if path.join("src").exists() {
             path = path.join("src");
@@ -102,15 +224,20 @@ impl RustTests {
                 path
             )));
         }
-        let module_paths = get_module_paths(&path)?;
+        self.module_paths = get_module_paths(&path)?;
+        Ok(())
+    }
+
+    fn refill_tests(&mut self, cargo_tests: Vec<(Vec<String>, String)>) -> Result<(), FztError> {
         let mut updated_tests: HashMap<String, Vec<RustTest>> = HashMap::new();
         for (module_path, method_name) in cargo_tests.into_iter() {
-            let test_path = module_paths
-                .get(&module_path)
-                .ok_or(FztError::GeneralParsingError(format!(
-                    "No module path found for test: {:?} -> {}",
-                    module_path, method_name
-                )))?;
+            let test_path =
+                self.module_paths
+                    .get(&module_path)
+                    .ok_or(FztError::GeneralParsingError(format!(
+                        "No module path found for test: {:?} -> {}",
+                        module_path, method_name
+                    )))?;
             let path = test_path.to_str().expect("Path needs to exist").to_string();
             let rust_test = RustTest {
                 module_path: module_path,
@@ -129,42 +256,6 @@ impl RustTests {
         }
         self.tests = updated_tests;
         Ok(())
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct RustTest {
-    pub module_path: Vec<String>,
-    pub method_name: String,
-}
-
-pub struct RustTestItem {
-    pub path: String,
-    pub module_path: String,
-    pub test: String,
-}
-
-impl RustTestItem {
-    pub fn new(path: String, module_path: String, test: String) -> Self {
-        Self {
-            path,
-            module_path,
-            test,
-        }
-    }
-}
-
-impl Test for RustTestItem {
-    fn runtime_argument(&self) -> String {
-        format!("{}::{}", self.module_path, self.test)
-    }
-
-    fn name(&self) -> String {
-        format!("{}::{}", self.path, self.test)
-    }
-
-    fn file_path(&self) -> String {
-        self.path.clone()
     }
 }
 
@@ -193,7 +284,9 @@ impl Tests for RustTests {
     }
 
     fn update(&mut self) -> Result<bool, FztError> {
-        self.update_tests(&RustTestParser::default())
+        let updated = self.update_tests(&RustTestParser::default())?;
+        self.update_uncovered_tests();
+        Ok(updated)
     }
 
     fn update_failed(&mut self, runtime_output: &str) -> bool {
@@ -223,6 +316,67 @@ impl Tests for RustTests {
             })
             .flatten()
             .collect()
+    }
+
+    fn update_file_coverage(
+        &mut self,
+        coverage: &HashMap<String, Vec<String>>,
+    ) -> Result<bool, FztError> {
+        if self.module_paths.is_empty() {
+            self.resolve_module_paths()?;
+        }
+        let mut updated = false;
+        for (relative_path, tests) in coverage.iter() {
+            let entry = self.file_coverage.get_mut(relative_path);
+            match entry {
+                Some(cov_tests) => {
+                    tests.iter().try_for_each(|test| {
+                        updated = true;
+                        let item = RustTestItem::try_from_cargo_test(
+                            test,
+                            &self.module_paths,
+                            &self.root_folder,
+                        )?;
+                        self.uncovered_tests.remove(&item);
+                        cov_tests.tests.insert(item);
+                        Ok::<(), FztError>(())
+                    })?;
+                }
+                None => {
+                    updated = true;
+                    let tests = HashSet::from_iter(
+                        tests
+                            .iter()
+                            .map(|test| {
+                                let item = RustTestItem::try_from_cargo_test(
+                                    test,
+                                    &self.module_paths,
+                                    &self.root_folder,
+                                )?;
+                                self.uncovered_tests.remove(&item);
+                                Ok(item)
+                            })
+                            .collect::<Result<Vec<RustTestItem>, FztError>>()?
+                            .into_iter(),
+                    );
+                    let cov_tests = CoverageRustTests {
+                        path: relative_path.clone(),
+                        tests,
+                    };
+                    self.file_coverage
+                        .insert(relative_path.to_string(), cov_tests);
+                }
+            }
+        }
+
+        self.file_coverage
+            .retain(|path, _| Path::new(path).exists());
+        self.timestamp_coverage = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
+        Ok(updated)
+    }
+
+    fn get_covered_tests(&self) -> Vec<impl Test> {
+        self.uncovered_tests.iter().cloned().collect()
     }
 }
 

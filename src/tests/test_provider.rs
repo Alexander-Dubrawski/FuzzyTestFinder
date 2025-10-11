@@ -132,6 +132,17 @@ impl TestProvider {
         }
     }
 
+    pub fn new_covered_tests<T: Tests>(tests: &T) -> Self {
+        let available_tests = tests.get_covered_tests();
+        Self {
+            test_selection: extract_test_selection(available_tests.as_slice()),
+            file_selection: extract_file_section(available_tests.as_slice()),
+            dictionary_selection: extract_dictionary_selection(available_tests.as_slice()),
+            runtime_selection: extract_runtime_selection(available_tests.as_slice()),
+            default_test_provider: Some(Box::new(TestProvider::new(tests))),
+        }
+    }
+
     pub fn select_option(&self, select_granularity: &SelectGranularity) -> Vec<&str> {
         match select_granularity {
             SelectGranularity::Test => self
