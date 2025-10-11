@@ -1,10 +1,11 @@
-use std::{process::Command, sync::mpsc::Receiver};
+use std::{collections::HashMap, process::Command, sync::mpsc::Receiver};
 
 use itertools::Itertools;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, DefaultFormatter, PythonDebugger, Runtime, utils::run_and_capture_print},
+    runtime::{Debugger, PythonDebugger, Runtime},
+    utils::process::{DefaultFormatter, run_and_capture_print},
 };
 
 #[derive(Default)]
@@ -14,6 +15,7 @@ fn build_command(tests: &[String], runtime_ags: &[String], debugger: &Option<Deb
     let mut command = if debugger.is_some() || runtime_ags.contains(&String::from("--pdb")) {
         Command::new("python")
     } else {
+        // Merge stdout and stderr
         let mut command = Command::new("unbuffer");
         command.arg("python");
         command
@@ -77,6 +79,7 @@ impl Runtime for PytestRuntime {
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
         receiver: Option<Receiver<String>>,
+        _coverage: &mut Option<HashMap<String, Vec<String>>>,
     ) -> Result<Option<String>, FztError> {
         let command = build_command(tests.as_slice(), runtime_ags, &None);
         let mut debug_command = build_command(tests.as_slice(), runtime_ags, debugger);
@@ -97,7 +100,7 @@ impl Runtime for PytestRuntime {
             if output.stopped {
                 Ok(None)
             } else {
-                Ok(Some(output.message))
+                Ok(Some(output.stdout))
             }
         }
     }
