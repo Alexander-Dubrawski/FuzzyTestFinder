@@ -8,13 +8,13 @@ use std::sync::mpsc::{Receiver as StdReceiver, TryRecvError as StdTryRecvError};
 
 use crate::errors::FztError;
 
-pub trait Formatter {
+pub trait OutputFormatter {
     fn line(&mut self, line: &str) -> Result<(), FztError>;
     fn err_line(&mut self, line: &str) -> Result<(), FztError>;
 }
 
 pub struct DefaultFormatter;
-impl Formatter for DefaultFormatter {
+impl OutputFormatter for DefaultFormatter {
     fn line(&mut self, line: &str) -> Result<(), FztError> {
         println!("{}", line);
         Ok(())
@@ -26,7 +26,7 @@ impl Formatter for DefaultFormatter {
 }
 
 pub struct OnlyStdoutFormatter;
-impl Formatter for OnlyStdoutFormatter {
+impl OutputFormatter for OnlyStdoutFormatter {
     fn line(&mut self, line: &str) -> Result<(), FztError> {
         println!("{}", line);
         Ok(())
@@ -37,7 +37,7 @@ impl Formatter for OnlyStdoutFormatter {
 }
 
 pub struct OnlyStderrFormatter;
-impl Formatter for OnlyStderrFormatter {
+impl OutputFormatter for OnlyStderrFormatter {
     fn line(&mut self, _line: &str) -> Result<(), FztError> {
         Ok(())
     }
@@ -114,7 +114,7 @@ pub fn run_and_capture_print<F, R>(
     receiver: Option<R>,
 ) -> Result<CaptureOutput, FztError>
 where
-    F: Formatter,
+    F: OutputFormatter,
     R: StringReceiver,
 {
     let mut child = cmd.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn()?;

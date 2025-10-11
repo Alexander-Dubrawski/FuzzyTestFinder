@@ -1,5 +1,5 @@
 use crate::runtime::utils::partition_tests;
-use crate::utils::process::{DefaultFormatter, Formatter, run_and_capture_print};
+use crate::utils::process::{DefaultFormatter, OutputFormatter, run_and_capture_print};
 use crate::{FztError, utils::process::CaptureOutput};
 use crossbeam_channel::{Receiver as CrossbeamReceiver, unbounded};
 use std::sync::mpsc::Receiver as StdReceiver;
@@ -15,23 +15,22 @@ struct Output {
     pub covered: Vec<String>,
 }
 
-pub struct Engine<F: RuntimeFormatter + Formatter + Clone + Sync + Send> {
+pub struct Engine<F: RuntimeFormatter + OutputFormatter + Clone + Sync + Send> {
     base_command_args: Vec<String>,
     runtime_command_args: Vec<String>,
     runtime_command_args_seperator: String,
     formatter: F,
     tests: Vec<String>,
     number_threads: usize,
+    test_failier_exit_code: i32,
 }
 
-impl<F: RuntimeFormatter + Clone + Formatter + Clone + Sync + Send> Engine<F> {
+impl<F: RuntimeFormatter + Clone + OutputFormatter + Clone + Sync + Send> Engine<F> {
     pub fn new(
-        base_command_args: Vec<String>,
-        runtime_command_args: Vec<String>,
         runtime_command_args_seperator: &str,
-        tests: Vec<String>,
         formatter: F,
         number_threads: Option<usize>,
+        test_failier_exit_code: i32,
     ) -> Self {
         let number_threads = if let Some(number_threads) = number_threads {
             number_threads
@@ -42,13 +41,30 @@ impl<F: RuntimeFormatter + Clone + Formatter + Clone + Sync + Send> Engine<F> {
                 .unwrap_or(NUMBER_THREADS)
         };
         Self {
-            base_command_args,
-            runtime_command_args,
+            base_command_args: vec![],
+            runtime_command_args: vec![],
             runtime_command_args_seperator: runtime_command_args_seperator.to_string(),
-            tests,
+            tests: vec![],
             formatter,
             number_threads,
+            test_failier_exit_code,
         }
+    }
+
+    pub fn base_args(&mut self, args: &[&str]) -> &mut Self {
+        self.base_command_args
+            .extend(args.iter().map(|s| s.to_string()));
+        self
+    }
+
+    pub fn runtime_args(&mut self, args: &[String]) -> &mut Self {
+        self.runtime_command_args.extend(args.iter().cloned());
+        self
+    }
+
+    pub fn tests(&mut self, tests: &[String]) -> &mut Self {
+        self.tests.extend(tests.iter().cloned());
+        self
     }
 
     fn construct_command(&self) -> Command {
@@ -127,9 +143,8 @@ impl<F: RuntimeFormatter + Clone + Formatter + Clone + Sync + Send> Engine<F> {
             println!("\n{} {}\n", program, args.as_slice().join(" "));
         }
 
-        // TODO: Check
-        // || runtime_ags.contains(&String::from("--pdb"))
-        if debugger.is_some() {
+        // TODO: Pytest logic should not leak in
+        if debugger.is_some() || self.runtime_command_args.contains(&String::from("pdb")) {
             command.status()?;
             Ok(None)
         } else {
@@ -189,6 +204,22 @@ impl<F: RuntimeFormatter + Clone + Formatter + Clone + Sync + Send> Engine<F> {
 
         for (formatter, output_result) in formatters.into_iter().zip(outputs.into_iter()) {
             let outputs = output_result?;
+            for output in outputs.iter() {
+                if output.output.status.is_some_and(|status| {
+                    !status.success()
+                        && status
+                            .code()
+                            .is_some_and(|code| code != self.test_failier_exit_code)
+                }) {
+                    return Err(FztError::RuntimeError(format!(
+                        "Tests {} failed with: status: {:?} | stdout: {:?} | stderr: {:?}",
+                        output.test,
+                        output.output.status,
+                        output.output.stdout,
+                        output.output.stderr
+                    )));
+                }
+            }
             if outputs
                 .iter()
                 .any(|capture_output| capture_output.output.stopped)
