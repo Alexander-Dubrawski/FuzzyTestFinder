@@ -5,6 +5,7 @@ use std::sync::mpsc::Receiver;
 
 use crate::errors::FztError;
 
+mod engine;
 pub mod java;
 pub mod python;
 pub mod rust;
