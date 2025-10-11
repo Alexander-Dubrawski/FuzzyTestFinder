@@ -84,19 +84,19 @@ impl OutputFormatter for OnlyStderrFormatter {
     }
 
     fn add(&mut self, _other: Self) {
-        todo!()
+        unimplemented!()
     }
 
     fn finish(self) {
-        todo!()
+        unimplemented!()
     }
 
     fn coverage(&self) -> Vec<String> {
-        todo!()
+        unimplemented!()
     }
 
     fn reset_coverage(&mut self) {
-        todo!()
+        unimplemented!()
     }
 }
 
