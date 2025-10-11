@@ -34,12 +34,6 @@ pub enum Debugger {
     Select,
 }
 
-trait RuntimeFormatter {
-    fn add(&mut self, other: Self);
-    fn finish(self);
-    fn coverage(&self) -> Vec<String>;
-    fn reset_coverage(&mut self);
-}
 
 pub trait Runtime {
     fn run_tests(

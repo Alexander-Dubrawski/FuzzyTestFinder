@@ -11,8 +11,13 @@ use crate::errors::FztError;
 pub trait OutputFormatter {
     fn line(&mut self, line: &str) -> Result<(), FztError>;
     fn err_line(&mut self, line: &str) -> Result<(), FztError>;
+    fn add(&mut self, other: Self);
+    fn finish(self);
+    fn coverage(&self) -> Vec<String>;
+    fn reset_coverage(&mut self);
 }
 
+#[derive(Debug, Clone)]
 pub struct DefaultFormatter;
 impl OutputFormatter for DefaultFormatter {
     fn line(&mut self, line: &str) -> Result<(), FztError> {
@@ -22,6 +27,22 @@ impl OutputFormatter for DefaultFormatter {
     fn err_line(&mut self, line: &str) -> Result<(), FztError> {
         println!("{}", line);
         Ok(())
+    }
+
+    fn add(&mut self, _other: Self) {
+        unimplemented!()
+    }
+
+    fn finish(self) {
+        unimplemented!()
+    }
+
+    fn coverage(&self) -> Vec<String> {
+        unimplemented!()
+    }
+
+    fn reset_coverage(&mut self) {
+        unimplemented!()
     }
 }
 
@@ -34,6 +55,22 @@ impl OutputFormatter for OnlyStdoutFormatter {
     fn err_line(&mut self, _line: &str) -> Result<(), FztError> {
         Ok(())
     }
+
+    fn add(&mut self, _other: Self) {
+        unimplemented!()
+    }
+
+    fn finish(self) {
+        unimplemented!()
+    }
+
+    fn coverage(&self) -> Vec<String> {
+        unimplemented!()
+    }
+
+    fn reset_coverage(&mut self) {
+        unimplemented!()
+    }
 }
 
 pub struct OnlyStderrFormatter;
@@ -44,6 +81,22 @@ impl OutputFormatter for OnlyStderrFormatter {
     fn err_line(&mut self, line: &str) -> Result<(), FztError> {
         println!("{}", line);
         Ok(())
+    }
+
+    fn add(&mut self, _other: Self) {
+        todo!()
+    }
+
+    fn finish(self) {
+        todo!()
+    }
+
+    fn coverage(&self) -> Vec<String> {
+        todo!()
+    }
+
+    fn reset_coverage(&mut self) {
+        todo!()
     }
 }
 

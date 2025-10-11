@@ -5,7 +5,7 @@ use crossbeam_channel::{Receiver as CrossbeamReceiver, unbounded};
 use std::sync::mpsc::Receiver as StdReceiver;
 use std::{collections::HashMap, process::Command};
 
-use super::{Debugger, RuntimeFormatter};
+use super::{Debugger};
 
 const NUMBER_THREADS: usize = 16;
 
@@ -15,7 +15,7 @@ struct Output {
     pub covered: Vec<String>,
 }
 
-pub struct Engine<F: RuntimeFormatter + OutputFormatter + Clone + Sync + Send> {
+pub struct Engine<F: OutputFormatter + Clone + Sync + Send> {
     base_command_args: Vec<String>,
     runtime_command_args: Vec<String>,
     runtime_command_args_seperator: String,
@@ -23,9 +23,10 @@ pub struct Engine<F: RuntimeFormatter + OutputFormatter + Clone + Sync + Send> {
     tests: Vec<String>,
     number_threads: usize,
     test_failier_exit_code: i32,
+    command_envs: HashMap<String, String>,
 }
 
-impl<F: RuntimeFormatter + Clone + OutputFormatter + Clone + Sync + Send> Engine<F> {
+impl<F: Clone + OutputFormatter + Clone + Sync + Send> Engine<F> {
     pub fn new(
         runtime_command_args_seperator: &str,
         formatter: F,
@@ -48,6 +49,7 @@ impl<F: RuntimeFormatter + Clone + OutputFormatter + Clone + Sync + Send> Engine
             formatter,
             number_threads,
             test_failier_exit_code,
+            command_envs: HashMap::new()
         }
     }
 
@@ -64,6 +66,16 @@ impl<F: RuntimeFormatter + Clone + OutputFormatter + Clone + Sync + Send> Engine
 
     pub fn tests(&mut self, tests: &[String]) -> &mut Self {
         self.tests.extend(tests.iter().cloned());
+        self
+    }
+
+    pub fn test(&mut self, test: &str) -> &mut Self {
+        self.tests.push(test.to_string());
+        self
+    }
+
+    pub fn env(&mut self, key: &str, value: &str) -> &mut Self {
+        self.command_envs.insert(key.to_string(), value.to_string());
         self
     }
 

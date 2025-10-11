@@ -1,4 +1,4 @@
-use crate::{FztError, runtime::RuntimeFormatter, utils::process::OutputFormatter};
+use crate::{FztError, utils::process::OutputFormatter};
 
 const TEST_PREFIX: &str = "test ";
 const TEST_FAILED_SUFFIX: &str = " ... FAILED";
@@ -62,49 +62,6 @@ impl CargoFormatter {
             seconds: 0f64,
             coverage: vec![],
         }
-    }
-}
-
-impl RuntimeFormatter for CargoFormatter {
-    fn add(&mut self, other: CargoFormatter) {
-        self.failed_tests.extend(other.failed_tests.into_iter());
-        self.passed += other.passed;
-        self.failed += other.failed;
-        self.seconds += other.seconds;
-        self.ignored += other.ignored;
-        self.measured += other.measured;
-    }
-
-    fn finish(self) {
-        if self.failed_tests.is_empty() {
-            println!(
-                "\ntest result: \x1b[32mok\x1b[0m. {} passed; 0 failed; {} measured; {} filtered out; finished in {:.3}s",
-                self.passed, self.measured, self.ignored, self.seconds
-            );
-        } else {
-            println!("\nfailures:");
-            for (_, error) in &self.failed_tests {
-                if !error.is_empty() {
-                    println!("{}", error);
-                }
-            }
-            println!("\nfailures:");
-            for (test, _) in &self.failed_tests {
-                println!("    {}", test);
-            }
-            println!(
-                "\ntest result: \x1b[31mFAILED\x1b[0m. {} passed; {} failed; {} measured; {} filtered out; finished in {:.3}s",
-                self.passed, self.failed, self.measured, self.ignored, self.seconds
-            );
-        }
-    }
-
-    fn coverage(&self) -> Vec<String> {
-        self.coverage.clone()
-    }
-
-    fn reset_coverage(&mut self) {
-        self.coverage = vec![];
     }
 }
 
@@ -199,5 +156,45 @@ impl OutputFormatter for CargoFormatter {
 
     fn err_line(&mut self, _line: &str) -> Result<(), FztError> {
         Ok(())
+    }
+    fn add(&mut self, other: CargoFormatter) {
+        self.failed_tests.extend(other.failed_tests.into_iter());
+        self.passed += other.passed;
+        self.failed += other.failed;
+        self.seconds += other.seconds;
+        self.ignored += other.ignored;
+        self.measured += other.measured;
+    }
+
+    fn finish(self) {
+        if self.failed_tests.is_empty() {
+            println!(
+                "\ntest result: \x1b[32mok\x1b[0m. {} passed; 0 failed; {} measured; {} filtered out; finished in {:.3}s",
+                self.passed, self.measured, self.ignored, self.seconds
+            );
+        } else {
+            println!("\nfailures:");
+            for (_, error) in &self.failed_tests {
+                if !error.is_empty() {
+                    println!("{}", error);
+                }
+            }
+            println!("\nfailures:");
+            for (test, _) in &self.failed_tests {
+                println!("    {}", test);
+            }
+            println!(
+                "\ntest result: \x1b[31mFAILED\x1b[0m. {} passed; {} failed; {} measured; {} filtered out; finished in {:.3}s",
+                self.passed, self.failed, self.measured, self.ignored, self.seconds
+            );
+        }
+    }
+
+    fn coverage(&self) -> Vec<String> {
+        self.coverage.clone()
+    }
+
+    fn reset_coverage(&mut self) {
+        self.coverage = vec![];
     }
 }
