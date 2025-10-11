@@ -257,12 +257,11 @@ fn run_test_partition(
         } else {
             let captured = run_and_capture_print(command, formatter, Some(receiver.clone()))?;
             let covered = formatter.coverage.clone();
-            // Refactor, do reset instead
             formatter.coverage = vec![];
             output.push(CargoOutput {
                 output: captured,
                 test: test.clone(),
-                covered: covered,
+                covered,
             });
         }
     }
@@ -342,7 +341,6 @@ impl Runtime for CargoRuntime {
             outputs.iter().for_each(|capture_output| {
                 if let Some(cov) = coverage {
                     capture_output.covered.iter().for_each(|path| {
-                        // TODO Refactor
                         cov.entry(path.to_string())
                             .and_modify(|tests| tests.push(capture_output.test.clone()))
                             .or_insert(vec![capture_output.test.clone()]);

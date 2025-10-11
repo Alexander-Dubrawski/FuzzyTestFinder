@@ -361,7 +361,7 @@ impl Tests for RustTests {
                     );
                     let cov_tests = CoverageRustTests {
                         path: relative_path.clone(),
-                        tests: tests,
+                        tests,
                     };
                     self.file_coverage
                         .insert(relative_path.to_string(), cov_tests);

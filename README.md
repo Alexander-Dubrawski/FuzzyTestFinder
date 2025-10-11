@@ -140,7 +140,7 @@ fzt -w --all
 
 
 # See all test related to changed files
-# Will pich up tests covering changed file since last run with -c or --covered
+# Will pick up tests covering changed file since last run with -c or --covered
 fzt -c
 fzt --covered
 ```
