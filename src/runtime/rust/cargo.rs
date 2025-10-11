@@ -6,7 +6,7 @@ use std::sync::mpsc::Receiver as StdReceiver;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, Runtime, utils::partition_tests},
+    runtime::{Debugger, Runtime, RuntimeFormatter, utils::partition_tests},
     utils::process::{CaptureOutput, DefaultFormatter, Formatter, run_and_capture_print},
 };
 
@@ -75,7 +75,9 @@ impl CargoFormatter {
             coverage: vec![],
         }
     }
+}
 
+impl RuntimeFormatter for CargoFormatter {
     fn add(&mut self, other: CargoFormatter) {
         self.failed_tests.extend(other.failed_tests.into_iter());
         self.passed += other.passed;
@@ -107,6 +109,14 @@ impl CargoFormatter {
                 self.passed, self.failed, self.measured, self.ignored, self.seconds
             );
         }
+    }
+
+    fn coverage(&self) -> Vec<String> {
+        self.coverage.clone()
+    }
+
+    fn reset_coverage(&mut self) {
+        self.coverage = vec![];
     }
 }
 
@@ -256,7 +266,7 @@ fn run_test_partition(
             });
         } else {
             let captured = run_and_capture_print(command, formatter, Some(receiver.clone()))?;
-            let covered = formatter.coverage.clone();
+            let covered = formatter.coverage();
             formatter.coverage = vec![];
             output.push(CargoOutput {
                 output: captured,

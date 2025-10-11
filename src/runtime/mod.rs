@@ -5,6 +5,7 @@ use std::sync::mpsc::Receiver;
 
 use crate::errors::FztError;
 
+mod engine;
 pub mod java;
 pub mod python;
 pub mod rust;
@@ -31,6 +32,13 @@ pub enum Debugger {
     Rust(RustDebugger),
     Java(JavaDebugger),
     Select,
+}
+
+trait RuntimeFormatter {
+    fn add(&mut self, other: Self);
+    fn finish(self);
+    fn coverage(&self) -> Vec<String>;
+    fn reset_coverage(&mut self);
 }
 
 pub trait Runtime {
