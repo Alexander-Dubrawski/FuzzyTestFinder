@@ -1,8 +1,5 @@
 use crossbeam_channel::unbounded;
-use std::{
-    collections::HashMap,
-    process::{Command},
-};
+use std::{collections::HashMap, process::Command};
 
 use crossbeam_channel::Receiver as CrossbeamReceiver;
 use std::sync::mpsc::Receiver as StdReceiver;

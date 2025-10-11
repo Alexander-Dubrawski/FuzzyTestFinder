@@ -1,7 +1,4 @@
-use std::{
-    process::{Command},
-    sync::mpsc::Receiver,
-};
+use std::{process::Command, sync::mpsc::Receiver};
 
 use itertools::Itertools;
 

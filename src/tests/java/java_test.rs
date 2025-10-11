@@ -127,11 +127,12 @@ impl Tests for JavaTests {
 
     fn update_file_coverage(
         &mut self,
-        coverage: &HashMap<String, Vec<String>>,
+        _coverage: &HashMap<String, Vec<String>>,
     ) -> Result<bool, FztError> {
         todo!()
     }
 
+    #[allow(unreachable_code)]
     fn get_covered_tests(&self) -> Vec<impl Test> {
         todo!();
         return Vec::<JavaTestItem>::new();
