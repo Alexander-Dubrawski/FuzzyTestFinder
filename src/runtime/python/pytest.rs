@@ -4,7 +4,8 @@ use itertools::Itertools;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, DefaultFormatter, PythonDebugger, Runtime, utils::run_and_capture_print},
+    runtime::{Debugger, PythonDebugger, Runtime},
+    utils::process::{DefaultFormatter, run_and_capture_print},
 };
 
 #[derive(Default)]
@@ -14,6 +15,7 @@ fn build_command(tests: &[String], runtime_ags: &[String], debugger: &Option<Deb
     let mut command = if debugger.is_some() || runtime_ags.contains(&String::from("--pdb")) {
         Command::new("python")
     } else {
+        // Merge stdout and stderr
         let mut command = Command::new("unbuffer");
         command.arg("python");
         command
@@ -98,7 +100,7 @@ impl Runtime for PytestRuntime {
             if output.stopped {
                 Ok(None)
             } else {
-                Ok(Some(output.message))
+                Ok(Some(output.stdout))
             }
         }
     }

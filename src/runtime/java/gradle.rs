@@ -2,7 +2,8 @@ use std::{collections::HashMap, process::Command, sync::mpsc::Receiver};
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, DefaultFormatter, Runtime, utils::run_and_capture_print},
+    runtime::{Debugger, Runtime},
+    utils::process::{DefaultFormatter, run_and_capture_print},
 };
 
 #[derive(Default)]
@@ -18,6 +19,7 @@ impl Runtime for GradleRuntime {
         receiver: Option<Receiver<String>>,
         _coverage: &mut Option<HashMap<String, Vec<String>>>,
     ) -> Result<Option<String>, FztError> {
+        // Merge stdout and stderr
         let mut command = Command::new("unbuffer");
         command.arg("./gradlew");
         command.arg("-i");
@@ -41,7 +43,7 @@ impl Runtime for GradleRuntime {
         if output.stopped {
             Ok(None)
         } else {
-            Ok(Some(output.message))
+            Ok(Some(output.stdout))
         }
     }
 

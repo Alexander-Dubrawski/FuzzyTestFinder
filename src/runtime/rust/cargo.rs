@@ -1,15 +1,16 @@
 use crossbeam_channel::unbounded;
-use std::{collections::HashMap, process::Command};
+use std::{
+    collections::HashMap,
+    process::{Command},
+};
 
 use crossbeam_channel::Receiver as CrossbeamReceiver;
 use std::sync::mpsc::Receiver as StdReceiver;
 
 use crate::{
     errors::FztError,
-    runtime::{
-        Debugger, DefaultFormatter, Runtime, RuntimeFormatter,
-        utils::{CaptureOutput, partition_tests, run_and_capture_print},
-    },
+    runtime::{Debugger, Runtime, utils::partition_tests},
+    utils::process::{CaptureOutput, DefaultFormatter, Formatter, run_and_capture_print},
 };
 
 const TEST_PREFIX: &str = "test ";
@@ -112,7 +113,7 @@ impl CargoFormatter {
     }
 }
 
-impl RuntimeFormatter for CargoFormatter {
+impl Formatter for CargoFormatter {
     fn line(&mut self, line: &str) -> Result<(), FztError> {
         let plain_bytes = strip_ansi_escapes::strip(line.as_bytes());
         let plain_line = String::from_utf8(plain_bytes).map_err(FztError::from)?;
@@ -200,25 +201,16 @@ impl RuntimeFormatter for CargoFormatter {
 
         Ok(())
     }
+
+    fn err_line(&mut self, _line: &str) -> Result<(), FztError> {
+        Ok(())
+    }
 }
 
 struct CargoOutput {
     pub output: CaptureOutput,
     pub test: String,
     pub covered: Vec<String>,
-}
-
-impl CargoOutput {
-    pub fn new_empty() -> Self {
-        Self {
-            output: CaptureOutput {
-                stopped: false,
-                message: String::new(),
-            },
-            test: String::new(),
-            covered: vec![],
-        }
-    }
 }
 
 fn run_test_partition(
@@ -231,6 +223,7 @@ fn run_test_partition(
 ) -> Result<Vec<CargoOutput>, FztError> {
     let mut output = vec![];
     for test in tests {
+        // Merge stdout and stderr
         let mut command = Command::new("unbuffer");
         if coverage {
             command.arg("cargo");
@@ -302,7 +295,6 @@ impl Runtime for CargoRuntime {
         let mut outputs: Vec<Result<Vec<CargoOutput>, FztError>> =
             (0..partitions.len()).map(|_| Ok(vec![])).collect();
 
-        Command::new("cargo").arg("build").status()?;
         println!("\nRunning {} tests", tests.len());
 
         let (cross_tx, cross_rx) = unbounded();
@@ -341,8 +333,8 @@ impl Runtime for CargoRuntime {
         let mut final_output = String::new();
 
         for (formatter, output_result) in formatters.into_iter().zip(outputs.into_iter()) {
-            let output = output_result?;
-            if output
+            let outputs = output_result?;
+            if outputs
                 .iter()
                 .any(|capture_output| capture_output.output.stopped)
             {
@@ -350,7 +342,7 @@ impl Runtime for CargoRuntime {
             }
             final_formatter.add(formatter);
             final_output.push_str("\n");
-            output.iter().for_each(|capture_output| {
+            outputs.iter().for_each(|capture_output| {
                 if let Some(cov) = coverage {
                     capture_output.covered.iter().for_each(|path| {
                         // TODO Refactor
@@ -359,7 +351,7 @@ impl Runtime for CargoRuntime {
                             .or_insert(vec![capture_output.test.clone()]);
                     });
                 }
-                final_output.push_str(capture_output.output.message.as_str());
+                final_output.push_str(&capture_output.output.stdout.as_str());
             });
         }
         if !verbose {

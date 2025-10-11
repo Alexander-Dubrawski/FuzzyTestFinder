@@ -33,18 +33,6 @@ pub enum Debugger {
     Select,
 }
 
-pub trait RuntimeFormatter {
-    fn line(&mut self, line: &str) -> Result<(), FztError>;
-}
-
-pub struct DefaultFormatter;
-impl RuntimeFormatter for DefaultFormatter {
-    fn line(&mut self, line: &str) -> Result<(), FztError> {
-        println!("{}", line);
-        Ok(())
-    }
-}
-
 pub trait Runtime {
     fn run_tests(
         &self,

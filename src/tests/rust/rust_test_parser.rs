@@ -1,8 +1,14 @@
-use std::process::Command;
+use std::{
+    process::{Command},
+    sync::mpsc::Receiver,
+};
 
 use itertools::Itertools;
 
-use crate::errors::FztError;
+use crate::{
+    errors::FztError,
+    utils::process::{OnlyStderrFormatter, run_and_capture_print},
+};
 
 use super::ParseRustTest;
 
@@ -11,29 +17,34 @@ pub struct RustTestParser {}
 
 impl ParseRustTest for RustTestParser {
     fn parse_tests(&self) -> Result<Vec<(Vec<String>, String)>, FztError> {
-        let binding = Command::new("cargo")
-            .arg("test")
-            .arg("--")
-            .arg("--list")
-            .output()
-            .expect("failed to retrieve Rust tests");
-        let output = std::str::from_utf8(binding.stdout.as_slice())
-            .map(|out| out.to_string())
-            .map_err(FztError::from)?;
-        if binding.status.success() == false {
-            let err = std::str::from_utf8(binding.stderr.as_slice())
-                .map(|out| out.to_string())
-                .map_err(FztError::from)?;
+        let mut command = Command::new("cargo");
+        command.arg("test");
+        command.arg("--");
+        command.arg("--list");
+        command.arg("--color=always");
+        command.env("CARGO_TERM_COLOR", "always");
+
+        let mut formatter = OnlyStderrFormatter;
+
+        let captured = run_and_capture_print(command, &mut formatter, None::<Receiver<String>>)?;
+
+        if let Some(status) = captured.status {
+            if status.success() == false {
+                return Err(FztError::RustError(format!(
+                    "Failed to run `cargo test -- --list`"
+                )));
+            }
+        } else {
             return Err(FztError::RustError(format!(
-                "Failed to run `cargo test -- --list`\n{err}"
+                "Failed to run `cargo test -- --list` no process status received"
             )));
         }
+
         let mut tests = Vec::new();
-        for line in output.lines() {
+        for line in captured.stdout.lines() {
             if line.is_empty() {
                 break;
             }
-            // Parse: cache::manager::tests::get_non_existing_entry: test
             let (path, type_name) =
                 line.split(" ")
                     .collect_tuple()
