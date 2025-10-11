@@ -16,20 +16,20 @@ struct Output {
 pub struct Engine<F: OutputFormatter + Clone + Sync + Send> {
     base_command_args: Vec<String>,
     runtime_command_args: Vec<String>,
-    runtime_command_args_seperator: String,
+    runtime_command_args_separator: String,
     formatter: F,
     tests: Vec<String>,
     number_threads: usize,
-    test_failier_exit_code: i32,
+    test_failure_exit_code: i32,
     command_envs: HashMap<String, String>,
 }
 
-impl<F: Clone + OutputFormatter + Clone + Sync + Send> Engine<F> {
+impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
     pub fn new(
-        runtime_command_args_seperator: &str,
+        runtime_command_args_separator: &str,
         formatter: F,
         number_threads: Option<usize>,
-        test_failier_exit_code: i32,
+        test_failure_exit_code: i32,
     ) -> Self {
         let number_threads = if let Some(number_threads) = number_threads {
             number_threads
@@ -42,11 +42,11 @@ impl<F: Clone + OutputFormatter + Clone + Sync + Send> Engine<F> {
         Self {
             base_command_args: vec![],
             runtime_command_args: vec![],
-            runtime_command_args_seperator: runtime_command_args_seperator.to_string(),
+            runtime_command_args_separator: runtime_command_args_separator.to_string(),
             tests: vec![],
             formatter,
             number_threads,
-            test_failier_exit_code,
+            test_failure_exit_code,
             command_envs: HashMap::new(),
         }
     }
@@ -96,8 +96,8 @@ impl<F: Clone + OutputFormatter + Clone + Sync + Send> Engine<F> {
     }
 
     fn append_runtime_args(&self, command: &mut Command) {
-        if self.runtime_command_args.len() > 0 {
-            command.arg(self.runtime_command_args_seperator.as_str());
+        if !self.runtime_command_args.is_empty() {
+            command.arg(self.runtime_command_args_separator.as_str());
             command.args(&self.runtime_command_args[..]);
         }
     }
@@ -228,7 +228,7 @@ impl<F: Clone + OutputFormatter + Clone + Sync + Send> Engine<F> {
                     !status.success()
                         && status
                             .code()
-                            .is_some_and(|code| code != self.test_failier_exit_code)
+                            .is_some_and(|code| code != self.test_failure_exit_code)
                 }) {
                     return Err(FztError::RuntimeError(format!(
                         "Tests {} failed with: status: {:?} | stdout: {:?} | stderr: {:?}",

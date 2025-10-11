@@ -74,7 +74,7 @@ impl Runtime for PytestRuntime {
         }
 
         engine.execute_single_batch(
-            debugger.is_some() || runtime_ags.contains(&String::from("pdb")),
+            debugger.is_some() || runtime_ags.contains(&String::from("--pdb")),
             receiver,
             verbose,
         )
