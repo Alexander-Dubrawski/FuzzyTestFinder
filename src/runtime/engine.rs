@@ -5,8 +5,6 @@ use crossbeam_channel::{Receiver as CrossbeamReceiver, unbounded};
 use std::sync::mpsc::Receiver as StdReceiver;
 use std::{collections::HashMap, process::Command};
 
-use super::{Debugger};
-
 const NUMBER_THREADS: usize = 16;
 
 struct Output {
@@ -49,13 +47,23 @@ impl<F: Clone + OutputFormatter + Clone + Sync + Send> Engine<F> {
             formatter,
             number_threads,
             test_failier_exit_code,
-            command_envs: HashMap::new()
+            command_envs: HashMap::new(),
         }
     }
 
     pub fn base_args(&mut self, args: &[&str]) -> &mut Self {
         self.base_command_args
             .extend(args.iter().map(|s| s.to_string()));
+        self
+    }
+
+    pub fn base_arg(&mut self, arg: &str) -> &mut Self {
+        self.base_command_args.push(arg.to_string());
+        self
+    }
+
+    pub fn base_args_string(&mut self, args: &[String]) -> &mut Self {
+        self.base_command_args.extend(args.iter().cloned());
         self
     }
 
@@ -137,7 +145,7 @@ impl<F: Clone + OutputFormatter + Clone + Sync + Send> Engine<F> {
 
     pub fn execute_single_batch(
         &self,
-        debugger: &Option<Debugger>,
+        debug_mode: bool,
         receiver: Option<StdReceiver<String>>,
         verbose: bool,
     ) -> Result<Option<String>, FztError> {
@@ -155,8 +163,7 @@ impl<F: Clone + OutputFormatter + Clone + Sync + Send> Engine<F> {
             println!("\n{} {}\n", program, args.as_slice().join(" "));
         }
 
-        // TODO: Pytest logic should not leak in
-        if debugger.is_some() || self.runtime_command_args.contains(&String::from("pdb")) {
+        if debug_mode {
             command.status()?;
             Ok(None)
         } else {

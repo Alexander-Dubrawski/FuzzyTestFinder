@@ -1,10 +1,12 @@
-use std::{collections::HashMap, process::Command, sync::mpsc::Receiver};
+use std::{collections::HashMap, sync::mpsc::Receiver};
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, Runtime},
-    utils::process::{DefaultFormatter, run_and_capture_print},
+    runtime::{Debugger, Runtime, engine::Engine},
+    utils::process::DefaultFormatter,
 };
+
+const JUNIT_FAILURE_EXIT_CODE: i32 = 1;
 
 #[derive(Default)]
 pub struct GradleRuntime {}
@@ -19,32 +21,20 @@ impl Runtime for GradleRuntime {
         receiver: Option<Receiver<String>>,
         _coverage: &mut Option<HashMap<String, Vec<String>>>,
     ) -> Result<Option<String>, FztError> {
-        // Merge stdout and stderr
-        let mut command = Command::new("unbuffer");
-        command.arg("./gradlew");
-        command.arg("-i");
-        runtime_ags.iter().for_each(|arg| {
-            command.arg(arg);
-        });
-        command.arg("test");
-        tests.into_iter().for_each(|test| {
-            command.arg("--tests");
-            command.arg(test);
-        });
-        if verbose {
-            let program = command.get_program().to_str().unwrap();
-            let args: Vec<String> = command
-                .get_args()
-                .map(|arg| arg.to_str().unwrap().to_string())
-                .collect();
-            println!("\n{} {}\n", program, args.as_slice().join(" "));
-        }
-        let output = run_and_capture_print(command, &mut DefaultFormatter, receiver)?;
-        if output.stopped {
-            Ok(None)
-        } else {
-            Ok(Some(output.stdout))
-        }
+        let mut engine = Engine::new("", DefaultFormatter, None, JUNIT_FAILURE_EXIT_CODE);
+        // unbuffer merges stdout and stderr
+        engine.base_args(&["unbuffer", "./gradlew", "-i"]);
+        engine.base_args_string(runtime_ags);
+        engine.base_arg("test");
+        engine.tests(
+            tests
+                .into_iter()
+                .map(|test| vec![String::from("--tests"), test])
+                .flatten()
+                .collect::<Vec<String>>()
+                .as_slice(),
+        );
+        engine.execute_single_batch(false, receiver, verbose)
     }
 
     fn name(&self) -> String {

@@ -4,8 +4,8 @@ use itertools::Itertools;
 
 use crate::{
     errors::FztError,
-    runtime::{engine::Engine, Debugger, PythonDebugger, Runtime},
-    utils::process::{DefaultFormatter},
+    runtime::{Debugger, PythonDebugger, Runtime, engine::Engine},
+    utils::process::DefaultFormatter,
 };
 
 const PYTEST_FAILURE_EXIT_CODE: i32 = 1;
@@ -27,6 +27,7 @@ impl Runtime for PytestRuntime {
         if debugger.is_some() || runtime_ags.contains(&String::from("--pdb")) {
             engine.base_args(&["python", "-m", "pytest", "-s"]);
         } else {
+            // unbuffer merges stdout and stderr
             engine.base_args(&["unbuffer", "python", "-m", "pytest"]);
         }
         engine.runtime_args(runtime_ags);
@@ -72,7 +73,11 @@ impl Runtime for PytestRuntime {
             engine.env("PYTHONBREAKPOINT", "0");
         }
 
-        engine.execute_single_batch(debugger, receiver, verbose)
+        engine.execute_single_batch(
+            debugger.is_some() || runtime_ags.contains(&String::from("pdb")),
+            receiver,
+            verbose,
+        )
     }
 
     fn name(&self) -> String {

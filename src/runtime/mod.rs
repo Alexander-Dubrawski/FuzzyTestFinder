@@ -34,7 +34,6 @@ pub enum Debugger {
     Select,
 }
 
-
 pub trait Runtime {
     fn run_tests(
         &self,
