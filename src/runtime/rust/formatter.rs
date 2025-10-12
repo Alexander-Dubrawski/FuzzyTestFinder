@@ -50,6 +50,7 @@ pub struct CargoFormatter {
     running: bool,
     seconds: f64,
     coverage: Vec<String>,
+    print_output: String,
 }
 
 impl CargoFormatter {
@@ -64,6 +65,7 @@ impl CargoFormatter {
             running: false,
             seconds: 0f64,
             coverage: vec![],
+            print_output: String::new(),
         }
     }
 }
@@ -99,28 +101,32 @@ impl OutputFormatter for CargoFormatter {
 
         // Test Passed
         if plain_line.ends_with("... ok") {
-            println!("{}", line);
+            self.print_output.push_str(line);
+            self.print_output.push_str("\n");
             self.passed += 1;
             return Ok(());
         }
 
         // Test Ignored
         if plain_line.ends_with("... ignored") {
-            println!("{}", line);
+            self.print_output.push_str(line);
+            self.print_output.push_str("\n");
             self.ignored += 1;
             return Ok(());
         }
 
         // Test measured
         if plain_line.ends_with("... measured") {
-            println!("{}", line);
+            self.print_output.push_str(line);
+            self.print_output.push_str("\n");
             self.measured += 1;
             return Ok(());
         }
 
         // Test Failed
         if plain_line.ends_with(TEST_FAILED_SUFFIX) {
-            println!("{}", line);
+            self.print_output.push_str(line);
+            self.print_output.push_str("\n");
             self.failed += 1;
             if let Some(test_name) = extract_test_name(&plain_line) {
                 self.failed_tests.push(FailedTest::new(test_name, ""));
@@ -186,7 +192,7 @@ impl OutputFormatter for CargoFormatter {
                 println!("    {}", failed_test.name);
             }
             println!(
-                "\ntest result: \x1b[31mFAILED\x1b[0m. {} passed; {} failed; {} measured; {} filtered out; finished in {:.3}s",
+                "\ntest result: \x1b[93mFAILED\x1b[0m. {} passed; {} failed; {} measured; {} filtered out; finished in {:.3}s",
                 self.passed, self.failed, self.measured, self.ignored, self.seconds
             );
         }
@@ -202,5 +208,9 @@ impl OutputFormatter for CargoFormatter {
 
     fn failed_tests(&self) -> Vec<FailedTest> {
         self.failed_tests.clone()
+    }
+
+    fn print(&self) {
+        println!("{}", self.print_output);
     }
 }

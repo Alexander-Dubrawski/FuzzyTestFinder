@@ -8,7 +8,7 @@ use std::sync::mpsc::{Receiver as StdReceiver, TryRecvError as StdTryRecvError};
 
 use crate::errors::FztError;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FailedTest {
     pub name: String,
     pub error_msg: String,
@@ -23,6 +23,7 @@ impl FailedTest {
     }
 }
 
+// TODO: Add function that prints all at once, so threats do not print in each other
 pub trait OutputFormatter {
     fn line(&mut self, line: &str) -> Result<(), FztError>;
     fn err_line(&mut self, line: &str) -> Result<(), FztError>;
@@ -31,6 +32,7 @@ pub trait OutputFormatter {
     fn coverage(&self) -> Vec<String>;
     fn reset_coverage(&mut self);
     fn failed_tests(&self) -> Vec<FailedTest>;
+    fn print(&self);
 }
 
 #[derive(Debug, Clone)]
@@ -64,6 +66,8 @@ impl OutputFormatter for DefaultFormatter {
     fn failed_tests(&self) -> Vec<FailedTest> {
         todo!()
     }
+
+    fn print(&self) {}
 }
 
 pub struct OnlyStdoutFormatter;
@@ -95,6 +99,8 @@ impl OutputFormatter for OnlyStdoutFormatter {
     fn failed_tests(&self) -> Vec<FailedTest> {
         todo!()
     }
+
+    fn print(&self) {}
 }
 
 pub struct OnlyStderrFormatter;
@@ -126,6 +132,8 @@ impl OutputFormatter for OnlyStderrFormatter {
     fn failed_tests(&self) -> Vec<FailedTest> {
         todo!()
     }
+
+    fn print(&self) {}
 }
 
 #[allow(dead_code)]
@@ -242,6 +250,8 @@ where
     } else {
         Some(child.wait()?)
     };
+    // print all at once so that threads do not overwrite each other
+    formatter.print();
     let stdout_plain = String::from_utf8(strip_ansi_escapes::strip(stdout_output.as_bytes()))
         .map_err(|e| FztError::from(e))?;
     let stderr_plain = String::from_utf8(strip_ansi_escapes::strip(stderr_output.as_bytes()))
