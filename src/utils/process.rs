@@ -8,6 +8,21 @@ use std::sync::mpsc::{Receiver as StdReceiver, TryRecvError as StdTryRecvError};
 
 use crate::errors::FztError;
 
+#[derive(Debug, Clone)]
+pub struct FailedTest {
+    pub name: String,
+    pub error_msg: String,
+}
+
+impl FailedTest {
+    pub fn new(name: &str, error_msg: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            error_msg: error_msg.to_string(),
+        }
+    }
+}
+
 pub trait OutputFormatter {
     fn line(&mut self, line: &str) -> Result<(), FztError>;
     fn err_line(&mut self, line: &str) -> Result<(), FztError>;
@@ -15,6 +30,7 @@ pub trait OutputFormatter {
     fn finish(self);
     fn coverage(&self) -> Vec<String>;
     fn reset_coverage(&mut self);
+    fn failed_tests(&self) -> Vec<FailedTest>;
 }
 
 #[derive(Debug, Clone)]
@@ -44,6 +60,10 @@ impl OutputFormatter for DefaultFormatter {
     fn reset_coverage(&mut self) {
         unimplemented!()
     }
+
+    fn failed_tests(&self) -> Vec<FailedTest> {
+        todo!()
+    }
 }
 
 pub struct OnlyStdoutFormatter;
@@ -71,6 +91,10 @@ impl OutputFormatter for OnlyStdoutFormatter {
     fn reset_coverage(&mut self) {
         unimplemented!()
     }
+
+    fn failed_tests(&self) -> Vec<FailedTest> {
+        todo!()
+    }
 }
 
 pub struct OnlyStderrFormatter;
@@ -97,6 +121,10 @@ impl OutputFormatter for OnlyStderrFormatter {
 
     fn reset_coverage(&mut self) {
         unimplemented!()
+    }
+
+    fn failed_tests(&self) -> Vec<FailedTest> {
+        todo!()
     }
 }
 

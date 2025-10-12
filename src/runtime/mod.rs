@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Receiver;
 
-use crate::errors::FztError;
+use crate::{errors::FztError, utils::process::FailedTest};
 
 mod engine;
 pub mod java;
@@ -34,6 +34,22 @@ pub enum Debugger {
     Select,
 }
 
+pub struct RuntimeOutput {
+    pub failed_tests: Vec<FailedTest>,
+    pub output: Option<String>,
+    pub coverage: HashMap<String, Vec<String>>,
+}
+
+impl RuntimeOutput {
+    pub fn new_empty() -> Self {
+        Self {
+            failed_tests: vec![],
+            output: None,
+            coverage: HashMap::new(),
+        }
+    }
+}
+
 pub trait Runtime {
     fn run_tests(
         &self,
@@ -42,7 +58,7 @@ pub trait Runtime {
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
         receiver: Option<Receiver<String>>,
-        coverage: &mut Option<HashMap<String, Vec<String>>>,
-    ) -> Result<Option<String>, FztError>;
+        run_coverage: bool,
+    ) -> Result<RuntimeOutput, FztError>;
     fn name(&self) -> String;
 }

@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-
 use std::sync::mpsc::Receiver as StdReceiver;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, Runtime, engine::Engine},
+    runtime::{Debugger, Runtime, RuntimeOutput, engine::Engine},
 };
 
 use super::formatter::CargoFormatter;
@@ -22,8 +20,8 @@ impl Runtime for CargoRuntime {
         runtime_args: &[String],
         _debugger: &Option<Debugger>,
         receiver: Option<StdReceiver<String>>,
-        coverage: &mut Option<HashMap<String, Vec<String>>>,
-    ) -> Result<Option<String>, FztError> {
+        run_coverage: bool,
+    ) -> Result<RuntimeOutput, FztError> {
         let mut engine = Engine::new(
             "--",
             CargoFormatter::new(),
@@ -31,7 +29,7 @@ impl Runtime for CargoRuntime {
             RUST_TEST_FAILURE_EXIT_CODE,
         );
         // unbuffer merges stdout and stderr
-        if coverage.is_some() {
+        if run_coverage {
             engine.base_args(&["unbuffer", "cargo", "tarpaulin", "--skip-clean", "--"]);
         } else {
             engine.base_args(&["unbuffer", "cargo", "test"]);
@@ -39,7 +37,7 @@ impl Runtime for CargoRuntime {
         engine.runtime_args(runtime_args);
         engine.tests(tests.as_slice());
 
-        engine.execute_per_item(coverage, receiver, verbose)
+        engine.execute_per_item(run_coverage, receiver, verbose)
     }
 
     fn name(&self) -> String {

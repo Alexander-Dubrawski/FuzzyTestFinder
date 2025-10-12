@@ -5,6 +5,7 @@ use super::rust_test::RustTest;
 static FAILED_TEST_PREFIX: usize = "test ".len();
 static FAILED_TEST_SUFFIX: usize = " ... FAILED".len();
 
+// TODO: This already exists in the formatter
 pub fn parse_failed_tests(
     output: &str,
     current_tests: &HashMap<String, Vec<RustTest>>,

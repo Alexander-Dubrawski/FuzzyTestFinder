@@ -5,6 +5,8 @@ use crossbeam_channel::{Receiver as CrossbeamReceiver, unbounded};
 use std::sync::mpsc::Receiver as StdReceiver;
 use std::{collections::HashMap, process::Command};
 
+use super::RuntimeOutput;
+
 const NUMBER_THREADS: usize = 16;
 
 struct Output {
@@ -148,7 +150,7 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
         debug_mode: bool,
         receiver: Option<StdReceiver<String>>,
         verbose: bool,
-    ) -> Result<Option<String>, FztError> {
+    ) -> Result<RuntimeOutput, FztError> {
         let mut command = self.construct_command();
         self.tests.iter().for_each(|test| {
             command.arg(test);
@@ -165,24 +167,29 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
 
         if debug_mode {
             command.status()?;
-            Ok(None)
+            Ok(RuntimeOutput::new_empty())
         } else {
             let output = run_and_capture_print(command, &mut DefaultFormatter, receiver)?;
             if output.stopped {
-                Ok(None)
+                Ok(RuntimeOutput::new_empty())
             } else {
-                Ok(Some(output.stdout))
+                Ok(RuntimeOutput {
+                    failed_tests: vec![],
+                    output: Some(output.stdout),
+                    coverage: HashMap::new(),
+                })
             }
         }
     }
 
     pub fn execute_per_item(
         &self,
-        coverage: &mut Option<HashMap<String, Vec<String>>>,
+        run_coverage: bool,
         receiver: Option<StdReceiver<String>>,
         verbose: bool,
-    ) -> Result<Option<String>, FztError> {
+    ) -> Result<RuntimeOutput, FztError> {
         let partitions = partition_tests(&self.tests, self.number_threads);
+        let mut coverage: HashMap<String, Vec<String>> = HashMap::new();
         let mut formatters = vec![self.formatter.clone(); partitions.len()];
         let mut outputs: Vec<Result<Vec<Output>, FztError>> =
             (0..partitions.len()).map(|_| Ok(vec![])).collect();
@@ -243,14 +250,15 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
                 .iter()
                 .any(|capture_output| capture_output.output.stopped)
             {
-                return Ok(None);
+                return Ok(RuntimeOutput::new_empty());
             }
             final_formatter.add(formatter);
             final_output.push_str("\n");
             outputs.iter().for_each(|capture_output| {
-                if let Some(cov) = coverage {
+                if run_coverage {
                     capture_output.covered.iter().for_each(|path| {
-                        cov.entry(path.to_string())
+                        coverage
+                            .entry(path.to_string())
                             .and_modify(|tests| tests.push(capture_output.test.clone()))
                             .or_insert(vec![capture_output.test.clone()]);
                     });
@@ -258,9 +266,15 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
                 final_output.push_str(&capture_output.output.stdout.as_str());
             });
         }
+        let failed_tests = final_formatter.failed_tests();
         if !verbose {
+            // TODO: Adjust finish to return failed_tests?
             final_formatter.finish();
         }
-        Ok(Some(final_output))
+        Ok(RuntimeOutput {
+            failed_tests: failed_tests,
+            output: Some(final_output),
+            coverage,
+        })
     }
 }

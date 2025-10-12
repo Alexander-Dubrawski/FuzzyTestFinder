@@ -1,4 +1,7 @@
-use crate::{FztError, utils::process::OutputFormatter};
+use crate::{
+    FztError,
+    utils::process::{FailedTest, OutputFormatter},
+};
 
 const TEST_PREFIX: &str = "test ";
 const TEST_FAILED_SUFFIX: &str = " ... FAILED";
@@ -38,7 +41,7 @@ fn parse_cargo_time(line: &str) -> Option<f64> {
 
 #[derive(Clone)]
 pub struct CargoFormatter {
-    failed_tests: Vec<(String, String)>,
+    failed_tests: Vec<FailedTest>,
     passed: usize,
     failed: usize,
     ignored: usize,
@@ -120,11 +123,10 @@ impl OutputFormatter for CargoFormatter {
             println!("{}", line);
             self.failed += 1;
             if let Some(test_name) = extract_test_name(&plain_line) {
-                self.failed_tests
-                    .push((test_name.to_string(), String::new()));
+                self.failed_tests.push(FailedTest::new(test_name, ""));
             } else {
                 self.failed_tests
-                    .push((plain_line.trim().to_string(), String::new()));
+                    .push(FailedTest::new(plain_line.trim(), ""));
             }
             return Ok(());
         }
@@ -137,11 +139,11 @@ impl OutputFormatter for CargoFormatter {
 
         // Collect Failure Details
         if self.currently_failed {
-            if let Some((_, error_msg)) = self.failed_tests.last_mut() {
-                if !error_msg.is_empty() {
-                    error_msg.push('\n');
+            if let Some(failed_test) = self.failed_tests.last_mut() {
+                if !failed_test.error_msg.is_empty() {
+                    failed_test.error_msg.push('\n');
                 }
-                error_msg.push_str(&line);
+                failed_test.error_msg.push_str(&line);
             }
             return Ok(());
         }
@@ -174,14 +176,14 @@ impl OutputFormatter for CargoFormatter {
             );
         } else {
             println!("\nfailures:");
-            for (_, error) in &self.failed_tests {
-                if !error.is_empty() {
-                    println!("{}", error);
+            for failed_test in &self.failed_tests {
+                if !failed_test.error_msg.is_empty() {
+                    println!("{}", failed_test.error_msg);
                 }
             }
             println!("\nfailures:");
-            for (test, _) in &self.failed_tests {
-                println!("    {}", test);
+            for failed_test in &self.failed_tests {
+                println!("    {}", failed_test.name);
             }
             println!(
                 "\ntest result: \x1b[31mFAILED\x1b[0m. {} passed; {} failed; {} measured; {} filtered out; finished in {:.3}s",
@@ -196,5 +198,9 @@ impl OutputFormatter for CargoFormatter {
 
     fn reset_coverage(&mut self) {
         self.coverage = vec![];
+    }
+
+    fn failed_tests(&self) -> Vec<FailedTest> {
+        self.failed_tests.clone()
     }
 }

@@ -1,8 +1,8 @@
-use std::{collections::HashMap, sync::mpsc::Receiver};
+use std::sync::mpsc::Receiver;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, Runtime, engine::Engine},
+    runtime::{Debugger, Runtime, RuntimeOutput, engine::Engine},
     utils::process::DefaultFormatter,
 };
 
@@ -19,8 +19,8 @@ impl Runtime for GradleRuntime {
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
         receiver: Option<Receiver<String>>,
-        _coverage: &mut Option<HashMap<String, Vec<String>>>,
-    ) -> Result<Option<String>, FztError> {
+        _run_coverage: bool,
+    ) -> Result<RuntimeOutput, FztError> {
         let mut engine = Engine::new("", DefaultFormatter, None, JUNIT_FAILURE_EXIT_CODE);
         // unbuffer merges stdout and stderr
         engine.base_args(&["unbuffer", "./gradlew", "-i"]);

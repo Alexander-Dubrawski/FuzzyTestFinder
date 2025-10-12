@@ -1,10 +1,10 @@
-use std::{collections::HashMap, sync::mpsc::Receiver};
+use std::sync::mpsc::Receiver;
 
 use itertools::Itertools;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, PythonDebugger, Runtime, engine::Engine},
+    runtime::{Debugger, PythonDebugger, Runtime, RuntimeOutput, engine::Engine},
     utils::process::DefaultFormatter,
 };
 
@@ -21,8 +21,8 @@ impl Runtime for PytestRuntime {
         runtime_ags: &[String],
         debugger: &Option<Debugger>,
         receiver: Option<Receiver<String>>,
-        _coverage: &mut Option<HashMap<String, Vec<String>>>,
-    ) -> Result<Option<String>, FztError> {
+        _run_coverage: bool,
+    ) -> Result<RuntimeOutput, FztError> {
         let mut engine = Engine::new("--", DefaultFormatter, None, PYTEST_FAILURE_EXIT_CODE);
         if debugger.is_some() || runtime_ags.contains(&String::from("--pdb")) {
             engine.base_args(&["python", "-m", "pytest", "-s"]);

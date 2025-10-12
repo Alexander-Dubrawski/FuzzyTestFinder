@@ -69,6 +69,7 @@ pub fn update_tests(
     )
 }
 
+// TODO: Put in formatter
 pub fn parse_failed_tests(output: &str) -> HashMap<String, HashSet<String>> {
     let mut failed_tests = HashMap::new();
     output.lines().for_each(|line| {
