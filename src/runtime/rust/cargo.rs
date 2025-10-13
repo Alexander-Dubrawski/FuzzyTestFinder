@@ -37,7 +37,7 @@ impl Runtime for CargoRuntime {
         engine.runtime_args(runtime_args);
         engine.tests(tests.as_slice());
 
-        engine.execute_per_item(run_coverage, receiver, verbose)
+        engine.execute_per_item_parallel(run_coverage, receiver, verbose)
     }
 
     fn name(&self) -> String {

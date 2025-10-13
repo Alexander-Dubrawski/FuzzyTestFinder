@@ -34,7 +34,7 @@ impl Runtime for GradleRuntime {
                 .collect::<Vec<String>>()
                 .as_slice(),
         );
-        engine.execute_single_batch(false, receiver, verbose)
+        engine.execute_single_batch_sequential(false, receiver, verbose)
     }
 
     fn name(&self) -> String {

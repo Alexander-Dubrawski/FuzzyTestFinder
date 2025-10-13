@@ -79,13 +79,9 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
         self
     }
 
-    pub fn test(&mut self, test: &str) -> &mut Self {
-        self.tests.push(test.to_string());
-        self
-    }
-
-    pub fn env(&mut self, key: &str, value: &str) -> &mut Self {
-        self.command_envs.insert(key.to_string(), value.to_string());
+    pub fn envs(&mut self, pairs: &HashMap<&str, &str>) -> &mut Self {
+        self.command_envs
+            .extend(pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())));
         self
     }
 
@@ -145,7 +141,7 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
         Ok(output)
     }
 
-    pub fn execute_single_batch(
+    pub fn execute_single_batch_sequential(
         &self,
         debug_mode: bool,
         receiver: Option<StdReceiver<String>>,
@@ -182,7 +178,7 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
         }
     }
 
-    pub fn execute_per_item(
+    pub fn execute_per_item_parallel(
         &self,
         run_coverage: bool,
         receiver: Option<StdReceiver<String>>,
