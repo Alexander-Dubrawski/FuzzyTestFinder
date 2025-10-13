@@ -81,7 +81,7 @@ impl Runtime for PytestRuntime {
                 ));
             }
             let mut engine =
-                Engine::new("--", PytestFormatter::new(), None, PYTEST_FAILURE_EXIT_CODE);
+                Engine::new("", PytestFormatter::new(), None, PYTEST_FAILURE_EXIT_CODE);
             engine.base_args(base_args.as_slice());
             engine.tests(ordered_tests.as_slice());
             engine.runtime_args(runtime_ags);

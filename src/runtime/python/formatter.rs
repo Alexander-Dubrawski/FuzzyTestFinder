@@ -6,6 +6,7 @@ use crate::{
 };
 
 const HEADER_END: &str = "collected";
+const HEADER_END_ALT: &str = "collected";
 const NEW_SECTION: &str = "====";
 
 #[derive(Clone, Debug)]
@@ -50,12 +51,12 @@ impl OutputFormatter for PytestFormatter {
             .map_err(FztError::from)?
             .trim()
             .to_string();
-
-        if !plain_line.starts_with(HEADER_END) && self.in_header {
+        // TODO: HAndle collected
+        if !plain_line.contains(HEADER_END) && self.in_header {
             return Ok(());
         }
 
-        if plain_line.starts_with(HEADER_END) && self.in_header {
+        if plain_line.contains(HEADER_END) && self.in_header {
             self.in_header = false;
             self.in_body = true;
             return Ok(());
@@ -204,6 +205,7 @@ impl OutputFormatter for PytestFormatter {
     }
 
     fn print(&self) {
+        // TODO: Just print test name and remove percentage 
         println!("{}", self.print_output);
     }
 }

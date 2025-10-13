@@ -1,4 +1,8 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -11,28 +15,41 @@ use crate::{
             python_test::PythonTest,
         },
     },
-    utils::file_walking::filter_out_deleted_files,
+    utils::{file::get_file_modification_timestamp, file_walking::filter_out_deleted_files},
 };
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct CoverageRustPytonTests {
+    pub path: String,
+    pub tests: HashSet<PythonTest>,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RustPytonTests {
     pub root_folder: String,
     pub timestamp: u128,
+    pub timestamp_coverage: u128,
     pub tests: HashMap<String, HashSet<String>>,
     pub failed_tests: HashMap<String, HashSet<String>>,
+    pub file_coverage: HashMap<String, CoverageRustPytonTests>,
+    pub uncovered_tests: HashSet<PythonTest>,
 }
 
 impl RustPytonTests {
     pub fn new(
         root_folder: String,
         timestamp: u128,
+        timestamp_coverage: u128,
         tests: HashMap<String, HashSet<String>>,
     ) -> Self {
         Self {
             root_folder,
             timestamp,
+            timestamp_coverage,
             tests,
             failed_tests: HashMap::new(),
+            file_coverage: HashMap::new(),
+            uncovered_tests: HashSet::new(),
         }
     }
 
@@ -40,28 +57,15 @@ impl RustPytonTests {
         Self {
             root_folder,
             timestamp: 0,
+            timestamp_coverage: 0,
             tests: HashMap::new(),
             failed_tests: HashMap::new(),
+            file_coverage: HashMap::new(),
+            uncovered_tests: HashSet::new(),
         }
     }
-}
 
-impl Tests for RustPytonTests {
-    fn to_json(&self) -> Result<String, FztError> {
-        serde_json::to_string(&self).map_err(FztError::from)
-    }
-
-    fn tests(&self) -> Vec<impl Test> {
-        let mut output = vec![];
-        self.tests.iter().for_each(|(path, tests)| {
-            tests.iter().for_each(|test| {
-                output.push(PythonTest::new(path.clone(), test.clone()));
-            });
-        });
-        output
-    }
-
-    fn update(&mut self) -> Result<bool, FztError> {
+    fn update_tests(&mut self) -> Result<bool, FztError> {
         let files_filtered_out = filter_out_deleted_files(&self.root_folder, &mut self.tests);
         let updated_tests = update_tests(
             self.root_folder.as_str(),
@@ -90,6 +94,65 @@ impl Tests for RustPytonTests {
         Ok(updated_tests || files_filtered_out)
     }
 
+    fn update_uncovered_tests(&mut self) {
+        self.file_coverage
+            .retain(|path, _| Path::new(path).exists());
+        self.uncovered_tests
+            .retain(|test| Path::new(&test.path).exists());
+        let mut coverage_tests: Vec<PythonTest> = self
+            .tests
+            .iter()
+            .filter(|(path, _)| {
+                get_file_modification_timestamp(path.as_str()) > self.timestamp_coverage
+            })
+            .map(|(path, tests)| {
+                tests
+                    .iter()
+                    .map(|test| PythonTest {
+                        path: path.clone(),
+                        test: test.clone(),
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .flatten()
+            .collect();
+
+        self.file_coverage.iter().for_each(|(path, cov_tests)| {
+            if get_file_modification_timestamp(path.as_str()) > self.timestamp_coverage {
+                cov_tests.tests.iter().for_each(|test| {
+                    coverage_tests.push(test.clone());
+                });
+            }
+        });
+        self.uncovered_tests.extend(coverage_tests);
+        self.timestamp_coverage = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("System clock may have gone backwards")
+            .as_millis();
+    }
+}
+
+impl Tests for RustPytonTests {
+    fn to_json(&self) -> Result<String, FztError> {
+        serde_json::to_string(&self).map_err(FztError::from)
+    }
+
+    fn tests(&self) -> Vec<impl Test> {
+        let mut output = vec![];
+        self.tests.iter().for_each(|(path, tests)| {
+            tests.iter().for_each(|test| {
+                output.push(PythonTest::new(path.clone(), test.clone()));
+            });
+        });
+        output
+    }
+
+    fn update(&mut self) -> Result<bool, FztError> {
+        let updated = self.update_tests()?;
+        self.update_uncovered_tests();
+        Ok(updated)
+    }
+
     fn update_failed(&mut self, runtime_output: &str) -> bool {
         let failed_tests = parse_failed_tests(runtime_output);
         if self.failed_tests == failed_tests {
@@ -112,15 +175,52 @@ impl Tests for RustPytonTests {
 
     fn update_file_coverage(
         &mut self,
-        _coverage: &HashMap<String, Vec<String>>,
+        coverage: &HashMap<String, Vec<String>>,
     ) -> Result<bool, FztError> {
-        todo!()
+        let mut updated = false;
+        for (relative_path, tests) in coverage.iter() {
+            let entry = self.file_coverage.get_mut(relative_path);
+            match entry {
+                Some(cov_tests) => {
+                    tests.iter().try_for_each(|test| {
+                        updated = true;
+                        let item = PythonTest::try_from_pytest_test(test)?;
+                        self.uncovered_tests.remove(&item);
+                        cov_tests.tests.insert(item);
+                        Ok::<(), FztError>(())
+                    })?;
+                }
+                None => {
+                    updated = true;
+                    let tests = HashSet::from_iter(
+                        tests
+                            .iter()
+                            .map(|test| {
+                                let item = PythonTest::try_from_pytest_test(test)?;
+                                self.uncovered_tests.remove(&item);
+                                Ok(item)
+                            })
+                            .collect::<Result<Vec<PythonTest>, FztError>>()?
+                            .into_iter(),
+                    );
+                    let cov_tests = CoverageRustPytonTests {
+                        path: relative_path.clone(),
+                        tests,
+                    };
+                    self.file_coverage
+                        .insert(relative_path.to_string(), cov_tests);
+                }
+            }
+        }
+
+        self.file_coverage
+            .retain(|path, _| Path::new(path).exists());
+        self.timestamp_coverage = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
+        Ok(updated)
     }
 
-    #[allow(unreachable_code)]
     fn get_covered_tests(&self) -> Vec<impl Test> {
-        todo!();
-        Vec::<PythonTest>::new()
+        self.uncovered_tests.iter().cloned().collect()
     }
 }
 

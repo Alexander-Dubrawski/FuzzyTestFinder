@@ -1,13 +1,38 @@
-use crate::tests::Test;
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
+use crate::{tests::Test, FztError};
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct PythonTest {
-    path: String,
-    test: String,
+    pub path: String,
+    pub test: String,
 }
 
 impl PythonTest {
     pub fn new(path: String, test: String) -> Self {
         Self { path, test }
+    }
+
+    pub fn try_from_pytest_test(test: &str) -> Result<Self, FztError> {
+        let (path, test_name) = test
+            .split("::")
+            .collect_tuple()
+            .map(|(path, test_name)| {
+                let test_name = test_name
+                    .chars()
+                    .take_while(|&ch| ch != '[')
+                    .collect::<String>();
+                (path.to_string(), test_name)
+            })
+            .ok_or(FztError::GeneralParsingError(format!(
+                "Parsing Pytest failed: {}",
+                test
+            )))?;
+        Ok(Self {
+            path,
+            test: test_name,
+        })
     }
 }
 
