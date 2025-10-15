@@ -21,20 +21,23 @@ impl Runtime for GradleRuntime {
         receiver: Option<Receiver<String>>,
         _run_coverage: bool,
     ) -> Result<RuntimeOutput, FztError> {
-        let mut engine = Engine::new("", DefaultFormatter, None, JUNIT_FAILURE_EXIT_CODE);
+        let mut engine = Engine::new("", None);
         // unbuffer merges stdout and stderr
         engine.base_args(&["unbuffer", "./gradlew", "-i"]);
         engine.base_args_string(runtime_ags);
         engine.base_arg("test");
-        engine.tests(
-            tests
-                .into_iter()
-                .map(|test| vec![String::from("--tests"), test])
-                .flatten()
-                .collect::<Vec<String>>()
-                .as_slice(),
-        );
-        engine.execute_single_batch_sequential(false, receiver, verbose)
+        let formatted_tests = tests
+            .into_iter()
+            .map(|test| vec![String::from("--tests"), test])
+            .flatten()
+            .collect::<Vec<String>>();
+        engine.execute_single_batch_sequential(
+            false,
+            receiver,
+            formatted_tests,
+            &mut DefaultFormatter,
+            verbose,
+        )
     }
 
     fn name(&self) -> String {

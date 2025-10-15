@@ -39,7 +39,7 @@ fn parse_cargo_time(line: &str) -> Option<f64> {
     None
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct CargoFormatter {
     failed_tests: Vec<FailedTest>,
     passed: usize,
@@ -165,8 +165,8 @@ impl OutputFormatter for CargoFormatter {
     fn err_line(&mut self, _line: &str) -> Result<(), FztError> {
         Ok(())
     }
-    fn add(&mut self, other: CargoFormatter) {
-        self.failed_tests.extend(other.failed_tests.into_iter());
+    fn add(&mut self, other: &CargoFormatter) {
+        self.failed_tests.extend(other.failed_tests.clone());
         self.passed += other.passed;
         self.failed += other.failed;
         self.seconds += other.seconds;

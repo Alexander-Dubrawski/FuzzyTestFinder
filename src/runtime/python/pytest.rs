@@ -5,10 +5,11 @@ use itertools::Itertools;
 use crate::{
     errors::FztError,
     runtime::{
-        Debugger, PythonDebugger, Runtime, RuntimeOutput, engine::Engine,
+        Debugger, PythonDebugger, Runtime, RuntimeOutput,
+        engine::{Engine, TestItem},
         python::formatter::PytestFormatter,
     },
-    utils::process::DefaultFormatter,
+    utils::process::{DefaultFormatter, OutputFormatter},
 };
 
 const PYTEST_FAILURE_EXIT_CODE: i32 = 1;
@@ -80,25 +81,52 @@ impl Runtime for PytestRuntime {
                     "Coverage cannot be run with a debugger attached.".to_string(),
                 ));
             }
-            let mut engine =
-                Engine::new("", PytestFormatter::new(), None, PYTEST_FAILURE_EXIT_CODE);
+            let test_items: Vec<TestItem<PytestFormatter>> = tests
+                .into_iter()
+                .map(|test| {
+                    let formatter = PytestFormatter::new();
+                    TestItem {
+                        test_name: test,
+                        formatter,
+                        additional_base_args: vec![],
+                        additional_runtime_args: vec![],
+                    }
+                })
+                .collect();
+            let mut engine = Engine::new("", None);
             engine.base_args(base_args.as_slice());
-            engine.tests(ordered_tests.as_slice());
             engine.runtime_args(runtime_ags);
             engine.runtime_args(&[
                 "--cov=myapp".to_string(),
                 "--cov-report=term-missing:skip-covered".to_string(),
             ]);
-            engine.execute_per_item_parallel(true, receiver, verbose)
+            let engine_output = engine.execute_per_item_parallel(receiver, test_items, verbose)?;
+
+            if !engine_output.success(PYTEST_FAILURE_EXIT_CODE) {
+                let error_msg =
+                    engine_output.get_error_status_test_output(PYTEST_FAILURE_EXIT_CODE);
+                return Err(FztError::RuntimeError(format!(
+                    "Some tests failed. Filed: {:?}",
+                    error_msg
+                )));
+            }
+            engine_output.merge_formatters().finish();
+
+            if engine_output.stopped() {
+                Ok(RuntimeOutput::new_empty())
+            } else {
+                Ok(RuntimeOutput::from_engine_output(&engine_output))
+            }
         } else {
-            let mut engine = Engine::new("--", DefaultFormatter, None, PYTEST_FAILURE_EXIT_CODE);
+            let mut engine = Engine::new("--", None);
             engine.base_args(base_args.as_slice());
-            engine.tests(ordered_tests.as_slice());
             engine.runtime_args(runtime_ags);
             engine.envs(&envs);
             engine.execute_single_batch_sequential(
                 debugger.is_some() || runtime_ags.contains(&String::from("--pdb")),
                 receiver,
+                tests,
+                &mut DefaultFormatter,
                 verbose,
             )
         }

@@ -27,7 +27,7 @@ impl FailedTest {
 pub trait OutputFormatter {
     fn line(&mut self, line: &str) -> Result<(), FztError>;
     fn err_line(&mut self, line: &str) -> Result<(), FztError>;
-    fn add(&mut self, other: Self);
+    fn add(&mut self, other: &Self);
     fn finish(self);
     fn coverage(&self) -> Vec<String>;
     fn reset_coverage(&mut self);
@@ -47,7 +47,7 @@ impl OutputFormatter for DefaultFormatter {
         Ok(())
     }
 
-    fn add(&mut self, _other: Self) {
+    fn add(&mut self, _other: &Self) {
         unimplemented!()
     }
 
@@ -80,7 +80,7 @@ impl OutputFormatter for OnlyStdoutFormatter {
         Ok(())
     }
 
-    fn add(&mut self, _other: Self) {
+    fn add(&mut self, _other: &Self) {
         unimplemented!()
     }
 
@@ -113,7 +113,7 @@ impl OutputFormatter for OnlyStderrFormatter {
         Ok(())
     }
 
-    fn add(&mut self, _other: Self) {
+    fn add(&mut self, _other: &Self) {
         unimplemented!()
     }
 
@@ -136,7 +136,7 @@ impl OutputFormatter for OnlyStderrFormatter {
     fn print(&self) {}
 }
 
-#[allow(dead_code)]
+#[derive(Clone, Debug)]
 pub struct CaptureOutput {
     pub stopped: bool,
     pub stdout: String,

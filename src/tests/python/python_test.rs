@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{tests::Test, FztError};
+use crate::{FztError, tests::Test};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct PythonTest {

@@ -9,7 +9,7 @@ const HEADER_END: &str = "collected";
 const HEADER_END_ALT: &str = "collected";
 const NEW_SECTION: &str = "====";
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct PytestFormatter {
     failed_tests: HashSet<FailedTest>,
     skipped_test: HashSet<String>,
@@ -170,9 +170,9 @@ impl OutputFormatter for PytestFormatter {
         Ok(())
     }
 
-    fn add(&mut self, other: Self) {
-        self.failed_tests.extend(other.failed_tests);
-        self.skipped_test.extend(other.skipped_test);
+    fn add(&mut self, other: &Self) {
+        self.failed_tests.extend(other.failed_tests.clone());
+        self.skipped_test.extend(other.skipped_test.clone());
         self.passed += other.passed;
         self.error += other.error;
         self.skipped += other.skipped;
@@ -205,7 +205,7 @@ impl OutputFormatter for PytestFormatter {
     }
 
     fn print(&self) {
-        // TODO: Just print test name and remove percentage 
+        // TODO: Just print test name and remove percentage
         println!("{}", self.print_output);
     }
 }
