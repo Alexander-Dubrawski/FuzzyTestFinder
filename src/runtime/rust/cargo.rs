@@ -1,4 +1,4 @@
-use std::sync::mpsc::Receiver as StdReceiver;
+use std::{process::ExitStatus, sync::mpsc::Receiver as StdReceiver};
 
 use crate::{
     errors::FztError,
@@ -50,11 +50,16 @@ impl Runtime for CargoRuntime {
         let engine_output = engine.execute_per_item_parallel(receiver, test_items, verbose)?;
 
         if !engine_output.success(RUST_TEST_FAILURE_EXIT_CODE) {
-            let error_msg = engine_output.get_error_status_test_output(RUST_TEST_FAILURE_EXIT_CODE);
-            return Err(FztError::RuntimeError(format!(
-                "Some tests failed. Filed: {:?}",
+            let error_msg: Vec<(String, Option<ExitStatus>)> = engine_output
+                .get_error_status_test_output(RUST_TEST_FAILURE_EXIT_CODE)
+                .into_iter()
+                .map(|test_output| (test_output.test, test_output.output.status))
+                .collect();
+
+            println!(
+                "WARNING: Some tests failed with exit codes: \n{:?}",
                 error_msg
-            )));
+            );
         }
 
         engine_output.merge_formatters().finish();

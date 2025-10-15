@@ -29,7 +29,7 @@ impl<F: OutputFormatter + Clone + Sync + Send + Default> EngineOutput<F> {
         })
     }
 
-    pub fn get_error_status_test_output(&self, test_failure_exit_code: i32) -> Vec<CaptureOutput> {
+    pub fn get_error_status_test_output(&self, test_failure_exit_code: i32) -> Vec<TestOutput<F>> {
         self.test_outputs
             .iter()
             .filter(|test_output| {
@@ -40,7 +40,7 @@ impl<F: OutputFormatter + Clone + Sync + Send + Default> EngineOutput<F> {
                             .is_some_and(|code| code != test_failure_exit_code)
                 })
             })
-            .map(|test_output| test_output.output.clone())
+            .cloned()
             .collect()
     }
 
@@ -98,6 +98,7 @@ impl<F: OutputFormatter + Clone + Sync + Send + Default> EngineOutput<F> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct TestOutput<F: OutputFormatter + Clone + Sync + Send> {
     pub output: CaptureOutput,
     pub test: String,

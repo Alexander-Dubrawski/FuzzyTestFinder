@@ -149,7 +149,12 @@ impl Tests for RustPytonTests {
 
     fn update(&mut self) -> Result<bool, FztError> {
         let updated = self.update_tests()?;
-        self.update_uncovered_tests();
+        // For now we can not handle the path mocking, to not include all files
+        // in this project
+        #[cfg(not(test))]
+        {
+            self.update_uncovered_tests();
+        }
         Ok(updated)
     }
 
