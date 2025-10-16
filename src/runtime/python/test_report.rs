@@ -53,6 +53,7 @@ pub struct Test {
 pub struct TestPhase {
     pub duration: f64,
     pub outcome: String,
+    pub longrepr: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

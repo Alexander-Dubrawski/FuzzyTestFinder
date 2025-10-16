@@ -16,6 +16,7 @@ pub struct PytestTempFileFormatter {
     skipped_test: HashSet<String>,
     passed_tests: HashSet<String>,
     output: String,
+    stderr: String,
     temp_cov_path: PathBuf,
     temp_report_log_path: PathBuf,
     passed: usize,
@@ -35,6 +36,7 @@ impl PytestTempFileFormatter {
             temp_cov_path,
             temp_report_log_path,
             output: String::new(),
+            stderr: String::new(),
             passed: 0,
             failed: 0,
             skipped: 0,
@@ -45,6 +47,16 @@ impl PytestTempFileFormatter {
     }
 
     fn process_test_report(&mut self) -> Result<(), FztError> {
+        if !self.temp_report_log_path.exists() {
+            println!(
+                "{}",
+                format!(
+                    "[{}] No test report found. STDERR: {}.",
+                    self.formatter_id, self.stderr
+                )
+            );
+            return Ok(());
+        }
         let json_str = fs::read_to_string(&self.temp_report_log_path)?;
         // If Fails thread crashes. And test just do not cover files.
         // TODO: Handle this case
@@ -76,7 +88,11 @@ impl PytestTempFileFormatter {
                 self.output.push_str(&"FAILED".red().bold().to_string());
             } else if test.outcome == "skipped" {
                 self.skipped_test.insert(test.nodeid.clone());
-                self.output.push_str(&"SKIPPED".yellow().bold().to_string());
+                self.output
+                    .push_str(&"SKIPPED ".yellow().bold().to_string());
+                if let Some(info) = test.setup.longrepr.as_ref() {
+                    self.output.push_str(info.as_str());
+                }
             } else if test.outcome == "passed" {
                 self.passed_tests.insert(test.nodeid.clone());
                 self.output.push_str(&"PASSED".green().bold().to_string());
@@ -117,15 +133,18 @@ impl PytestTempFileFormatter {
     }
 
     fn process_coverage_report(&mut self) -> Result<(), FztError> {
-        let json_str = fs::read_to_string(&self.temp_cov_path)?;
-        let report: CoverageReport = serde_json::from_str(&json_str)?;
-        self.coverage = HashSet::from_iter(
-            report
-                .files
-                .into_iter()
-                .filter(|(_, file)| file.summary.percent_covered > 0.0)
-                .map(|(filepath, _)| filepath),
-        );
+        // If test failed it does not exist
+        if self.temp_cov_path.exists() {
+            let json_str = fs::read_to_string(&self.temp_cov_path)?;
+            let report: CoverageReport = serde_json::from_str(&json_str)?;
+            self.coverage = HashSet::from_iter(
+                report
+                    .files
+                    .into_iter()
+                    .filter(|(_, file)| file.summary.percent_covered > 0.0)
+                    .map(|(filepath, _)| filepath),
+            );
+        }
         Ok(())
     }
 }
@@ -135,7 +154,9 @@ impl OutputFormatter for PytestTempFileFormatter {
         Ok(())
     }
 
-    fn err_line(&mut self, _line: &str) -> Result<(), crate::FztError> {
+    fn err_line(&mut self, line: &str) -> Result<(), crate::FztError> {
+        self.stderr.push_str(line);
+        self.stderr.push('\n');
         Ok(())
     }
 
@@ -187,20 +208,6 @@ impl OutputFormatter for PytestTempFileFormatter {
     }
 
     fn update(&mut self) -> Result<(), FztError> {
-        if !&self.temp_report_log_path.exists() {
-            println!(
-                "{}",
-                format!("Report file {:?} for formatter {} does not exist, something went wrong while test execution! [SKIPPING]", &self.temp_report_log_path, self.formatter_id).yellow().to_string()
-            );
-            return Ok(());
-        }
-        if !&self.temp_cov_path.exists() {
-            println!(
-                "{}",
-                format!("Report file {:?} for formatter {} does not exist, something went wrong while test execution! [SKIPPING]", &self.temp_cov_path, self.formatter_id).yellow().to_string()
-            );
-            return Ok(());
-        }
         self.process_test_report()?;
         self.process_coverage_report()
     }

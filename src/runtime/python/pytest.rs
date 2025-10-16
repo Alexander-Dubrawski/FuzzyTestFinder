@@ -13,8 +13,6 @@ use crate::{
     utils::process::{DefaultFormatter, OutputFormatter},
 };
 
-const PYTEST_FAILURE_EXIT_CODE: i32 = 1;
-
 #[derive(Default)]
 pub struct PytestRuntime {}
 
@@ -128,19 +126,6 @@ impl Runtime for PytestRuntime {
             engine.base_args(&["--cov=myapp", "--cov-report=term-missing:skip-covered"]);
             let engine_output = engine.execute_per_item_parallel(receiver, test_items, verbose)?;
 
-            if !engine_output.success(PYTEST_FAILURE_EXIT_CODE) {
-                // TODO: Filter out test that failed from output
-                let error_msg: Vec<(String, Option<ExitStatus>)> = engine_output
-                    .get_error_status_test_output(PYTEST_FAILURE_EXIT_CODE)
-                    .into_iter()
-                    .map(|test_output| (test_output.test, test_output.output.status))
-                    .collect();
-
-                println!(
-                    "WARNING: Some tests failed with exit codes: \n{:?}",
-                    error_msg
-                );
-            }
             engine_output.merge_formatters().finish();
 
             if engine_output.stopped() {
