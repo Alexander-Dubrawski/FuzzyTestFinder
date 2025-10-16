@@ -7,7 +7,7 @@ use crate::{
     runtime::{
         Debugger, PythonDebugger, Runtime, RuntimeOutput,
         engine::{Engine, TestItem},
-        python::formatter::PytestFormatter,
+        python::formatter::PytestTempFileFormatter,
     },
     utils::process::{DefaultFormatter, OutputFormatter},
 };
@@ -81,10 +81,10 @@ impl Runtime for PytestRuntime {
                     "Coverage cannot be run with a debugger attached.".to_string(),
                 ));
             }
-            let test_items: Vec<TestItem<PytestFormatter>> = tests
+            let test_items: Vec<TestItem<PytestTempFileFormatter>> = tests
                 .into_iter()
                 .map(|test| {
-                    let formatter = PytestFormatter::new();
+                    let formatter = PytestTempFileFormatter::new();
                     TestItem {
                         test_name: test,
                         formatter,
