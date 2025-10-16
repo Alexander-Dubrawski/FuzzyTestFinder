@@ -1,13 +1,14 @@
-use std::{collections::HashMap, sync::mpsc::Receiver};
+use std::{collections::HashMap, process::ExitStatus, sync::mpsc::Receiver};
 
 use itertools::Itertools;
+use tempfile::TempDir;
 
 use crate::{
     errors::FztError,
     runtime::{
         Debugger, PythonDebugger, Runtime, RuntimeOutput,
         engine::{Engine, TestItem},
-        python::formatter::PytestFormatter,
+        python::formatter::PytestTempFileFormatter,
     },
     utils::process::{DefaultFormatter, OutputFormatter},
 };
@@ -81,34 +82,63 @@ impl Runtime for PytestRuntime {
                     "Coverage cannot be run with a debugger attached.".to_string(),
                 ));
             }
-            let test_items: Vec<TestItem<PytestFormatter>> = tests
+            // Drops TempDir when leaving scope
+            let temp_dirs: Vec<(TempDir, TempDir)> = (0..tests.len())
+                .map(|_| -> Result<(TempDir, TempDir), std::io::Error> {
+                    Ok((tempfile::tempdir()?, tempfile::tempdir()?))
+                })
+                .collect::<Result<Vec<(TempDir, TempDir)>, std::io::Error>>()?;
+
+            let test_items: Vec<TestItem<PytestTempFileFormatter>> = tests
                 .into_iter()
-                .map(|test| {
-                    let formatter = PytestFormatter::new();
+                .zip(temp_dirs.iter())
+                .map(|(test, (cov_dir, rep_dir))| {
+                    let cov_path = cov_dir.path().join("coverage.json").to_path_buf();
+                    let rep_path = rep_dir.path().join("report.json").to_path_buf();
+                    let additional_base_args = vec![
+                        "--json-report".to_string(),
+                        format!(
+                            "--cov-report=json:{}",
+                            cov_path
+                                .as_os_str()
+                                .to_str()
+                                .expect("Failed to convert path to string")
+                        ),
+                        format!(
+                            "--json-report-file={}",
+                            rep_path
+                                .as_os_str()
+                                .to_str()
+                                .expect("Failed to convert path to string")
+                        ),
+                    ];
+
+                    let formatter = PytestTempFileFormatter::new(cov_path, rep_path);
                     TestItem {
                         test_name: test,
                         formatter,
-                        additional_base_args: vec![],
+                        additional_base_args,
                         additional_runtime_args: vec![],
                     }
                 })
                 .collect();
-            let mut engine = Engine::new("", None);
+            let mut engine = Engine::new("--", None);
             engine.base_args(base_args.as_slice());
             engine.runtime_args(runtime_ags);
-            engine.runtime_args(&[
-                "--cov=myapp".to_string(),
-                "--cov-report=term-missing:skip-covered".to_string(),
-            ]);
+            engine.base_args(&["--cov=myapp", "--cov-report=term-missing:skip-covered"]);
             let engine_output = engine.execute_per_item_parallel(receiver, test_items, verbose)?;
 
             if !engine_output.success(PYTEST_FAILURE_EXIT_CODE) {
-                let error_msg =
-                    engine_output.get_error_status_test_output(PYTEST_FAILURE_EXIT_CODE);
-                return Err(FztError::RuntimeError(format!(
-                    "Some tests failed. Filed: {:?}",
+                let error_msg: Vec<(String, Option<ExitStatus>)> = engine_output
+                    .get_error_status_test_output(PYTEST_FAILURE_EXIT_CODE)
+                    .into_iter()
+                    .map(|test_output| (test_output.test, test_output.output.status))
+                    .collect();
+
+                println!(
+                    "WARNING: Some tests failed with exit codes: \n{:?}",
                     error_msg
-                )));
+                );
             }
             engine_output.merge_formatters().finish();
 
@@ -125,7 +155,8 @@ impl Runtime for PytestRuntime {
             engine.execute_single_batch_sequential(
                 debugger.is_some() || runtime_ags.contains(&String::from("--pdb")),
                 receiver,
-                tests,
+                ordered_tests,
+                // Needs to be able to collect failed tests
                 &mut DefaultFormatter,
                 verbose,
             )

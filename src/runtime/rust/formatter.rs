@@ -213,4 +213,8 @@ impl OutputFormatter for CargoFormatter {
     fn print(&self) {
         println!("{}", self.print_output);
     }
+
+    fn update(&mut self) -> Result<(), FztError> {
+        Ok(())
+    }
 }

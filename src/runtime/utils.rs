@@ -1,8 +1,6 @@
-use std::collections::HashMap;
+use crate::utils::process::OutputFormatter;
 
-use crate::{FztError, utils::process::OutputFormatter};
-
-use super::engine::{TestItem, TestOutput};
+use super::engine::TestItem;
 
 pub fn partition_tests<F: OutputFormatter + Clone + Sync + Send>(
     vec: Vec<TestItem<F>>,

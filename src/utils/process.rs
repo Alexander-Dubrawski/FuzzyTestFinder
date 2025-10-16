@@ -32,6 +32,7 @@ pub trait OutputFormatter {
     fn coverage(&self) -> Vec<String>;
     fn reset_coverage(&mut self);
     fn failed_tests(&self) -> Vec<FailedTest>;
+    fn update(&mut self) -> Result<(), FztError>;
     fn print(&self);
 }
 
@@ -68,6 +69,10 @@ impl OutputFormatter for DefaultFormatter {
     }
 
     fn print(&self) {}
+
+    fn update(&mut self) -> Result<(), FztError> {
+        Ok(())
+    }
 }
 
 pub struct OnlyStdoutFormatter;
@@ -101,6 +106,9 @@ impl OutputFormatter for OnlyStdoutFormatter {
     }
 
     fn print(&self) {}
+    fn update(&mut self) -> Result<(), FztError> {
+        Ok(())
+    }
 }
 
 pub struct OnlyStderrFormatter;
@@ -134,6 +142,9 @@ impl OutputFormatter for OnlyStderrFormatter {
     }
 
     fn print(&self) {}
+    fn update(&mut self) -> Result<(), FztError> {
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -251,6 +262,7 @@ where
         Some(child.wait()?)
     };
     // print all at once so that threads do not overwrite each other
+    formatter.update()?;
     formatter.print();
     let stdout_plain = String::from_utf8(strip_ansi_escapes::strip(stdout_output.as_bytes()))
         .map_err(|e| FztError::from(e))?;

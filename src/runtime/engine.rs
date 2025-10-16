@@ -1,5 +1,5 @@
 use crate::runtime::utils::partition_tests;
-use crate::utils::process::{DefaultFormatter, FailedTest, OutputFormatter, run_and_capture_print};
+use crate::utils::process::{FailedTest, OutputFormatter, run_and_capture_print};
 use crate::{FztError, utils::process::CaptureOutput};
 use crossbeam_channel::{Receiver as CrossbeamReceiver, unbounded};
 use std::sync::mpsc::Receiver as StdReceiver;
