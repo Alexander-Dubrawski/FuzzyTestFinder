@@ -217,4 +217,7 @@ impl OutputFormatter for CargoFormatter {
     fn update(&mut self) -> Result<(), FztError> {
         Ok(())
     }
+    fn skipped(&self) -> bool {
+        self.ignored > 0
+    }
 }

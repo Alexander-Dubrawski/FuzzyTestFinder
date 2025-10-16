@@ -44,7 +44,8 @@ pub struct Test {
     pub outcome: String,
     pub keywords: Vec<String>,
     pub setup: TestPhase,
-    pub call: TestCall,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub call: Option<TestCall>,
     pub teardown: TestPhase,
 }
 

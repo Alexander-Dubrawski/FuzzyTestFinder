@@ -38,7 +38,7 @@ impl Runtime for CargoRuntime {
                 }
             })
             .collect();
-        let mut engine = Engine::new("--", None);
+        let mut engine = Engine::new(Some("--".to_string()), None);
         // unbuffer merges stdout and stderr
         if run_coverage {
             engine.base_args(&["unbuffer", "cargo", "tarpaulin", "--skip-clean", "--"]);

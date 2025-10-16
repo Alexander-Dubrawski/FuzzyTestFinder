@@ -30,6 +30,7 @@ pub trait OutputFormatter {
     fn add(&mut self, other: &Self);
     fn finish(self);
     fn coverage(&self) -> Vec<String>;
+    fn skipped(&self) -> bool;
     fn reset_coverage(&mut self);
     fn failed_tests(&self) -> Vec<FailedTest>;
     fn update(&mut self) -> Result<(), FztError>;
@@ -73,6 +74,10 @@ impl OutputFormatter for DefaultFormatter {
     fn update(&mut self) -> Result<(), FztError> {
         Ok(())
     }
+
+    fn skipped(&self) -> bool {
+        false
+    }
 }
 
 pub struct OnlyStdoutFormatter;
@@ -109,6 +114,9 @@ impl OutputFormatter for OnlyStdoutFormatter {
     fn update(&mut self) -> Result<(), FztError> {
         Ok(())
     }
+    fn skipped(&self) -> bool {
+        false
+    }
 }
 
 pub struct OnlyStderrFormatter;
@@ -144,6 +152,9 @@ impl OutputFormatter for OnlyStderrFormatter {
     fn print(&self) {}
     fn update(&mut self) -> Result<(), FztError> {
         Ok(())
+    }
+    fn skipped(&self) -> bool {
+        false
     }
 }
 
@@ -262,6 +273,8 @@ where
         Some(child.wait()?)
     };
     // print all at once so that threads do not overwrite each other
+    // TODO: Check Status
+
     formatter.update()?;
     formatter.print();
     let stdout_plain = String::from_utf8(strip_ansi_escapes::strip(stdout_output.as_bytes()))

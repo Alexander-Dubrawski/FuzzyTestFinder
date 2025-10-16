@@ -113,7 +113,7 @@ impl Runtime for PytestRuntime {
                         ),
                     ];
 
-                    let formatter = PytestTempFileFormatter::new(cov_path, rep_path);
+                    let formatter = PytestTempFileFormatter::new(cov_path, rep_path, test.as_str());
                     TestItem {
                         test_name: test,
                         formatter,
@@ -122,13 +122,14 @@ impl Runtime for PytestRuntime {
                     }
                 })
                 .collect();
-            let mut engine = Engine::new("--", None);
+            let mut engine = Engine::new(None, None);
             engine.base_args(base_args.as_slice());
             engine.runtime_args(runtime_ags);
             engine.base_args(&["--cov=myapp", "--cov-report=term-missing:skip-covered"]);
             let engine_output = engine.execute_per_item_parallel(receiver, test_items, verbose)?;
 
             if !engine_output.success(PYTEST_FAILURE_EXIT_CODE) {
+                // TODO: Filter out test that failed from output
                 let error_msg: Vec<(String, Option<ExitStatus>)> = engine_output
                     .get_error_status_test_output(PYTEST_FAILURE_EXIT_CODE)
                     .into_iter()
@@ -148,7 +149,7 @@ impl Runtime for PytestRuntime {
                 Ok(RuntimeOutput::from_engine_output(&engine_output))
             }
         } else {
-            let mut engine = Engine::new("--", None);
+            let mut engine = Engine::new(None, None);
             engine.base_args(base_args.as_slice());
             engine.runtime_args(runtime_ags);
             engine.envs(&envs);

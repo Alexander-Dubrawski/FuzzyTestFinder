@@ -21,7 +21,7 @@ impl Runtime for GradleRuntime {
         receiver: Option<Receiver<String>>,
         _run_coverage: bool,
     ) -> Result<RuntimeOutput, FztError> {
-        let mut engine = Engine::new("", None);
+        let mut engine = Engine::new(None, None);
         // unbuffer merges stdout and stderr
         engine.base_args(&["unbuffer", "./gradlew", "-i"]);
         engine.base_args_string(runtime_ags);

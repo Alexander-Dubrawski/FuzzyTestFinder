@@ -51,6 +51,7 @@ impl<F: OutputFormatter + Clone + Sync + Send + Default> EngineOutput<F> {
     }
 
     pub fn failed_tests(&self) -> Vec<FailedTest> {
+        // TODO: also include tests that filed with status
         self.test_outputs
             .iter()
             .flat_map(|test_output| test_output.formatter.failed_tests())
@@ -61,6 +62,13 @@ impl<F: OutputFormatter + Clone + Sync + Send + Default> EngineOutput<F> {
         let mut coverage: HashMap<String, Vec<String>> = HashMap::new();
         self.test_outputs
             .iter()
+            .filter(|test_output| {
+                test_output
+                    .output
+                    .status
+                    .is_some_and(|status| status.success())
+                    && !test_output.formatter.skipped()
+            })
             .map(|test_output| (test_output.test.as_str(), test_output.formatter.coverage()))
             .for_each(|(test, coverred_tests)| {
                 coverred_tests.iter().for_each(|path| {
@@ -87,8 +95,10 @@ impl<F: OutputFormatter + Clone + Sync + Send + Default> EngineOutput<F> {
     pub fn merge_stdout(&self) -> String {
         let mut merged_stdout = String::new();
         for output in self.test_outputs.iter() {
-            merged_stdout.push_str(&output.output.stdout);
-            merged_stdout.push_str("\n");
+            if output.output.status.is_some_and(|s| s.success()) {
+                merged_stdout.push_str(&output.output.stdout);
+                merged_stdout.push_str("\n");
+            }
         }
         merged_stdout
     }
@@ -116,13 +126,16 @@ pub struct TestItem<F: OutputFormatter + Clone + Sync + Send> {
 pub struct Engine {
     base_command_args: Vec<String>,
     runtime_command_args: Vec<String>,
-    runtime_command_args_separator: String,
+    runtime_command_args_separator: Option<String>,
     number_threads: usize,
     command_envs: HashMap<String, String>,
 }
 
 impl Engine {
-    pub fn new(runtime_command_args_separator: &str, number_threads: Option<usize>) -> Self {
+    pub fn new(
+        runtime_command_args_separator: Option<String>,
+        number_threads: Option<usize>,
+    ) -> Self {
         let number_threads = if let Some(number_threads) = number_threads {
             number_threads
         } else {
@@ -134,7 +147,7 @@ impl Engine {
         Self {
             base_command_args: vec![],
             runtime_command_args: vec![],
-            runtime_command_args_separator: runtime_command_args_separator.to_string(),
+            runtime_command_args_separator,
             number_threads,
             command_envs: HashMap::new(),
         }
@@ -178,7 +191,9 @@ impl Engine {
 
     fn append_runtime_args(&self, command: &mut Command, addional_args: &[String]) {
         if !self.runtime_command_args.is_empty() {
-            command.arg(self.runtime_command_args_separator.as_str());
+            if let Some(separator) = self.runtime_command_args_separator.as_ref() {
+                command.arg(separator.as_str());
+            }
             command.args(&self.runtime_command_args[..]);
             command.args(addional_args);
         }

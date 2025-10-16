@@ -23,10 +23,11 @@ pub struct PytestTempFileFormatter {
     skipped: usize,
     duration: f64,
     coverage: HashSet<String>,
+    formatter_id: String,
 }
 
 impl PytestTempFileFormatter {
-    pub fn new(temp_cov_path: PathBuf, temp_report_log_path: PathBuf) -> Self {
+    pub fn new(temp_cov_path: PathBuf, temp_report_log_path: PathBuf, formatter_id: &str) -> Self {
         Self {
             failed_tests: HashSet::new(),
             skipped_test: HashSet::new(),
@@ -39,11 +40,14 @@ impl PytestTempFileFormatter {
             skipped: 0,
             duration: 0f64,
             coverage: HashSet::new(),
+            formatter_id: formatter_id.to_string(),
         }
     }
 
     fn process_test_report(&mut self) -> Result<(), FztError> {
         let json_str = fs::read_to_string(&self.temp_report_log_path)?;
+        // If Fails thread crashes. And test just do not cover files.
+        // TODO: Handle this case
         let report: TestReport = serde_json::from_str(&json_str)?;
         if let Some(failed) = report.summary.failed {
             self.failed += failed;
@@ -65,9 +69,9 @@ impl PytestTempFileFormatter {
                     name: test.nodeid.clone(),
                     error_msg: test
                         .call
-                        .crash
                         .as_ref()
-                        .map_or("".to_string(), |crash| crash.message.clone()),
+                        .and_then(|call| call.crash.as_ref())
+                        .map_or(String::new(), |crash| crash.message.clone()),
                 });
                 self.output.push_str(&"FAILED".red().bold().to_string());
             } else if test.outcome == "skipped" {
@@ -94,17 +98,18 @@ impl PytestTempFileFormatter {
                 self.output.push('\n');
                 self.output.push_str(&test.nodeid);
                 self.output.push('\n');
-
-                if let Some(longrepr) = &test.call.longrepr {
-                    self.output.push('\n');
-                    self.output.push_str(longrepr);
-                    self.output.push('\n');
-                } else if let Some(crash) = &test.call.crash {
-                    self.output.push('\n');
-                    self.output.push_str(&format!(
-                        "{}:{}: {}\n",
-                        crash.path, crash.lineno, crash.message
-                    ));
+                if let Some(call) = &test.call {
+                    if let Some(longrepr) = call.longrepr.as_ref() {
+                        self.output.push('\n');
+                        self.output.push_str(longrepr.as_str());
+                        self.output.push('\n');
+                    } else if let Some(crash) = call.crash.as_ref() {
+                        self.output.push('\n');
+                        self.output.push_str(&format!(
+                            "{}:{}: {}\n",
+                            crash.path, crash.lineno, crash.message
+                        ));
+                    }
                 }
             }
         }
@@ -182,12 +187,30 @@ impl OutputFormatter for PytestTempFileFormatter {
     }
 
     fn update(&mut self) -> Result<(), FztError> {
+        if !&self.temp_report_log_path.exists() {
+            println!(
+                "{}",
+                format!("Report file {:?} for formatter {} does not exist, something went wrong while test execution! [SKIPPING]", &self.temp_report_log_path, self.formatter_id).yellow().to_string()
+            );
+            return Ok(());
+        }
+        if !&self.temp_cov_path.exists() {
+            println!(
+                "{}",
+                format!("Report file {:?} for formatter {} does not exist, something went wrong while test execution! [SKIPPING]", &self.temp_cov_path, self.formatter_id).yellow().to_string()
+            );
+            return Ok(());
+        }
         self.process_test_report()?;
         self.process_coverage_report()
     }
 
     fn print(&self) {
         print!("{}", self.output);
+    }
+
+    fn skipped(&self) -> bool {
+        self.skipped > 0
     }
 }
 
