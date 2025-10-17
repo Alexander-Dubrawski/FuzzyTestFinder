@@ -91,8 +91,11 @@ impl Runtime for PytestRuntime {
                 .into_iter()
                 .zip(temp_dirs.iter())
                 .map(|(test, (cov_dir, rep_dir))| {
+                    // We do not want multiple threads use the same coverage file
+                    let cov_data_path = cov_dir.path().join("coverage").to_path_buf();
                     let cov_path = cov_dir.path().join("coverage.json").to_path_buf();
                     let rep_path = rep_dir.path().join("report.json").to_path_buf();
+
                     let additional_base_args = vec![
                         "--json-report".to_string(),
                         format!(
@@ -108,7 +111,7 @@ impl Runtime for PytestRuntime {
                                 .as_os_str()
                                 .to_str()
                                 .expect("Failed to convert path to string")
-                        ),
+                        )
                     ];
 
                     let formatter = PytestTempFileFormatter::new(cov_path, rep_path, test.as_str());
@@ -117,6 +120,17 @@ impl Runtime for PytestRuntime {
                         formatter,
                         additional_base_args,
                         additional_runtime_args: vec![],
+                        additional_command_envs: HashMap::from_iter(
+                            vec![(
+                                "COVERAGE_FILE".to_string(),
+                                cov_data_path
+                                    .as_os_str()
+                                    .to_str()
+                                    .expect("Failed to convert path to string")
+                                    .to_string(),
+                            )]
+                            .into_iter(),
+                        ),
                     }
                 })
                 .collect();

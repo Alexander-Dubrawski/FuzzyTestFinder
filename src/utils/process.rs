@@ -274,7 +274,7 @@ where
     };
     // print all at once so that threads do not overwrite each other
     // TODO: Check Status
-
+    
     formatter.update()?;
     formatter.print();
     let stdout_plain = String::from_utf8(strip_ansi_escapes::strip(stdout_output.as_bytes()))

@@ -68,10 +68,12 @@ impl<F: OutputFormatter + Clone + Sync + Send + Default> EngineOutput<F> {
                     .status
                     .is_some_and(|status| status.success())
                     && !test_output.formatter.skipped()
+
             })
             .map(|test_output| (test_output.test.as_str(), test_output.formatter.coverage()))
-            .for_each(|(test, coverred_tests)| {
-                coverred_tests.iter().for_each(|path| {
+            .for_each(|(test, coverred_files)| {
+                // println!("{}", test);
+                coverred_files.iter().for_each(|path| {
                     coverage
                         .entry(path.to_string())
                         .and_modify(|tests| tests.push(String::from(test)))
@@ -121,6 +123,7 @@ pub struct TestItem<F: OutputFormatter + Clone + Sync + Send> {
     pub formatter: F,
     pub additional_base_args: Vec<String>,
     pub additional_runtime_args: Vec<String>,
+    pub additional_command_envs: HashMap<String, String>,
 }
 
 pub struct Engine {
@@ -210,7 +213,11 @@ impl Engine {
             let mut command = self.construct_command(&item.additional_base_args.as_slice());
             command.arg(item.test_name.clone());
             self.append_runtime_args(&mut command, &item.additional_runtime_args.as_slice());
-
+            item.additional_command_envs
+                .iter()
+                .for_each(|(key, value)| {
+                    command.env(key, value);
+                });
             if verbose {
                 let program = command.get_program().to_str().unwrap();
                 let args: Vec<String> = command
@@ -270,7 +277,6 @@ impl Engine {
         }
     }
 
-    // TODO: Return Vec
     pub fn execute_per_item_parallel<F: OutputFormatter + Clone + Sync + Send + Default>(
         &self,
         receiver: Option<StdReceiver<String>>,

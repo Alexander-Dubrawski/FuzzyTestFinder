@@ -1,4 +1,4 @@
-use std::{process::ExitStatus, sync::mpsc::Receiver as StdReceiver};
+use std::{collections::HashMap, process::ExitStatus, sync::mpsc::Receiver as StdReceiver};
 
 use crate::{
     errors::FztError,
@@ -33,6 +33,7 @@ impl Runtime for CargoRuntime {
                     formatter,
                     additional_base_args: vec![],
                     additional_runtime_args: vec![],
+                    additional_command_envs: HashMap::new(),
                 }
             })
             .collect();

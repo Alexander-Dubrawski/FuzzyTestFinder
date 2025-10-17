@@ -51,8 +51,10 @@ impl PytestTempFileFormatter {
             println!(
                 "{}",
                 format!(
-                    "[{}] No test report found. STDERR: {}.",
-                    self.formatter_id, self.stderr
+                    "{} [{}] No test report found. STDERR: {}.",
+                    &"FAILED".red().bold().to_string(),
+                    self.formatter_id,
+                    self.stderr
                 )
             );
             return Ok(());
