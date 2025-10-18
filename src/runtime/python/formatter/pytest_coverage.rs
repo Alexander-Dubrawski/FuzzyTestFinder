@@ -4,14 +4,12 @@ use colored::Colorize;
 
 use crate::{
     FztError,
-    runtime::python::test_report::TestReport,
+    runtime::python::{coverage_report::CoverageReport, test_report::TestReport},
     utils::process::{FailedTest, OutputFormatter},
 };
 
-use super::coverage_report::CoverageReport;
-
 #[derive(Clone, Debug, Default)]
-pub struct PytestTempFileFormatter {
+pub struct PytestCovFormatter {
     failed_tests: HashSet<FailedTest>,
     skipped_test: HashSet<String>,
     passed_tests: HashSet<String>,
@@ -27,7 +25,7 @@ pub struct PytestTempFileFormatter {
     formatter_id: String,
 }
 
-impl PytestTempFileFormatter {
+impl PytestCovFormatter {
     pub fn new(temp_cov_path: PathBuf, temp_report_log_path: PathBuf, formatter_id: &str) -> Self {
         Self {
             failed_tests: HashSet::new(),
@@ -151,7 +149,7 @@ impl PytestTempFileFormatter {
     }
 }
 
-impl OutputFormatter for PytestTempFileFormatter {
+impl OutputFormatter for PytestCovFormatter {
     fn line(&mut self, _line: &str) -> Result<(), crate::FztError> {
         Ok(())
     }
@@ -227,7 +225,7 @@ impl OutputFormatter for PytestTempFileFormatter {
 mod tests {
     use crate::utils::process::{FailedTest, OutputFormatter};
 
-    use super::PytestTempFileFormatter;
+    use super::PytestCovFormatter;
 
     #[test]
     fn parse_no_coverage() {

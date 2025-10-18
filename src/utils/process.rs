@@ -8,7 +8,7 @@ use std::sync::mpsc::{Receiver as StdReceiver, TryRecvError as StdTryRecvError};
 
 use crate::errors::FztError;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd)]
 pub struct FailedTest {
     pub name: String,
     pub error_msg: String,
@@ -274,7 +274,7 @@ where
     };
     // print all at once so that threads do not overwrite each other
     // TODO: Check Status
-    
+
     formatter.update()?;
     formatter.print();
     let stdout_plain = String::from_utf8(strip_ansi_escapes::strip(stdout_output.as_bytes()))

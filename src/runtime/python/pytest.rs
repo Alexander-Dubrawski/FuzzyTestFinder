@@ -1,4 +1,4 @@
-use std::{collections::HashMap, process::ExitStatus, sync::mpsc::Receiver};
+use std::{collections::HashMap, sync::mpsc::Receiver};
 
 use itertools::Itertools;
 use tempfile::TempDir;
@@ -8,10 +8,11 @@ use crate::{
     runtime::{
         Debugger, PythonDebugger, Runtime, RuntimeOutput,
         engine::{Engine, TestItem},
-        python::formatter::PytestTempFileFormatter,
     },
-    utils::process::{DefaultFormatter, OutputFormatter},
+    utils::process::OutputFormatter,
 };
+
+use super::formatter::{pytest::PytestFormatter, pytest_coverage::PytestCovFormatter};
 
 #[derive(Default)]
 pub struct PytestRuntime {}
@@ -87,7 +88,7 @@ impl Runtime for PytestRuntime {
                 })
                 .collect::<Result<Vec<(TempDir, TempDir)>, std::io::Error>>()?;
 
-            let test_items: Vec<TestItem<PytestTempFileFormatter>> = tests
+            let test_items: Vec<TestItem<PytestCovFormatter>> = tests
                 .into_iter()
                 .zip(temp_dirs.iter())
                 .map(|(test, (cov_dir, rep_dir))| {
@@ -111,10 +112,10 @@ impl Runtime for PytestRuntime {
                                 .as_os_str()
                                 .to_str()
                                 .expect("Failed to convert path to string")
-                        )
+                        ),
                     ];
 
-                    let formatter = PytestTempFileFormatter::new(cov_path, rep_path, test.as_str());
+                    let formatter = PytestCovFormatter::new(cov_path, rep_path, test.as_str());
                     TestItem {
                         test_name: test,
                         formatter,
@@ -156,8 +157,7 @@ impl Runtime for PytestRuntime {
                 debugger.is_some() || runtime_ags.contains(&String::from("--pdb")),
                 receiver,
                 ordered_tests,
-                // Needs to be able to collect failed tests
-                &mut DefaultFormatter,
+                &mut PytestFormatter::new(),
                 verbose,
             )
         }

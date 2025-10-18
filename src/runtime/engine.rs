@@ -68,7 +68,6 @@ impl<F: OutputFormatter + Clone + Sync + Send + Default> EngineOutput<F> {
                     .status
                     .is_some_and(|status| status.success())
                     && !test_output.formatter.skipped()
-
             })
             .map(|test_output| (test_output.test.as_str(), test_output.formatter.coverage()))
             .for_each(|(test, coverred_files)| {
@@ -269,7 +268,7 @@ impl Engine {
                 Ok(RuntimeOutput::new_empty())
             } else {
                 Ok(RuntimeOutput {
-                    failed_tests: vec![],
+                    failed_tests: formatter.failed_tests(),
                     output: Some(output.stdout),
                     coverage: HashMap::new(),
                 })

@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::{
     FztError,
     utils::process::{FailedTest, OutputFormatter},
@@ -177,8 +179,12 @@ impl OutputFormatter for CargoFormatter {
     fn finish(self) {
         if self.failed_tests.is_empty() {
             println!(
-                "\ntest result: \x1b[32mok\x1b[0m. {} passed; 0 failed; {} measured; {} filtered out; finished in {:.3}s",
-                self.passed, self.measured, self.ignored, self.seconds
+                "\ntest result: {}. {} passed; 0 failed; {} measured; {} filtered out; finished in {:.3}s",
+                &"ok".green().bold(),
+                self.passed,
+                self.measured,
+                self.ignored,
+                self.seconds
             );
         } else {
             println!("\nfailures:");
@@ -192,8 +198,13 @@ impl OutputFormatter for CargoFormatter {
                 println!("    {}", failed_test.name);
             }
             println!(
-                "\ntest result: \x1b[93mFAILED\x1b[0m. {} passed; {} failed; {} measured; {} filtered out; finished in {:.3}s",
-                self.passed, self.failed, self.measured, self.ignored, self.seconds
+                "\ntest result: {}. {} passed; {} failed; {} measured; {} filtered out; finished in {:.3}s",
+                &"FAILED".red().bold(),
+                self.passed,
+                self.failed,
+                self.measured,
+                self.ignored,
+                self.seconds
             );
         }
     }
