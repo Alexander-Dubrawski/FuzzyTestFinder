@@ -4,13 +4,11 @@ use engine::EngineOutput;
 use serde::{Deserialize, Serialize};
 use std::sync::mpsc::Receiver;
 
-use crate::{
-    errors::FztError,
-    utils::process::{FailedTest, OutputFormatter},
-};
+use crate::errors::FztError;
 
 mod engine;
 pub mod java;
+mod process;
 pub mod python;
 pub mod rust;
 mod utils;
@@ -36,6 +34,34 @@ pub enum Debugger {
     Rust(RustDebugger),
     Java(JavaDebugger),
     Select,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd)]
+pub struct FailedTest {
+    pub name: String,
+    pub error_msg: String,
+}
+
+impl FailedTest {
+    pub fn new(name: &str, error_msg: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            error_msg: error_msg.to_string(),
+        }
+    }
+}
+
+pub trait OutputFormatter {
+    fn line(&mut self, line: &str) -> Result<(), FztError>;
+    fn err_line(&mut self, line: &str) -> Result<(), FztError>;
+    fn add(&mut self, other: &Self);
+    fn finish(self);
+    fn coverage(&self) -> Vec<String>;
+    fn skipped(&self) -> bool;
+    fn reset_coverage(&mut self);
+    fn failed_tests(&self) -> Vec<FailedTest>;
+    fn update(&mut self) -> Result<(), FztError>;
+    fn print(&self);
 }
 
 pub struct RuntimeOutput {

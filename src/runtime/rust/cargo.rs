@@ -1,12 +1,11 @@
-use std::{collections::HashMap, process::ExitStatus, sync::mpsc::Receiver as StdReceiver};
+use std::{collections::HashMap, sync::mpsc::Receiver as StdReceiver};
 
 use crate::{
     errors::FztError,
     runtime::{
-        Debugger, Runtime, RuntimeOutput,
+        Debugger, OutputFormatter, Runtime, RuntimeOutput,
         engine::{Engine, TestItem},
     },
-    utils::process::OutputFormatter,
 };
 
 use super::formatter::CargoFormatter;

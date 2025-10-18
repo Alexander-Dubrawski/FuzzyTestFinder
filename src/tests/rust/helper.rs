@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::utils::process::FailedTest;
+use crate::runtime::FailedTest;
 
 use super::rust_test::RustTest;
 

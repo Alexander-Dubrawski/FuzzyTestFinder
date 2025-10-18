@@ -4,8 +4,10 @@ use colored::Colorize;
 
 use crate::{
     FztError,
-    runtime::python::{coverage_report::CoverageReport, test_report::TestReport},
-    utils::process::{FailedTest, OutputFormatter},
+    runtime::{
+        FailedTest, OutputFormatter,
+        python::{coverage_report::CoverageReport, test_report::TestReport},
+    },
 };
 
 #[derive(Clone, Debug, Default)]
@@ -223,9 +225,6 @@ impl OutputFormatter for PytestCovFormatter {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::process::{FailedTest, OutputFormatter};
-
-    use super::PytestCovFormatter;
 
     #[test]
     fn parse_no_coverage() {

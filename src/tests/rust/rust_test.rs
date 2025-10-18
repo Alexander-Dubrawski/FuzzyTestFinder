@@ -8,14 +8,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::FztError,
+    runtime::FailedTest,
     tests::{
         Test, Tests,
         rust::{ParseRustTest, mod_resolver::get_module_paths, rust_test_parser::RustTestParser},
     },
-    utils::{
-        file::get_file_modification_timestamp, path_resolver::get_relative_path,
-        process::FailedTest,
-    },
+    utils::{file::get_file_modification_timestamp, path_resolver::get_relative_path},
 };
 
 use super::helper::parse_failed_tests;

@@ -2,7 +2,7 @@ use colored::Colorize;
 
 use crate::{
     FztError,
-    utils::process::{FailedTest, OutputFormatter},
+    runtime::{FailedTest, OutputFormatter},
 };
 
 const TEST_PREFIX: &str = "test ";

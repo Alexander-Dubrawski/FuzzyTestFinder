@@ -2,11 +2,11 @@ use std::sync::mpsc::Receiver;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, Runtime, RuntimeOutput, engine::Engine},
-    utils::process::DefaultFormatter,
+    runtime::{
+        Debugger, Runtime, RuntimeOutput, engine::Engine,
+        java::formatter::gradle_formatter::GradleFormatter,
+    },
 };
-
-const JUNIT_FAILURE_EXIT_CODE: i32 = 1;
 
 #[derive(Default)]
 pub struct GradleRuntime {}
@@ -35,7 +35,7 @@ impl Runtime for GradleRuntime {
             false,
             receiver,
             formatted_tests,
-            &mut DefaultFormatter,
+            &mut GradleFormatter::new(),
             verbose,
         )
     }

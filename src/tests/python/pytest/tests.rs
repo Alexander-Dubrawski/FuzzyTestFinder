@@ -6,13 +6,15 @@ use std::{
 
 use crate::{
     errors::FztError,
+    runtime::FailedTest,
     tests::{
+        Test, Tests,
         python::{
             helper::{parse_failed_tests, update_tests},
             python_test::PythonTest,
-        }, Test, Tests
+        },
     },
-    utils::{file_walking::filter_out_deleted_files, process::FailedTest},
+    utils::file_walking::filter_out_deleted_files,
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};

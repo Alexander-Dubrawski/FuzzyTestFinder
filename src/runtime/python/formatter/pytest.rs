@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     FztError,
-    utils::process::{FailedTest, OutputFormatter},
+    runtime::{FailedTest, OutputFormatter},
 };
 
 #[derive(Clone, Debug, Default)]
@@ -70,11 +70,11 @@ impl OutputFormatter for PytestFormatter {
 
     fn reset_coverage(&mut self) {}
 
-    fn failed_tests(&self) -> Vec<crate::utils::process::FailedTest> {
+    fn failed_tests(&self) -> Vec<FailedTest> {
         vec![]
     }
 
-    fn update(&mut self) -> Result<(), crate::FztError> {
+    fn update(&mut self) -> Result<(), FztError> {
         Ok(())
     }
 

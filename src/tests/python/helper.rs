@@ -6,10 +6,7 @@ use std::{
 use regex::Regex;
 use rustpython_parser::{Mode, lexer::lex, parse_tokens};
 
-use crate::{
-    errors::FztError,
-    utils::{file_walking::collect_tests, process::FailedTest},
-};
+use crate::{errors::FztError, runtime::FailedTest, utils::file_walking::collect_tests};
 
 fn collect_tests_from_file(path: &Path) -> Result<HashSet<String>, FztError> {
     let source_code = std::fs::read_to_string(path)?;
@@ -87,7 +84,7 @@ pub fn parse_failed_tests(failed_tests: &[FailedTest]) -> HashMap<String, HashSe
                 .insert(test_name);
         }
     });
-    failed_tests
+    sorted_failed_tests
 }
 
 #[cfg(test)]

@@ -1,6 +1,4 @@
-use crate::utils::process::OutputFormatter;
-
-use super::engine::TestItem;
+use super::{OutputFormatter, engine::TestItem};
 
 pub fn partition_tests<F: OutputFormatter + Clone + Sync + Send>(
     vec: Vec<TestItem<F>>,

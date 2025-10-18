@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::FztError,
+    runtime::FailedTest,
     tests::{
         Test, Tests,
         python::{
@@ -15,10 +16,7 @@ use crate::{
             python_test::PythonTest,
         },
     },
-    utils::{
-        file::get_file_modification_timestamp, file_walking::filter_out_deleted_files,
-        process::FailedTest,
-    },
+    utils::{file::get_file_modification_timestamp, file_walking::filter_out_deleted_files},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]

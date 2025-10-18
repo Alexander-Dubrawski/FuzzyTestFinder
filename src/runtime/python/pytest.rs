@@ -6,10 +6,9 @@ use tempfile::TempDir;
 use crate::{
     errors::FztError,
     runtime::{
-        Debugger, PythonDebugger, Runtime, RuntimeOutput,
+        Debugger, OutputFormatter, PythonDebugger, Runtime, RuntimeOutput,
         engine::{Engine, TestItem},
     },
-    utils::process::OutputFormatter,
 };
 
 use super::formatter::{pytest::PytestFormatter, pytest_coverage::PytestCovFormatter};

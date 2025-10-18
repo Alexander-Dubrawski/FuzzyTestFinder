@@ -1,11 +1,12 @@
+use crate::FztError;
+use crate::runtime::process::run_and_capture_print;
 use crate::runtime::utils::partition_tests;
-use crate::utils::process::{FailedTest, OutputFormatter, run_and_capture_print};
-use crate::{FztError, utils::process::CaptureOutput};
 use crossbeam_channel::{Receiver as CrossbeamReceiver, unbounded};
 use std::sync::mpsc::Receiver as StdReceiver;
 use std::{collections::HashMap, process::Command};
 
-use super::RuntimeOutput;
+use super::process::CaptureOutput;
+use super::{FailedTest, OutputFormatter, RuntimeOutput};
 
 const NUMBER_THREADS: usize = 16;
 
@@ -71,7 +72,6 @@ impl<F: OutputFormatter + Clone + Sync + Send + Default> EngineOutput<F> {
             })
             .map(|test_output| (test_output.test.as_str(), test_output.formatter.coverage()))
             .for_each(|(test, coverred_files)| {
-                // println!("{}", test);
                 coverred_files.iter().for_each(|path| {
                     coverage
                         .entry(path.to_string())
