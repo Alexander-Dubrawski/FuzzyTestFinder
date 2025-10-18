@@ -38,7 +38,10 @@ pub fn parse_failed_tests(
 mod tests {
     use std::collections::HashMap;
 
-    use crate::tests::java::{helper::parse_failed_tests, java_test::JavaTest};
+    use crate::{
+        runtime::FailedTest,
+        tests::java::{helper::parse_failed_tests, java_test::JavaTest},
+    };
 
     #[test]
     fn collect_failed_tests() {

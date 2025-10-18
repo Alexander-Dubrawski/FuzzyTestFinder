@@ -104,7 +104,6 @@ impl OutputFormatter for CargoFormatter {
         // Test Passed
         if plain_line.ends_with("... ok") {
             self.print_output.push_str(line);
-            self.print_output.push_str("\n");
             self.passed += 1;
             return Ok(());
         }
@@ -112,7 +111,6 @@ impl OutputFormatter for CargoFormatter {
         // Test Ignored
         if plain_line.ends_with("... ignored") {
             self.print_output.push_str(line);
-            self.print_output.push_str("\n");
             self.ignored += 1;
             return Ok(());
         }
@@ -120,7 +118,6 @@ impl OutputFormatter for CargoFormatter {
         // Test measured
         if plain_line.ends_with("... measured") {
             self.print_output.push_str(line);
-            self.print_output.push_str("\n");
             self.measured += 1;
             return Ok(());
         }
@@ -128,7 +125,6 @@ impl OutputFormatter for CargoFormatter {
         // Test Failed
         if plain_line.ends_with(TEST_FAILED_SUFFIX) {
             self.print_output.push_str(line);
-            self.print_output.push_str("\n");
             self.failed += 1;
             if let Some(test_name) = extract_test_name(&plain_line) {
                 self.failed_tests.push(FailedTest::new(test_name, ""));
@@ -235,9 +231,7 @@ impl OutputFormatter for CargoFormatter {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{HashMap, HashSet};
-
-    use crate::utils::process::{FailedTest, OutputFormatter};
+    use crate::runtime::{FailedTest, OutputFormatter};
 
     use super::CargoFormatter;
 

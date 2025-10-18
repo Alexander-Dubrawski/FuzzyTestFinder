@@ -44,8 +44,8 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
+        runtime::FailedTest,
         tests::rust::{helper::parse_failed_tests, rust_test::RustTest},
-        utils::process::FailedTest,
     };
 
     #[test]

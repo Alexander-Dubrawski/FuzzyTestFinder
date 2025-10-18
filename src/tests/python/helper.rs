@@ -189,6 +189,8 @@ mod tests {
             ),
         ]);
 
+        let result = parse_failed_tests(failed_tests.as_slice());
+
         assert_eq!(result, expected);
     }
 }
