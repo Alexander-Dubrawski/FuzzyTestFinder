@@ -160,7 +160,7 @@ struct Cli {
         long,
         short,
         default_value_t = false,
-        help = "Tests that cover changed files, since last run with this option"
+        help = "Tests that cover changed files, since last run with this option. Can not be run with attached debugger."
     )]
     covered: bool,
 

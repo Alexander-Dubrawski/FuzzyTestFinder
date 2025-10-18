@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::FztError,
+    runtime::FailedTest,
     tests::{Test, Tests},
 };
 
@@ -101,8 +102,8 @@ impl Tests for JavaTests {
         Ok(updated)
     }
 
-    fn update_failed(&mut self, runtime_output: &str) -> bool {
-        let failed_tests = parse_failed_tests(runtime_output, &self.tests);
+    fn update_failed(&mut self, failed_tests_output: &[FailedTest]) -> bool {
+        let failed_tests = parse_failed_tests(failed_tests_output, &self.tests);
         if self.failed_tests == failed_tests {
             false
         } else {

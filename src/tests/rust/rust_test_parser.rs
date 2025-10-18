@@ -1,11 +1,11 @@
-use std::{process::Command, sync::mpsc::Receiver};
+use std::{
+    io::{BufRead, BufReader},
+    process::{Command, Stdio},
+};
 
 use itertools::Itertools;
 
-use crate::{
-    errors::FztError,
-    utils::process::{OnlyStderrFormatter, run_and_capture_print},
-};
+use crate::errors::FztError;
 
 use super::ParseRustTest;
 
@@ -21,24 +21,40 @@ impl ParseRustTest for RustTestParser {
         command.arg("--color=always");
         command.env("CARGO_TERM_COLOR", "always");
 
-        let mut formatter = OnlyStderrFormatter;
+        let mut child = command
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
 
-        let captured = run_and_capture_print(command, &mut formatter, None::<Receiver<String>>)?;
+        let mut stdout_output = String::new();
 
-        if let Some(status) = captured.status {
-            if status.success() == false {
-                return Err(FztError::RustError(format!(
-                    "Failed to run `cargo test -- --list`"
-                )));
+        if let Some(stdout) = child.stdout.take() {
+            let reader = BufReader::new(stdout);
+            for line in reader.lines() {
+                let line = line?;
+                stdout_output.push_str(&line);
+                stdout_output.push('\n');
             }
-        } else {
+        }
+
+        if let Some(stderr) = child.stderr.take() {
+            let reader = BufReader::new(stderr);
+            for line in reader.lines() {
+                let line = line?;
+                println!("{}", line);
+            }
+        }
+
+        let status = child.wait()?;
+
+        if !status.success() {
             return Err(FztError::RustError(format!(
-                "Failed to run `cargo test -- --list` no process status received"
+                "Failed to run `cargo test -- --list`"
             )));
         }
 
         let mut tests = Vec::new();
-        for line in captured.stdout.lines() {
+        for line in stdout_output.lines() {
             if line.is_empty() {
                 break;
             }

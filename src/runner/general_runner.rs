@@ -274,29 +274,26 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clo
         };
         drop(test_provider);
         if !tests_to_run.is_empty() {
-            let mut coverage = if self.config.covered {
-                Some(HashMap::new())
-            } else {
-                None
-            };
-            if let Some(output) = self.runtime.run_tests(
+            let runtime_output = self.runtime.run_tests(
                 tests_to_run,
                 self.config.verbose,
                 &self.config.runtime_args.as_slice(),
                 &self.config.debugger,
                 receiver,
-                &mut coverage,
-            )? {
-                // We don't want to update the cache if we are running failed tests only
-                if !self.config.run_failed {
-                    let mut updated = self.tests.update_failed(output.as_str());
-                    if let Some(coverage) = &coverage {
-                        updated = updated || self.tests.update_file_coverage(coverage)?;
-                    }
-                    if updated {
-                        self.cache_manager
-                            .add_entry(self.tests.to_json()?.as_str())?;
-                    }
+                self.config.covered,
+            )?;
+            // We don't want to update the cache if we are running failed tests only
+            if !self.config.run_failed {
+                let mut updated = self
+                    .tests
+                    .update_failed(runtime_output.failed_tests.as_slice());
+                if self.config.covered {
+                    updated =
+                        updated || self.tests.update_file_coverage(&runtime_output.coverage)?;
+                }
+                if updated {
+                    self.cache_manager
+                        .add_entry(self.tests.to_json()?.as_str())?;
                 }
             }
             Ok(())
