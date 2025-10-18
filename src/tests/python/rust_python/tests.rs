@@ -15,7 +15,10 @@ use crate::{
             python_test::PythonTest,
         },
     },
-    utils::{file::get_file_modification_timestamp, file_walking::filter_out_deleted_files},
+    utils::{
+        file::get_file_modification_timestamp, file_walking::filter_out_deleted_files,
+        process::FailedTest,
+    },
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -158,8 +161,8 @@ impl Tests for RustPytonTests {
         Ok(updated)
     }
 
-    fn update_failed(&mut self, runtime_output: &str) -> bool {
-        let failed_tests = parse_failed_tests(runtime_output);
+    fn update_failed(&mut self, failed_tests_output: &[FailedTest]) -> bool {
+        let failed_tests = parse_failed_tests(failed_tests_output);
         if self.failed_tests == failed_tests {
             false
         } else {

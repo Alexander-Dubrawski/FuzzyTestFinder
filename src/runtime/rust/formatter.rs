@@ -232,3 +232,107 @@ impl OutputFormatter for CargoFormatter {
         self.ignored > 0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::{HashMap, HashSet};
+
+    use crate::utils::process::{FailedTest, OutputFormatter};
+
+    use super::CargoFormatter;
+
+    #[test]
+    fn collect_failed_tests() {
+        let output = "
+running 1 test
+test tests::python::helper::tests::collect_tests ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.01s
+
+     Running unittests src/main.rs (target/debug/deps/FzT-1105c16a9c36c56e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+warning: unused variable: `runtime_output`
+  --> src/tests/java/java_test.rs:93:33
+   |
+93 |     fn update_failed(&mut self, runtime_output: &str) -> bool {
+   |                                 ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_runtime_output`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `runtime_output`
+   --> src/tests/rust/rust_test.rs:185:33
+    |
+185 |     fn update_failed(&mut self, runtime_output: &str) -> bool {
+    |                                 ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_runtime_output`
+
+warning: crate `FzT` should have a snake case name
+  |
+  = help: convert the identifier to snake case: `fz_t`
+  = note: `#[warn(non_snake_case)]` on by default
+
+warning: `FzT` (lib) generated 3 warnings
+warning: `FzT` (lib test) generated 2 warnings (2 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running unittests src/lib.rs (target/debug/deps/FzT-ae27e584e72f55cd)
+
+running 1 test
+test tests::java::java_test::tests::collect_meta ... FAILED
+
+warning: unused variable: `runtime_output`
+  --> src/tests/java/java_test.rs:93:33
+   |
+93 |     fn update_failed(&mut self, runtime_output: &str) -> bool {
+   |                                 ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_runtime_output`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `runtime_output`
+   --> src/tests/rust/rust_test.rs:185:33
+    |
+185 |     fn update_failed(&mut self, runtime_output: &str) -> bool {
+    |                                 ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_runtime_output`
+
+warning: crate `FzT` should have a snake case name
+  |
+  = help: convert the identifier to snake case: `fz_t`
+  = note: `#[warn(non_snake_case)]` on by default
+
+warning: `FzT` (lib) generated 3 warnings
+warning: `FzT` (lib test) generated 2 warnings (2 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running unittests src/lib.rs (target/debug/deps/FzT-ae27e584e72f55cd)
+
+running 1 test
+test tests::java::java_test::tests::collect_tests ... FAILED
+
+failures:
+
+---- tests::java::java_test::tests::collect_tests stdout ----
+
+thread 'tests::java::java_test::tests::collect_tests' panicked at src/tests/java/java_test.rs:136:9:
+assertion failed: false
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::java::java_test::tests::collect_tests
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib
+        ";
+        let mut formatter = CargoFormatter::new();
+        let expected = vec![FailedTest {
+            name: "tests::java::java_test::tests::collect_tests".to_string(),
+            error_msg: String::from(""),
+        }];
+        for line in output.lines() {
+            formatter.line(line).unwrap();
+        }
+        assert_eq!(formatter.failed_tests, expected);
+    }
+}

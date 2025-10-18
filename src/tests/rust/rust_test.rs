@@ -12,7 +12,10 @@ use crate::{
         Test, Tests,
         rust::{ParseRustTest, mod_resolver::get_module_paths, rust_test_parser::RustTestParser},
     },
-    utils::{file::get_file_modification_timestamp, path_resolver::get_relative_path},
+    utils::{
+        file::get_file_modification_timestamp, path_resolver::get_relative_path,
+        process::FailedTest,
+    },
 };
 
 use super::helper::parse_failed_tests;
@@ -289,8 +292,8 @@ impl Tests for RustTests {
         Ok(updated)
     }
 
-    fn update_failed(&mut self, runtime_output: &str) -> bool {
-        let failed_tests = parse_failed_tests(runtime_output, &self.tests);
+    fn update_failed(&mut self, failed_tests_output: &[FailedTest]) -> bool {
+        let failed_tests = parse_failed_tests(failed_tests_output, &self.tests);
         if self.failed_tests == failed_tests {
             false
         } else {

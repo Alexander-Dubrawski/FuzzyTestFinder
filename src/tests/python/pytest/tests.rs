@@ -7,13 +7,12 @@ use std::{
 use crate::{
     errors::FztError,
     tests::{
-        Test, Tests,
         python::{
             helper::{parse_failed_tests, update_tests},
             python_test::PythonTest,
-        },
+        }, Test, Tests
     },
-    utils::file_walking::filter_out_deleted_files,
+    utils::{file_walking::filter_out_deleted_files, process::FailedTest},
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -136,8 +135,8 @@ impl Tests for PytestTests {
         Ok(updated || files_filtered_out)
     }
 
-    fn update_failed(&mut self, runtime_output: &str) -> bool {
-        let failed_tests = parse_failed_tests(runtime_output);
+    fn update_failed(&mut self, failed_tests_output: &[FailedTest]) -> bool {
+        let failed_tests = parse_failed_tests(failed_tests_output);
         if self.failed_tests == failed_tests {
             false
         } else {

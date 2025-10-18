@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::errors::FztError;
+use crate::{errors::FztError, utils::process::FailedTest};
 
 pub mod java;
 pub mod python;
@@ -23,5 +23,5 @@ pub trait Tests {
         coverage: &HashMap<String, Vec<String>>,
     ) -> Result<bool, FztError>;
     fn get_covered_tests(&self) -> Vec<impl Test>;
-    fn update_failed(&mut self, runtime_output: &str) -> bool;
+    fn update_failed(&mut self, failed_tests_output: &[FailedTest]) -> bool;
 }
