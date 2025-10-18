@@ -283,19 +283,22 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clo
                 self.config.covered,
             )?;
             // We don't want to update the cache if we are running failed tests only
+            let mut updated = false;
             if !self.config.run_failed {
-                let mut updated = self
+                updated = self
                     .tests
                     .update_failed(runtime_output.failed_tests.as_slice());
-                if self.config.covered {
-                    updated =
-                        updated || self.tests.update_file_coverage(&runtime_output.coverage)?;
-                }
-                if updated {
-                    self.cache_manager
-                        .add_entry(self.tests.to_json()?.as_str())?;
-                }
             }
+            if self.config.covered {
+                let updated_cov = self.tests.update_file_coverage(&runtime_output.coverage)?;
+                updated =
+                    updated || updated_cov;
+            }
+            if updated {
+                self.cache_manager
+                    .add_entry(self.tests.to_json()?.as_str())?;
+            }
+
             Ok(())
         } else {
             Ok(())
