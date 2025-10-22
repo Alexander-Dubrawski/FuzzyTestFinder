@@ -26,7 +26,7 @@ impl Runtime for PytestRuntime {
         receiver: Option<Receiver<String>>,
         run_coverage: bool,
     ) -> Result<RuntimeOutput, FztError> {
-        let base_args = if debugger.is_some() || runtime_ags.contains(&String::from("--pdb")) {
+        let mut base_args = if debugger.is_some() || runtime_ags.contains(&String::from("--pdb")) {
             vec!["python", "-m", "pytest", "-s"]
         } else {
             vec!["unbuffer", "python", "-m", "pytest"]
@@ -149,6 +149,17 @@ impl Runtime for PytestRuntime {
             }
         } else {
             let mut engine = Engine::new(None, None);
+            let rep_dir = tempfile::tempdir()?;
+            let rep_path = rep_dir.path().join("report.json").to_path_buf();
+            let rep_arg = format!(
+                "--json-report-file={}",
+                rep_path
+                    .as_os_str()
+                    .to_str()
+                    .expect("Failed to convert path to string")
+            );
+            base_args.push("--json-report");
+            base_args.push(rep_arg.as_str());
             engine.base_args(base_args.as_slice());
             engine.runtime_args(runtime_ags);
             engine.envs(&envs);
@@ -156,7 +167,7 @@ impl Runtime for PytestRuntime {
                 debugger.is_some() || runtime_ags.contains(&String::from("--pdb")),
                 receiver,
                 ordered_tests,
-                &mut PytestFormatter::new(),
+                &mut PytestFormatter::new(rep_path),
                 verbose,
             )
         }
