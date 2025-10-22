@@ -56,26 +56,28 @@ impl OutputFormatter for GradleFormatter {
     }
 
     fn update(&mut self) -> Result<(), FztError> {
+        let mut last_failed_block_line = String::new();
         self.output_lines.iter().fold(false, |in_test, line| {
             if line.ends_with("FAILED") {
                 return true;
             }
             if line.is_empty() && in_test {
-                return false;
+                let parts: Vec<&str> = last_failed_block_line.split('(').collect();
+                if parts.len() == 2 {
+                    let method_part = parts[0]
+                        .trim_start_matches("at ")
+                        .trim_start_matches("app//")
+                        .trim();
+                    self.failed_tests.insert(FailedTest {
+                        name: method_part.to_string(),
+                        error_msg: String::new(),
+                    });
+                    return false;
+                }
             }
             if in_test {
                 if line.trim().starts_with("at ") {
-                    let parts: Vec<&str> = line.trim().split('(').collect();
-                    if parts.len() == 2 {
-                        let method_part = parts[0]
-                            .trim_start_matches("at ")
-                            .trim_start_matches("app//")
-                            .trim();
-                        self.failed_tests.insert(FailedTest {
-                            name: method_part.to_string(),
-                            error_msg: String::new(),
-                        });
-                    }
+                    last_failed_block_line = line.trim().to_string();
                 }
             }
             in_test
@@ -138,15 +140,12 @@ ParserTest > parseCache() FAILED
                 name: "org.parser.ParserTest.foo".to_string(),
                 error_msg: String::from(""),
             },
-            FailedTest {
-                name: "org.parser.ParserTest.hoo".to_string(),
-                error_msg: String::from(""),
-            },
         ]);
 
         for line in output.lines() {
             formatter.line(line).unwrap();
         }
+        formatter.update().unwrap();
         assert_eq!(formatter.failed_tests, expected);
     }
 }

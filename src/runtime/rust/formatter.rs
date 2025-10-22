@@ -273,8 +273,6 @@ warning: `FzT` (lib test) generated 2 warnings (2 duplicates)
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
      Running unittests src/lib.rs (target/debug/deps/FzT-ae27e584e72f55cd)
 
-running 1 test
-test tests::java::java_test::tests::collect_meta ... FAILED
 
 warning: unused variable: `runtime_output`
   --> src/tests/java/java_test.rs:93:33
@@ -322,7 +320,9 @@ error: test failed, to rerun pass `--lib
         let mut formatter = CargoFormatter::new();
         let expected = vec![FailedTest {
             name: "tests::java::java_test::tests::collect_tests".to_string(),
-            error_msg: String::from(""),
+            error_msg: String::from(
+                "---- tests::java::java_test::tests::collect_tests stdout ----\n\nthread 'tests::java::java_test::tests::collect_tests' panicked at src/tests/java/java_test.rs:136:9:\nassertion failed: false\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n",
+            ),
         }];
         for line in output.lines() {
             formatter.line(line).unwrap();

@@ -51,13 +51,13 @@ mod tests {
     #[test]
     fn collect_failed_tests() {
         let current_tests: HashMap<String, Vec<RustTest>> = HashMap::from([(
-            "tests/java/java_test/tests.java".to_string(),
+            "tests/foo/boo/tests.rs".to_string(),
             vec![
                 RustTest {
                     module_path: vec![
                         "tests".to_string(),
-                        "java".to_string(),
-                        "java_test".to_string(),
+                        "foo".to_string(),
+                        "boo".to_string(),
                         "tests".to_string(),
                     ],
                     method_name: "collect_tests".to_string(),
@@ -65,8 +65,8 @@ mod tests {
                 RustTest {
                     module_path: vec![
                         "tests".to_string(),
-                        "java".to_string(),
-                        "java_test".to_string(),
+                        "foo".to_string(),
+                        "boo".to_string(),
                         "tests".to_string(),
                     ],
                     method_name: "collect_meta".to_string(),
@@ -74,7 +74,7 @@ mod tests {
                 RustTest {
                     module_path: vec![
                         "tests".to_string(),
-                        "java".to_string(),
+                        "foo".to_string(),
                         "some_other_tests".to_string(),
                         "tests".to_string(),
                     ],
@@ -84,13 +84,13 @@ mod tests {
         )]);
 
         let expected: HashMap<String, Vec<RustTest>> = HashMap::from([(
-            "tests/java/java_test/tests.java".to_string(),
+            "tests/foo/boo/tests.rs".to_string(),
             vec![
                 RustTest {
                     module_path: vec![
                         "tests".to_string(),
-                        "java".to_string(),
-                        "java_test".to_string(),
+                        "foo".to_string(),
+                        "boo".to_string(),
                         "tests".to_string(),
                     ],
                     method_name: "collect_tests".to_string(),
@@ -98,8 +98,8 @@ mod tests {
                 RustTest {
                     module_path: vec![
                         "tests".to_string(),
-                        "java".to_string(),
-                        "java_test".to_string(),
+                        "foo".to_string(),
+                        "boo".to_string(),
                         "tests".to_string(),
                     ],
                     method_name: "collect_meta".to_string(),
@@ -109,11 +109,11 @@ mod tests {
 
         let failed_tests = vec![
             FailedTest {
-                name: "tests/java/java_test/tests.java::collect_meta".to_string(),
+                name: "tests::foo::boo::tests::collect_meta".to_string(),
                 error_msg: "".to_string(),
             },
             FailedTest {
-                name: "tests/java/java_test/tests.java::collect_tests".to_string(),
+                name: "tests::foo::boo::tests::collect_tests".to_string(),
                 error_msg: "".to_string(),
             },
         ];

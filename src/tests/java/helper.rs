@@ -87,28 +87,23 @@ mod tests {
             ),
         ]);
 
-        let expected: HashMap<String, Vec<JavaTest>> = HashMap::from([
-            (
-                String::from("parser/ParserTest.java"),
-                vec![
-                    JavaTest {
-                        class_path: String::from("org.parser.ParserTest"),
-                        method_name: String::from("boo"),
-                    },
-                    JavaTest {
-                        class_path: String::from("org.parser.ParserTest"),
-                        method_name: String::from("foo"),
-                    },
-                ],
-            ),
-            (
-                String::from("parser/SomeParserTest.java"),
-                vec![JavaTest {
-                    class_path: String::from("org.parser.SomeParserTest"),
-                    method_name: String::from("parseCache"),
-                }],
-            ),
-        ]);
+        let expected: HashMap<String, Vec<JavaTest>> = HashMap::from([(
+            String::from("parser/ParserTest.java"),
+            vec![
+                JavaTest {
+                    class_path: String::from("org.parser.ParserTest"),
+                    method_name: String::from("boo"),
+                },
+                JavaTest {
+                    class_path: String::from("org.parser.ParserTest"),
+                    method_name: String::from("foo"),
+                },
+                JavaTest {
+                    class_path: String::from("org.parser.ParserTest"),
+                    method_name: String::from("hoo"),
+                },
+            ],
+        )]);
 
         let result = parse_failed_tests(failed_tests.as_slice(), &current_tests);
 
