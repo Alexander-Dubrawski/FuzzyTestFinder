@@ -197,8 +197,8 @@ impl Engine {
                 command.arg(separator.as_str());
             }
             command.args(&self.runtime_command_args[..]);
-            command.args(addional_args);
         }
+        command.args(addional_args);
     }
 
     fn run_tests_single<F: OutputFormatter + Clone + Sync + Send>(
@@ -218,6 +218,7 @@ impl Engine {
                     command.env(key, value);
                 });
             if verbose {
+                // TODO: Why not running ?
                 let program = command.get_program().to_str().unwrap();
                 let args: Vec<String> = command
                     .get_args()

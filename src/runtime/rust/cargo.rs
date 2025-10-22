@@ -36,12 +36,16 @@ impl Runtime for CargoRuntime {
                 }
             })
             .collect();
-        let mut engine = Engine::new(Some("--".to_string()), None);
+        // Coverage only work with one thread at a time.
         // unbuffer merges stdout and stderr
-        if run_coverage {
+        let mut engine = if run_coverage {
+            let mut engine = Engine::new(Some("--".to_string()), Some(1));
             engine.base_args(&["unbuffer", "cargo", "tarpaulin", "--skip-clean", "--"]);
+            engine
         } else {
+            let mut engine = Engine::new(Some("--".to_string()), None);
             engine.base_args(&["unbuffer", "cargo", "test"]);
+            engine
         };
         engine.runtime_args(runtime_args);
 

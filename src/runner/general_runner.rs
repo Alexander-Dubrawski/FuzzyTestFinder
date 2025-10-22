@@ -291,8 +291,7 @@ impl<SE: SearchEngine, RT: Runtime, T: Tests + DeserializeOwned, CM: Cache + Clo
             }
             if self.config.covered {
                 let updated_cov = self.tests.update_file_coverage(&runtime_output.coverage)?;
-                updated =
-                    updated || updated_cov;
+                updated = updated || updated_cov;
             }
             if updated {
                 self.cache_manager
