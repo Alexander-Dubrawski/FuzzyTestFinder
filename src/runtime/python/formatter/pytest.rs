@@ -47,7 +47,7 @@ impl OutputFormatter for PytestFormatter {
     fn reset_coverage(&mut self) {}
 
     fn failed_tests(&self) -> Vec<FailedTest> {
-        vec![]
+        self.failed_tests.iter().cloned().collect()
     }
 
     fn update(&mut self) -> Result<(), FztError> {
