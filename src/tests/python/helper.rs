@@ -69,7 +69,6 @@ pub fn update_tests(
     )
 }
 
-// TODO: Parse to hash map
 pub fn parse_failed_tests(failed_tests: &[FailedTest]) -> HashMap<String, HashSet<String>> {
     let mut sorted_failed_tests = HashMap::new();
 
