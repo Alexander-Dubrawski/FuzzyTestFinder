@@ -218,22 +218,20 @@ impl Engine {
                     command.env(key, value);
                 });
             if verbose {
-                // TODO: Why not running ?
                 let program = command.get_program().to_str().unwrap();
                 let args: Vec<String> = command
                     .get_args()
                     .map(|arg| arg.to_str().unwrap().to_string())
                     .collect();
                 println!("\n{} {}\n", program, args.as_slice().join(" "));
-            } else {
-                let captured =
-                    run_and_capture_print(command, &mut item.formatter, Some(receiver.clone()))?;
-                output.push(TestOutput {
-                    output: captured,
-                    test: item.test_name,
-                    formatter: item.formatter,
-                });
             }
+            let captured =
+                run_and_capture_print(command, &mut item.formatter, Some(receiver.clone()))?;
+            output.push(TestOutput {
+                output: captured,
+                test: item.test_name,
+                formatter: item.formatter,
+            });
         }
         Ok(output)
     }

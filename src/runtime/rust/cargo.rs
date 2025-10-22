@@ -36,9 +36,9 @@ impl Runtime for CargoRuntime {
                 }
             })
             .collect();
-        // Coverage only work with one thread at a time.
         // unbuffer merges stdout and stderr
         let mut engine = if run_coverage {
+            // Coverage only work with one thread at a time.
             let mut engine = Engine::new(Some("--".to_string()), Some(1));
             engine.base_args(&["unbuffer", "cargo", "tarpaulin", "--skip-clean", "--"]);
             engine

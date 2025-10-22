@@ -85,9 +85,204 @@ impl OutputFormatter for PytestFormatter {
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+    use std::fs;
+    use tempfile::TempDir;
+
+    fn create_test_report_json(
+        passed: usize,
+        failed: usize,
+        skipped: usize,
+        duration: f64,
+    ) -> String {
+        let mut tests = Vec::new();
+
+        for i in 0..passed {
+            tests.push(format!(
+                r#"{{
+                    "nodeid": "test_file.py::test_passed_{}",
+                    "lineno": 10,
+                    "outcome": "passed",
+                    "keywords": [],
+                    "setup": {{
+                        "duration": 0.01,
+                        "outcome": "passed"
+                    }},
+                    "call": {{
+                        "duration": 0.1,
+                        "outcome": "passed"
+                    }},
+                    "teardown": {{
+                        "duration": 0.01,
+                        "outcome": "passed"
+                    }}
+                }}"#,
+                i
+            ));
+        }
+
+        for i in 0..failed {
+            tests.push(format!(
+                r#"{{
+                    "nodeid": "test_file.py::test_failed_{}",
+                    "lineno": 20,
+                    "outcome": "failed",
+                    "keywords": [],
+                    "setup": {{
+                        "duration": 0.01,
+                        "outcome": "passed"
+                    }},
+                    "call": {{
+                        "duration": 0.1,
+                        "outcome": "failed",
+                        "longrepr": "AssertionError: Test failed",
+                        "crash": {{
+                            "path": "test_file.py",
+                            "lineno": 42,
+                            "message": "assertion failed"
+                        }}
+                    }},
+                    "teardown": {{
+                        "duration": 0.01,
+                        "outcome": "passed"
+                    }}
+                }}"#,
+                i
+            ));
+        }
+
+        for i in 0..skipped {
+            tests.push(format!(
+                r#"{{
+                    "nodeid": "test_file.py::test_skipped_{}",
+                    "lineno": 30,
+                    "outcome": "skipped",
+                    "keywords": [],
+                    "setup": {{
+                        "duration": 0.0,
+                        "outcome": "skipped",
+                        "longrepr": "Skipped: reason for skipping"
+                    }},
+                    "teardown": {{
+                        "duration": 0.0,
+                        "outcome": "passed"
+                    }}
+                }}"#,
+                i
+            ));
+        }
+
+        let total = passed + failed + skipped;
+
+        format!(
+            r#"{{
+                "created": 1234567890.0,
+                "duration": {},
+                "exitcode": 0,
+                "root": "/test/path",
+                "environment": {{}},
+                "summary": {{
+                    "passed": {},
+                    "failed": {},
+                    "skipped": {},
+                    "total": {},
+                    "collected": {}
+                }},
+                "collectors": [],
+                "tests": [{}]
+            }}"#,
+            duration,
+            if passed > 0 {
+                passed.to_string()
+            } else {
+                "null".to_string()
+            },
+            if failed > 0 {
+                failed.to_string()
+            } else {
+                "null".to_string()
+            },
+            if skipped > 0 {
+                skipped.to_string()
+            } else {
+                "null".to_string()
+            },
+            total,
+            total,
+            tests.join(",")
+        )
+    }
 
     #[test]
     fn collect_failed_shiny_pytest() {
-        // TODO: Implement test
+        let temp_dir = TempDir::new().unwrap();
+        let report_path = temp_dir.path().join("report.json");
+
+        // Create test report with multiple failed tests
+        let test_report = create_test_report_json(5, 3, 1, 2.5);
+        fs::write(&report_path, test_report).unwrap();
+
+        let mut formatter = PytestFormatter::new(report_path);
+
+        // Update should parse the report and collect failed tests
+        formatter.update().unwrap();
+
+        let failed_tests = formatter.failed_tests();
+
+        // Should have exactly 3 failed tests
+        assert_eq!(failed_tests.len(), 3);
+
+        // Verify the failed test names
+        assert!(
+            failed_tests
+                .iter()
+                .any(|t| t.name == "test_file.py::test_failed_0")
+        );
+        assert!(
+            failed_tests
+                .iter()
+                .any(|t| t.name == "test_file.py::test_failed_1")
+        );
+        assert!(
+            failed_tests
+                .iter()
+                .any(|t| t.name == "test_file.py::test_failed_2")
+        );
+
+        // Verify error messages are captured
+        for failed_test in &failed_tests {
+            assert_eq!(failed_test.error_msg, "assertion failed");
+        }
+    }
+
+    #[test]
+    fn collect_no_failures() {
+        let temp_dir = TempDir::new().unwrap();
+        let report_path = temp_dir.path().join("report.json");
+
+        // Create test report with only passed tests
+        let test_report = create_test_report_json(5, 0, 0, 1.0);
+        fs::write(&report_path, test_report).unwrap();
+
+        let mut formatter = PytestFormatter::new(report_path);
+        formatter.update().unwrap();
+
+        let failed_tests = formatter.failed_tests();
+
+        // Should have no failed tests
+        assert_eq!(failed_tests.len(), 0);
+    }
+
+    #[test]
+    fn no_report_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let report_path = temp_dir.path().join("nonexistent.json");
+
+        let mut formatter = PytestFormatter::new(report_path);
+
+        // Should not error when report file doesn't exist
+        assert!(formatter.update().is_ok());
+
+        // Should have no failed tests
+        assert_eq!(formatter.failed_tests().len(), 0);
     }
 }

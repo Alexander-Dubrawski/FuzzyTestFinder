@@ -60,8 +60,6 @@ impl PytestCovFormatter {
             return Ok(());
         }
         let json_str = fs::read_to_string(&self.temp_report_log_path)?;
-        // If Fails thread crashes. And test just do not cover files.
-        // TODO: Handle this case
         let report: TestReport = serde_json::from_str(&json_str)?;
         if let Some(failed) = report.summary.failed {
             self.failed += failed;
@@ -225,14 +223,209 @@ impl OutputFormatter for PytestCovFormatter {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    fn create_test_report_json(
+        passed: usize,
+        failed: usize,
+        skipped: usize,
+        duration: f64,
+    ) -> String {
+        let mut tests = Vec::new();
+
+        for i in 0..passed {
+            tests.push(format!(
+                r#"{{
+                    "nodeid": "test_file.py::test_passed_{}",
+                    "lineno": 10,
+                    "outcome": "passed",
+                    "keywords": [],
+                    "setup": {{
+                        "duration": 0.01,
+                        "outcome": "passed"
+                    }},
+                    "call": {{
+                        "duration": 0.1,
+                        "outcome": "passed"
+                    }},
+                    "teardown": {{
+                        "duration": 0.01,
+                        "outcome": "passed"
+                    }}
+                }}"#,
+                i
+            ));
+        }
+
+        for i in 0..failed {
+            tests.push(format!(
+                r#"{{
+                    "nodeid": "test_file.py::test_failed_{}",
+                    "lineno": 20,
+                    "outcome": "failed",
+                    "keywords": [],
+                    "setup": {{
+                        "duration": 0.01,
+                        "outcome": "passed"
+                    }},
+                    "call": {{
+                        "duration": 0.1,
+                        "outcome": "failed",
+                        "longrepr": "AssertionError: Test failed",
+                        "crash": {{
+                            "path": "test_file.py",
+                            "lineno": 42,
+                            "message": "assertion failed"
+                        }}
+                    }},
+                    "teardown": {{
+                        "duration": 0.01,
+                        "outcome": "passed"
+                    }}
+                }}"#,
+                i
+            ));
+        }
+
+        for i in 0..skipped {
+            tests.push(format!(
+                r#"{{
+                    "nodeid": "test_file.py::test_skipped_{}",
+                    "lineno": 30,
+                    "outcome": "skipped",
+                    "keywords": [],
+                    "setup": {{
+                        "duration": 0.0,
+                        "outcome": "skipped",
+                        "longrepr": "Skipped: reason for skipping"
+                    }},
+                    "teardown": {{
+                        "duration": 0.0,
+                        "outcome": "passed"
+                    }}
+                }}"#,
+                i
+            ));
+        }
+
+        let total = passed + failed + skipped;
+
+        format!(
+            r#"{{
+                "created": 1234567890.0,
+                "duration": {},
+                "exitcode": 0,
+                "root": "/test/path",
+                "environment": {{}},
+                "summary": {{
+                    "passed": {},
+                    "failed": {},
+                    "skipped": {},
+                    "total": {},
+                    "collected": {}
+                }},
+                "collectors": [],
+                "tests": [{}]
+            }}"#,
+            duration,
+            if passed > 0 {
+                passed.to_string()
+            } else {
+                "null".to_string()
+            },
+            if failed > 0 {
+                failed.to_string()
+            } else {
+                "null".to_string()
+            },
+            if skipped > 0 {
+                skipped.to_string()
+            } else {
+                "null".to_string()
+            },
+            total,
+            total,
+            tests.join(",")
+        )
+    }
+
+    fn create_coverage_report_json(files: Vec<(&str, f64)>) -> String {
+        let files_json: Vec<String> = files
+            .iter()
+            .map(|(path, percent)| {
+                format!(
+                    r#""{}": {{
+                        "summary": {{
+                            "percent_covered": {}
+                        }}
+                    }}"#,
+                    path, percent
+                )
+            })
+            .collect();
+
+        format!(r#"{{"files": {{{}}}}}"#, files_json.join(","))
+    }
 
     #[test]
     fn parse_no_coverage() {
-        // TODO: Implement test
+        let temp_dir = TempDir::new().unwrap();
+        let cov_path = temp_dir.path().join("coverage.json");
+        let report_path = temp_dir.path().join("report.json");
+
+        // Create test report with passed tests
+        let test_report = create_test_report_json(3, 0, 0, 1.5);
+        fs::write(&report_path, test_report).unwrap();
+
+        // Don't create coverage file to simulate no coverage
+
+        let mut formatter = PytestCovFormatter::new(cov_path, report_path, "test-formatter");
+
+        formatter.update().unwrap();
+
+        assert_eq!(formatter.passed, 3);
+        assert_eq!(formatter.failed, 0);
+        assert_eq!(formatter.skipped, 0);
+        assert_eq!(formatter.duration, 1.5);
+        assert!(formatter.coverage.is_empty());
+        assert_eq!(formatter.passed_tests.len(), 3);
     }
 
     #[test]
     fn parse_with_coverage() {
-        // TODO: Implement test
+        let temp_dir = TempDir::new().unwrap();
+        let cov_path = temp_dir.path().join("coverage.json");
+        let report_path = temp_dir.path().join("report.json");
+
+        // Create test report with mixed results
+        let test_report = create_test_report_json(2, 1, 1, 2.0);
+        fs::write(&report_path, test_report).unwrap();
+
+        // Create coverage report - files with 0% coverage should be filtered out
+        let coverage_report = create_coverage_report_json(vec![
+            ("src/main.py", 85.5),
+            ("src/utils.py", 70.0),
+            ("src/ignored.py", 0.0), // Should be filtered out
+        ]);
+        fs::write(&cov_path, coverage_report).unwrap();
+
+        let mut formatter = PytestCovFormatter::new(cov_path, report_path, "test-formatter");
+
+        formatter.update().unwrap();
+
+        assert_eq!(formatter.passed, 2);
+        assert_eq!(formatter.failed, 1);
+        assert_eq!(formatter.skipped, 1);
+        assert_eq!(formatter.duration, 2.0);
+        assert_eq!(formatter.coverage.len(), 2);
+        assert!(formatter.coverage.contains("src/main.py"));
+        assert!(formatter.coverage.contains("src/utils.py"));
+        assert!(!formatter.coverage.contains("src/ignored.py"));
+        assert_eq!(formatter.failed_tests.len(), 1);
+        assert!(formatter.output.contains("FAILED"));
+        assert!(formatter.output.contains("PASSED"));
+        assert!(formatter.output.contains("SKIPPED"));
     }
 }
