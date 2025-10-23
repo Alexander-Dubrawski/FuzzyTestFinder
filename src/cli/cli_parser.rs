@@ -187,7 +187,7 @@ enum Commands {
         runtime: String,
     },
     Rust {
-        #[arg(default_value_t = String::from("cargo"), value_parser=["cargo", "cargo-nextest"])]
+        #[arg(default_value_t = String::from("cargo"), value_parser=["cargo", "nextest"])]
         runtime: String,
     },
 }

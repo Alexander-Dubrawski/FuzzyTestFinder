@@ -1,21 +1,20 @@
-use std::{collections::HashSet, fs, path::PathBuf};
+use std::collections::HashSet;
 
 use crate::{
     FztError,
     runtime::{FailedTest, OutputFormatter},
 };
-use colored::Colorize;
+
+use super::test_report::TestReport;
 
 #[derive(Clone, Debug, Default)]
 pub struct NextestFormatter {
     failed_tests: HashSet<FailedTest>,
-    temp_report_log_path: PathBuf,
 }
 
 impl NextestFormatter {
-    pub fn new(temp_report_log_path: PathBuf) -> Self {
+    pub fn new() -> Self {
         Self {
-            temp_report_log_path,
             failed_tests: HashSet::new(),
         }
     }
@@ -23,12 +22,33 @@ impl NextestFormatter {
 
 impl OutputFormatter for NextestFormatter {
     fn line(&mut self, line: &str) -> Result<(), FztError> {
-        println!("{}", line);
+        let plain_bytes = strip_ansi_escapes::strip(line.as_bytes());
+        let plain_line = String::from_utf8(plain_bytes).map_err(FztError::from)?;
+        if plain_line.starts_with("{\"type\":\"test\"") {
+            let report: TestReport = serde_json::from_str(&plain_line)?;
+            if report.event == "failed" {
+                let test_name: Vec<&str> = report.name.split("$").collect();
+                let err_msg = if let Some(msg) = report.stdout {
+                    msg
+                } else {
+                    "No output captured.".to_string()
+                };
+                self.failed_tests
+                    .insert(FailedTest::new(test_name[1], err_msg.as_str()));
+            }
+        }
+        if !plain_line.starts_with("{\"type\"") {
+            println!("{}", line);
+        }
         Ok(())
     }
 
     fn err_line(&mut self, line: &str) -> Result<(), crate::FztError> {
-        println!("{}", line);
+        let plain_bytes = strip_ansi_escapes::strip(line.as_bytes());
+        let plain_line = String::from_utf8(plain_bytes).map_err(FztError::from)?;
+        if !plain_line.starts_with("{\"type\"") {
+            println!("{}", line);
+        }
         Ok(())
     }
 

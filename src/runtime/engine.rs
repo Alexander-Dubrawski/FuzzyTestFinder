@@ -186,6 +186,9 @@ impl Engine {
         if self.base_command_args.len() > 1 {
             command.args(&self.base_command_args[1..]);
         }
+        self.command_envs.iter().for_each(|(key, value)| {
+            command.env(key, value);
+        });
         command.args(addional_args);
         command
     }

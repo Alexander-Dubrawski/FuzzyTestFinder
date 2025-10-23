@@ -24,6 +24,8 @@ brew install fzf
 brew install expect
 brew install bat
 brew install ripgrep
+# For nextest runtime
+brew install cargo-nextest
 ```
 
 If you want to use the tool for python please install:
@@ -81,7 +83,11 @@ First you need to set the default language for the project. That way you only ha
 
 ```bash
 fzt --default rust 
+# or
+fzt --default rust "nextest"
 ```
+
+⚠️ It is recommended using `cargo-nextest`, since it is much faster than using `cargo` as a runtime.
 
 Afterwards you can fuzzy find the tests. You can do that on multiple modes:
 

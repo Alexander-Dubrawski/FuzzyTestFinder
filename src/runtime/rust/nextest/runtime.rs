@@ -1,8 +1,7 @@
 use crate::{
     errors::FztError,
     runtime::{
-        Debugger, Runtime, RuntimeOutput,
-        engine::{Engine, TestItem},
+        Debugger, Runtime, RuntimeOutput, engine::Engine,
         rust::nextest::formatter::NextestFormatter,
     },
 };
@@ -22,7 +21,16 @@ impl Runtime for NextestRuntime {
         receiver: Option<StdReceiver<String>>,
         run_coverage: bool,
     ) -> Result<RuntimeOutput, FztError> {
-        let base_args = vec!["unbuffer", "cargo", "nextest", "run"];
+        let base_args = vec![
+            "unbuffer",
+            "cargo-nextest",
+            "nextest",
+            "run",
+            "--message-format",
+            "libtest-json",
+            "--show-progress",
+            "counter",
+        ];
         if run_coverage {
             println!(
                 "{}",
@@ -32,16 +40,16 @@ impl Runtime for NextestRuntime {
                     .to_string()
             );
         }
+        let envs = HashMap::from([("NEXTEST_EXPERIMENTAL_LIBTEST_JSON", "1")]);
         let mut engine = Engine::new(Some("--".to_string()), None);
-        let rep_dir = tempfile::tempdir()?;
-        let rep_path = rep_dir.path().join("report.json").to_path_buf();
+        engine.envs(&envs);
         engine.base_args(base_args.as_slice());
         engine.runtime_args(runtime_args);
         engine.execute_single_batch_sequential(
             false,
             receiver,
             tests,
-            &mut NextestFormatter::new(rep_path),
+            &mut NextestFormatter::new(),
             verbose,
         )
     }

@@ -37,7 +37,7 @@ pub fn get_rust_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static>(
             cache_manager,
             path_str.to_string(),
         ))),
-        "cargo-nextest" => Ok(Box::new(GeneralCacheRunner::new(
+        "nextest" => Ok(Box::new(GeneralCacheRunner::new(
             NextestRuntime::default(),
             config,
             RustTests::new_empty(path_str.to_string()),
