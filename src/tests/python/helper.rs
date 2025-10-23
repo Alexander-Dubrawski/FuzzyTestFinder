@@ -6,12 +6,18 @@ use std::{
 use regex::Regex;
 use rustpython_parser::{Mode, lexer::lex, parse_tokens};
 
-use crate::{errors::FztError, utils::file_walking::collect_tests};
+use crate::{errors::FztError, runtime::FailedTest, utils::file_walking::collect_tests};
 
 fn collect_tests_from_file(path: &Path) -> Result<HashSet<String>, FztError> {
     let source_code = std::fs::read_to_string(path)?;
     let tokens = lex(source_code.as_str(), Mode::Module);
-    let ast = parse_tokens(tokens, Mode::Module, "<embedded>")?;
+    let ast = parse_tokens(tokens, Mode::Module, "<embedded>").map_err(|e| {
+        FztError::PythonParser(format!(
+            "Failed to parse Python file {}: {}",
+            path.display(),
+            e
+        ))
+    })?;
     let mut tests = HashSet::new();
     match ast {
         rustpython_parser::ast::Mod::Module(mod_module) => {
@@ -69,30 +75,21 @@ pub fn update_tests(
     )
 }
 
-pub fn parse_failed_tests(output: &str) -> HashMap<String, HashSet<String>> {
-    let mut failed_tests = HashMap::new();
-    output.lines().for_each(|line| {
-        if line.starts_with("FAILED ") || line.starts_with("ERROR ") {
-            let parts: Vec<&str> = if line.starts_with("FAILED ") {
-                line["FAILED ".len()..].split("::").collect()
-            } else {
-                line["ERROR ".len()..].split("::").collect()
-            };
-            if parts.len() == 2 {
-                let file_path = parts[0].trim().to_string();
-                let test_name = parts[1].split("-").collect::<Vec<&str>>()[0]
-                    .split("[")
-                    .collect::<Vec<&str>>()[0]
-                    .trim()
-                    .to_string();
-                failed_tests
-                    .entry(file_path)
-                    .or_insert_with(HashSet::new)
-                    .insert(test_name);
-            }
+pub fn parse_failed_tests(failed_tests: &[FailedTest]) -> HashMap<String, HashSet<String>> {
+    let mut sorted_failed_tests = HashMap::new();
+
+    failed_tests.iter().for_each(|failed_test| {
+        let parts: Vec<&str> = failed_test.name.split("::").collect();
+        if parts.len() == 2 {
+            let file_path = parts[0].trim().to_string();
+            let test_name = parts[1].trim().to_string();
+            sorted_failed_tests
+                .entry(file_path)
+                .or_insert_with(HashSet::new)
+                .insert(test_name);
         }
     });
-    failed_tests
+    sorted_failed_tests
 }
 
 #[cfg(test)]
@@ -167,25 +164,22 @@ mod tests {
     }
 
     #[test]
-    fn collect_failed_shiny_pytest() {
-        let output = "
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-==================================================================== tests coverage ====================================================================
-___________________________________________________ coverage: platform darwin, python 3.12.8-final-0 ___________________________________________________
+    fn collect_failed() {
+        let failed_tests: Vec<FailedTest> = vec![
+            FailedTest {
+                name: "tests/folder_a/folder_b/test_foo.py::test_foo_two".to_string(),
+                error_msg: String::from("polars.exceptions.ColumnNotFoundError: key"),
+            },
+            FailedTest {
+                name: "tests/folder_a/folder_b/test_foo.py::test_foo_three".to_string(),
+                error_msg: String::from("polars.exceptions.ColumnNotFoundError: key"),
+            },
+            FailedTest {
+                name: "tests/folder_a/folder_c/test_baa.py::test_foo_two".to_string(),
+                error_msg: String::from("polars.exceptions.ColumnNotFoundError: key"),
+            },
+        ];
 
-Coverage HTML written to dir coverage/html
-=============================================================== short test summary info ================================================================
-FAILED tests/folder_a/folder_b/test_foo.py::test_foo_two[ABCD] - assert False
-FAILED tests/folder_a/folder_b/test_foo.py::test_foo_three - assert False
-FAILED tests/folder_a/folder_c/test_baa.py::test_foo_two - assert False
-
-Results (1.34s):
-       2 passed
-       2 failed
-         - tests/folder_a/folder_b/test_foo.py:46 test_foo_two
-         - tests/folder_a/folder_b/test_foo.py:49 test_foo_three
-         - tests/folder_a/folder_c/test_baa.py:90 test_foo_two
-";
         let expected: HashMap<String, HashSet<String>> = HashMap::from([
             (
                 "tests/folder_a/folder_b/test_foo.py".to_string(),
@@ -200,69 +194,7 @@ Results (1.34s):
             ),
         ]);
 
-        let result = parse_failed_tests(output);
-
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn collect_failed_pytest() {
-        let output = "
-    def test_food(mocked, tmp_path, mock_datetime_now):
->       assert False
-E       assert False
-
-tests/folder_a/folder_b/test_foo.py:310: AssertionError
-====================================================================================================================================================== warnings summary =======================================================================================================================================================
-tests/folder_a/folder_b/test_foo.py::test_foo_two[ABC]
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-=================================================================================================================================================== short test summary info ===================================================================================================================================================
-FAILED tests/folder_a/folder_b/test_foo.py::test_foo_two[ABC] - assert False
-FAILED tests/folder_a/folder_b/test_foo.py::test_foo_three - assert False
-FAILED tests/folder_a/folder_c/test_baa.py::test_foo_two - assert False
-";
-        let expected: HashMap<String, HashSet<String>> = HashMap::from([
-            (
-                "tests/folder_a/folder_b/test_foo.py".to_string(),
-                HashSet::from_iter(vec![
-                    "test_foo_two".to_string(),
-                    "test_foo_three".to_string(),
-                ]),
-            ),
-            (
-                "tests/folder_a/folder_c/test_baa.py".to_string(),
-                HashSet::from_iter(vec!["test_foo_two".to_string()]),
-            ),
-        ]);
-
-        let result = parse_failed_tests(output);
-
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn collect_error_pytest() {
-        let output = "
-ERROR tests/folder_a/folder_b/test_foo.py::test_foo_two[ABC] - polars.exceptions.ColumnNotFoundError: key                                                                                                                                                                                                                                      [ 20%]
-ERROR tests/folder_a/folder_b/test_foo.py::test_foo_three - polars.exceptions.ColumnNotFoundError: key                                                                                                                                                                                                                        [ 40%]
-ERROR tests/folder_a/folder_c/test_baa.py::test_foo_two - polars.exceptions.ColumnNotFoundError: key
-        ";
-        let expected: HashMap<String, HashSet<String>> = HashMap::from([
-            (
-                "tests/folder_a/folder_b/test_foo.py".to_string(),
-                HashSet::from_iter(vec![
-                    "test_foo_two".to_string(),
-                    "test_foo_three".to_string(),
-                ]),
-            ),
-            (
-                "tests/folder_a/folder_c/test_baa.py".to_string(),
-                HashSet::from_iter(vec!["test_foo_two".to_string()]),
-            ),
-        ]);
-
-        let result = parse_failed_tests(output);
+        let result = parse_failed_tests(failed_tests.as_slice());
 
         assert_eq!(result, expected);
     }

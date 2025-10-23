@@ -1,12 +1,12 @@
-use std::{collections::HashMap, sync::mpsc::Receiver};
+use std::sync::mpsc::Receiver;
 
 use crate::{
     errors::FztError,
-    runtime::{Debugger, Runtime, engine::Engine},
-    utils::process::DefaultFormatter,
+    runtime::{
+        Debugger, Runtime, RuntimeOutput, engine::Engine,
+        java::formatter::gradle_formatter::GradleFormatter,
+    },
 };
-
-const JUNIT_FAILURE_EXIT_CODE: i32 = 1;
 
 #[derive(Default)]
 pub struct GradleRuntime {}
@@ -19,22 +19,25 @@ impl Runtime for GradleRuntime {
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
         receiver: Option<Receiver<String>>,
-        _coverage: &mut Option<HashMap<String, Vec<String>>>,
-    ) -> Result<Option<String>, FztError> {
-        let mut engine = Engine::new("", DefaultFormatter, None, JUNIT_FAILURE_EXIT_CODE);
+        _run_coverage: bool,
+    ) -> Result<RuntimeOutput, FztError> {
+        let mut engine = Engine::new(None, None);
         // unbuffer merges stdout and stderr
         engine.base_args(&["unbuffer", "./gradlew", "-i"]);
         engine.base_args_string(runtime_ags);
         engine.base_arg("test");
-        engine.tests(
-            tests
-                .into_iter()
-                .map(|test| vec![String::from("--tests"), test])
-                .flatten()
-                .collect::<Vec<String>>()
-                .as_slice(),
-        );
-        engine.execute_single_batch(false, receiver, verbose)
+        let formatted_tests = tests
+            .into_iter()
+            .map(|test| vec![String::from("--tests"), test])
+            .flatten()
+            .collect::<Vec<String>>();
+        engine.execute_single_batch_sequential(
+            false,
+            receiver,
+            formatted_tests,
+            &mut GradleFormatter::new(),
+            verbose,
+        )
     }
 
     fn name(&self) -> String {

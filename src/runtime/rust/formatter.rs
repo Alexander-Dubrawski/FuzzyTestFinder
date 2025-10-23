@@ -1,4 +1,9 @@
-use crate::{FztError, utils::process::OutputFormatter};
+use colored::Colorize;
+
+use crate::{
+    FztError,
+    runtime::{FailedTest, OutputFormatter},
+};
 
 const TEST_PREFIX: &str = "test ";
 const TEST_FAILED_SUFFIX: &str = " ... FAILED";
@@ -36,9 +41,9 @@ fn parse_cargo_time(line: &str) -> Option<f64> {
     None
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct CargoFormatter {
-    failed_tests: Vec<(String, String)>,
+    failed_tests: Vec<FailedTest>,
     passed: usize,
     failed: usize,
     ignored: usize,
@@ -47,6 +52,7 @@ pub struct CargoFormatter {
     running: bool,
     seconds: f64,
     coverage: Vec<String>,
+    print_output: String,
 }
 
 impl CargoFormatter {
@@ -61,6 +67,7 @@ impl CargoFormatter {
             running: false,
             seconds: 0f64,
             coverage: vec![],
+            print_output: String::new(),
         }
     }
 }
@@ -96,35 +103,34 @@ impl OutputFormatter for CargoFormatter {
 
         // Test Passed
         if plain_line.ends_with("... ok") {
-            println!("{}", line);
+            self.print_output.push_str(line);
             self.passed += 1;
             return Ok(());
         }
 
         // Test Ignored
         if plain_line.ends_with("... ignored") {
-            println!("{}", line);
+            self.print_output.push_str(line);
             self.ignored += 1;
             return Ok(());
         }
 
         // Test measured
         if plain_line.ends_with("... measured") {
-            println!("{}", line);
+            self.print_output.push_str(line);
             self.measured += 1;
             return Ok(());
         }
 
         // Test Failed
         if plain_line.ends_with(TEST_FAILED_SUFFIX) {
-            println!("{}", line);
+            self.print_output.push_str(line);
             self.failed += 1;
             if let Some(test_name) = extract_test_name(&plain_line) {
-                self.failed_tests
-                    .push((test_name.to_string(), String::new()));
+                self.failed_tests.push(FailedTest::new(test_name, ""));
             } else {
                 self.failed_tests
-                    .push((plain_line.trim().to_string(), String::new()));
+                    .push(FailedTest::new(plain_line.trim(), ""));
             }
             return Ok(());
         }
@@ -137,11 +143,11 @@ impl OutputFormatter for CargoFormatter {
 
         // Collect Failure Details
         if self.currently_failed {
-            if let Some((_, error_msg)) = self.failed_tests.last_mut() {
-                if !error_msg.is_empty() {
-                    error_msg.push('\n');
+            if let Some(failed_test) = self.failed_tests.last_mut() {
+                if !failed_test.error_msg.is_empty() {
+                    failed_test.error_msg.push('\n');
                 }
-                error_msg.push_str(&line);
+                failed_test.error_msg.push_str(&line);
             }
             return Ok(());
         }
@@ -157,8 +163,8 @@ impl OutputFormatter for CargoFormatter {
     fn err_line(&mut self, _line: &str) -> Result<(), FztError> {
         Ok(())
     }
-    fn add(&mut self, other: CargoFormatter) {
-        self.failed_tests.extend(other.failed_tests.into_iter());
+    fn add(&mut self, other: &CargoFormatter) {
+        self.failed_tests.extend(other.failed_tests.clone());
         self.passed += other.passed;
         self.failed += other.failed;
         self.seconds += other.seconds;
@@ -169,23 +175,32 @@ impl OutputFormatter for CargoFormatter {
     fn finish(self) {
         if self.failed_tests.is_empty() {
             println!(
-                "\ntest result: \x1b[32mok\x1b[0m. {} passed; 0 failed; {} measured; {} filtered out; finished in {:.3}s",
-                self.passed, self.measured, self.ignored, self.seconds
+                "\ntest result: {}. {} passed; 0 failed; {} measured; {} filtered out; finished in {:.3}s",
+                &"ok".green().bold(),
+                self.passed,
+                self.measured,
+                self.ignored,
+                self.seconds
             );
         } else {
             println!("\nfailures:");
-            for (_, error) in &self.failed_tests {
-                if !error.is_empty() {
-                    println!("{}", error);
+            for failed_test in &self.failed_tests {
+                if !failed_test.error_msg.is_empty() {
+                    println!("{}", failed_test.error_msg);
                 }
             }
             println!("\nfailures:");
-            for (test, _) in &self.failed_tests {
-                println!("    {}", test);
+            for failed_test in &self.failed_tests {
+                println!("    {}", failed_test.name);
             }
             println!(
-                "\ntest result: \x1b[31mFAILED\x1b[0m. {} passed; {} failed; {} measured; {} filtered out; finished in {:.3}s",
-                self.passed, self.failed, self.measured, self.ignored, self.seconds
+                "\ntest result: {}. {} passed; {} failed; {} measured; {} filtered out; finished in {:.3}s",
+                &"FAILED".red().bold(),
+                self.passed,
+                self.failed,
+                self.measured,
+                self.ignored,
+                self.seconds
             );
         }
     }
@@ -196,5 +211,122 @@ impl OutputFormatter for CargoFormatter {
 
     fn reset_coverage(&mut self) {
         self.coverage = vec![];
+    }
+
+    fn failed_tests(&self) -> Vec<FailedTest> {
+        self.failed_tests.clone()
+    }
+
+    fn print(&self) {
+        println!("{}", self.print_output);
+    }
+
+    fn update(&mut self) -> Result<(), FztError> {
+        Ok(())
+    }
+    fn skipped(&self) -> bool {
+        self.ignored > 0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::runtime::{FailedTest, OutputFormatter};
+
+    use super::CargoFormatter;
+
+    #[test]
+    fn collect_failed_tests() {
+        let output = "
+running 1 test
+test tests::python::helper::tests::collect_tests ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.01s
+
+     Running unittests src/main.rs (target/debug/deps/FzT-1105c16a9c36c56e)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+warning: unused variable: `runtime_output`
+  --> src/tests/java/java_test.rs:93:33
+   |
+93 |     fn update_failed(&mut self, runtime_output: &str) -> bool {
+   |                                 ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_runtime_output`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `runtime_output`
+   --> src/tests/rust/rust_test.rs:185:33
+    |
+185 |     fn update_failed(&mut self, runtime_output: &str) -> bool {
+    |                                 ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_runtime_output`
+
+warning: crate `FzT` should have a snake case name
+  |
+  = help: convert the identifier to snake case: `fz_t`
+  = note: `#[warn(non_snake_case)]` on by default
+
+warning: `FzT` (lib) generated 3 warnings
+warning: `FzT` (lib test) generated 2 warnings (2 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running unittests src/lib.rs (target/debug/deps/FzT-ae27e584e72f55cd)
+
+
+warning: unused variable: `runtime_output`
+  --> src/tests/java/java_test.rs:93:33
+   |
+93 |     fn update_failed(&mut self, runtime_output: &str) -> bool {
+   |                                 ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_runtime_output`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `runtime_output`
+   --> src/tests/rust/rust_test.rs:185:33
+    |
+185 |     fn update_failed(&mut self, runtime_output: &str) -> bool {
+    |                                 ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_runtime_output`
+
+warning: crate `FzT` should have a snake case name
+  |
+  = help: convert the identifier to snake case: `fz_t`
+  = note: `#[warn(non_snake_case)]` on by default
+
+warning: `FzT` (lib) generated 3 warnings
+warning: `FzT` (lib test) generated 2 warnings (2 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running unittests src/lib.rs (target/debug/deps/FzT-ae27e584e72f55cd)
+
+running 1 test
+test tests::java::java_test::tests::collect_tests ... FAILED
+
+failures:
+
+---- tests::java::java_test::tests::collect_tests stdout ----
+
+thread 'tests::java::java_test::tests::collect_tests' panicked at src/tests/java/java_test.rs:136:9:
+assertion failed: false
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::java::java_test::tests::collect_tests
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib
+        ";
+        let mut formatter = CargoFormatter::new();
+        let expected = vec![FailedTest {
+            name: "tests::java::java_test::tests::collect_tests".to_string(),
+            error_msg: String::from(
+                "---- tests::java::java_test::tests::collect_tests stdout ----\n\nthread 'tests::java::java_test::tests::collect_tests' panicked at src/tests/java/java_test.rs:136:9:\nassertion failed: false\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n",
+            ),
+        }];
+        for line in output.lines() {
+            formatter.line(line).unwrap();
+        }
+        assert_eq!(formatter.failed_tests, expected);
     }
 }

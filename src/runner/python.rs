@@ -6,7 +6,7 @@ use crate::{
     runner::{RunnerName, general_runner::GeneralCacheRunner},
     runtime::{Debugger, PythonDebugger, python::pytest::PytestRuntime},
     search_engine::SearchEngine,
-    tests::python::{pytest::tests::PytestTests, rust_python::tests::RustPytonTests},
+    tests::python::{pytest::tests::PytestTests, rust_python::tests::RustPythonTests},
 };
 
 use super::{Runner, config::RunnerConfig};
@@ -58,7 +58,7 @@ pub fn get_python_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static
         ("rustpython", "pytest") => Ok(Box::new(GeneralCacheRunner::new(
             PytestRuntime::default(),
             config,
-            RustPytonTests::new_empty(path_str.to_string()),
+            RustPythonTests::new_empty(path_str.to_string()),
             RunnerName::RustPythonRunner,
             cache_manager,
             path_str.to_string(),

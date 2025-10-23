@@ -41,7 +41,7 @@ pub use tests::java::java_test::JavaTests;
 pub use tests::java::parser::JavaParser;
 pub use tests::python::pytest::tests::PytestTests;
 pub use tests::python::python_test::PythonTest;
-pub use tests::python::rust_python::tests::RustPytonTests;
+pub use tests::python::rust_python::tests::RustPythonTests;
 pub use tests::rust::rust_test::RustTest;
 pub use tests::rust::rust_test::RustTestItem;
 pub use tests::rust::rust_test::RustTests;

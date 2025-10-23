@@ -8,99 +8,9 @@ use std::sync::mpsc::{Receiver as StdReceiver, TryRecvError as StdTryRecvError};
 
 use crate::errors::FztError;
 
-pub trait OutputFormatter {
-    fn line(&mut self, line: &str) -> Result<(), FztError>;
-    fn err_line(&mut self, line: &str) -> Result<(), FztError>;
-    fn add(&mut self, other: Self);
-    fn finish(self);
-    fn coverage(&self) -> Vec<String>;
-    fn reset_coverage(&mut self);
-}
+use super::OutputFormatter;
 
-#[derive(Debug, Clone)]
-pub struct DefaultFormatter;
-impl OutputFormatter for DefaultFormatter {
-    fn line(&mut self, line: &str) -> Result<(), FztError> {
-        println!("{}", line);
-        Ok(())
-    }
-    fn err_line(&mut self, line: &str) -> Result<(), FztError> {
-        println!("{}", line);
-        Ok(())
-    }
-
-    fn add(&mut self, _other: Self) {
-        unimplemented!()
-    }
-
-    fn finish(self) {
-        unimplemented!()
-    }
-
-    fn coverage(&self) -> Vec<String> {
-        unimplemented!()
-    }
-
-    fn reset_coverage(&mut self) {
-        unimplemented!()
-    }
-}
-
-pub struct OnlyStdoutFormatter;
-impl OutputFormatter for OnlyStdoutFormatter {
-    fn line(&mut self, line: &str) -> Result<(), FztError> {
-        println!("{}", line);
-        Ok(())
-    }
-    fn err_line(&mut self, _line: &str) -> Result<(), FztError> {
-        Ok(())
-    }
-
-    fn add(&mut self, _other: Self) {
-        unimplemented!()
-    }
-
-    fn finish(self) {
-        unimplemented!()
-    }
-
-    fn coverage(&self) -> Vec<String> {
-        unimplemented!()
-    }
-
-    fn reset_coverage(&mut self) {
-        unimplemented!()
-    }
-}
-
-pub struct OnlyStderrFormatter;
-impl OutputFormatter for OnlyStderrFormatter {
-    fn line(&mut self, _line: &str) -> Result<(), FztError> {
-        Ok(())
-    }
-    fn err_line(&mut self, line: &str) -> Result<(), FztError> {
-        println!("{}", line);
-        Ok(())
-    }
-
-    fn add(&mut self, _other: Self) {
-        unimplemented!()
-    }
-
-    fn finish(self) {
-        unimplemented!()
-    }
-
-    fn coverage(&self) -> Vec<String> {
-        unimplemented!()
-    }
-
-    fn reset_coverage(&mut self) {
-        unimplemented!()
-    }
-}
-
-#[allow(dead_code)]
+#[derive(Clone, Debug)]
 pub struct CaptureOutput {
     pub stopped: bool,
     pub stdout: String,
@@ -214,6 +124,8 @@ where
     } else {
         Some(child.wait()?)
     };
+    formatter.update()?;
+    formatter.print();
     let stdout_plain = String::from_utf8(strip_ansi_escapes::strip(stdout_output.as_bytes()))
         .map_err(|e| FztError::from(e))?;
     let stderr_plain = String::from_utf8(strip_ansi_escapes::strip(stderr_output.as_bytes()))

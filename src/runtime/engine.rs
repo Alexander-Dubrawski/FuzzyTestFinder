@@ -1,35 +1,141 @@
+use crate::FztError;
+use crate::runtime::process::run_and_capture_print;
 use crate::runtime::utils::partition_tests;
-use crate::utils::process::{DefaultFormatter, OutputFormatter, run_and_capture_print};
-use crate::{FztError, utils::process::CaptureOutput};
 use crossbeam_channel::{Receiver as CrossbeamReceiver, unbounded};
 use std::sync::mpsc::Receiver as StdReceiver;
 use std::{collections::HashMap, process::Command};
 
+use super::process::CaptureOutput;
+use super::{FailedTest, OutputFormatter, RuntimeOutput};
+
 const NUMBER_THREADS: usize = 16;
 
-struct Output {
-    pub output: CaptureOutput,
-    pub test: String,
-    pub covered: Vec<String>,
+pub struct EngineOutput<F: OutputFormatter + Clone + Sync + Send + Default> {
+    test_outputs: Vec<TestOutput<F>>,
 }
 
-pub struct Engine<F: OutputFormatter + Clone + Sync + Send> {
+impl<F: OutputFormatter + Clone + Sync + Send + Default> EngineOutput<F> {
+    pub fn new(test_outputs: Vec<TestOutput<F>>) -> Self {
+        Self { test_outputs }
+    }
+
+    pub fn success(&self, test_failure_exit_code: i32) -> bool {
+        !self.test_outputs.iter().any(|test_output| {
+            test_output.output.status.is_some_and(|status| {
+                !status.success()
+                    && status
+                        .code()
+                        .is_some_and(|code| code != test_failure_exit_code)
+            })
+        })
+    }
+
+    pub fn get_error_status_test_output(&self, test_failure_exit_code: i32) -> Vec<TestOutput<F>> {
+        self.test_outputs
+            .iter()
+            .filter(|test_output| {
+                test_output.output.status.is_some_and(|status| {
+                    !status.success()
+                        && status
+                            .code()
+                            .is_some_and(|code| code != test_failure_exit_code)
+                })
+            })
+            .cloned()
+            .collect()
+    }
+
+    pub fn stopped(&self) -> bool {
+        self.test_outputs
+            .iter()
+            .any(|test_output| test_output.output.stopped)
+    }
+
+    pub fn failed_tests(&self) -> Vec<FailedTest> {
+        self.test_outputs
+            .iter()
+            .flat_map(|test_output| test_output.formatter.failed_tests())
+            .collect()
+    }
+
+    pub fn coverage(&self) -> HashMap<String, Vec<String>> {
+        let mut coverage: HashMap<String, Vec<String>> = HashMap::new();
+        self.test_outputs
+            .iter()
+            .filter(|test_output| {
+                test_output
+                    .output
+                    .status
+                    .is_some_and(|status| status.success())
+                    && !test_output.formatter.skipped()
+            })
+            .map(|test_output| (test_output.test.as_str(), test_output.formatter.coverage()))
+            .for_each(|(test, coverred_files)| {
+                coverred_files.iter().for_each(|path| {
+                    coverage
+                        .entry(path.to_string())
+                        .and_modify(|tests| tests.push(String::from(test)))
+                        .or_insert(vec![String::from(test)]);
+                });
+            });
+        coverage
+    }
+
+    pub fn merge_formatters(&self) -> F {
+        let mut final_formatter = F::default();
+        self.test_outputs
+            .iter()
+            .map(|test_output| &test_output.formatter)
+            .for_each(|formatter| {
+                final_formatter.add(formatter);
+            });
+        final_formatter
+    }
+
+    pub fn merge_stdout(&self) -> String {
+        let mut merged_stdout = String::new();
+        for output in self.test_outputs.iter() {
+            if output.output.status.is_some_and(|s| s.success()) {
+                merged_stdout.push_str(&output.output.stdout);
+                merged_stdout.push_str("\n");
+            }
+        }
+        merged_stdout
+    }
+
+    pub fn get_test_outputs(&self) -> &[TestOutput<F>] {
+        &self.test_outputs.as_slice()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TestOutput<F: OutputFormatter + Clone + Sync + Send> {
+    pub output: CaptureOutput,
+    pub test: String,
+    pub formatter: F,
+}
+
+#[derive(Debug, Clone)]
+pub struct TestItem<F: OutputFormatter + Clone + Sync + Send> {
+    pub test_name: String,
+    pub formatter: F,
+    pub additional_base_args: Vec<String>,
+    pub additional_runtime_args: Vec<String>,
+    pub additional_command_envs: HashMap<String, String>,
+}
+
+pub struct Engine {
     base_command_args: Vec<String>,
     runtime_command_args: Vec<String>,
-    runtime_command_args_separator: String,
-    formatter: F,
-    tests: Vec<String>,
+    runtime_command_args_separator: Option<String>,
     number_threads: usize,
-    test_failure_exit_code: i32,
     command_envs: HashMap<String, String>,
 }
 
-impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
+impl Engine {
     pub fn new(
-        runtime_command_args_separator: &str,
-        formatter: F,
+        runtime_command_args_separator: Option<String>,
         number_threads: Option<usize>,
-        test_failure_exit_code: i32,
     ) -> Self {
         let number_threads = if let Some(number_threads) = number_threads {
             number_threads
@@ -42,11 +148,8 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
         Self {
             base_command_args: vec![],
             runtime_command_args: vec![],
-            runtime_command_args_separator: runtime_command_args_separator.to_string(),
-            tests: vec![],
-            formatter,
+            runtime_command_args_separator,
             number_threads,
-            test_failure_exit_code,
             command_envs: HashMap::new(),
         }
     }
@@ -72,49 +175,47 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
         self
     }
 
-    pub fn tests(&mut self, tests: &[String]) -> &mut Self {
-        self.tests.extend(tests.iter().cloned());
+    pub fn envs(&mut self, pairs: &HashMap<&str, &str>) -> &mut Self {
+        self.command_envs
+            .extend(pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())));
         self
     }
 
-    pub fn test(&mut self, test: &str) -> &mut Self {
-        self.tests.push(test.to_string());
-        self
-    }
-
-    pub fn env(&mut self, key: &str, value: &str) -> &mut Self {
-        self.command_envs.insert(key.to_string(), value.to_string());
-        self
-    }
-
-    fn construct_command(&self) -> Command {
+    fn construct_command(&self, addional_args: &[String]) -> Command {
         let mut command = Command::new(&self.base_command_args[0]);
         if self.base_command_args.len() > 1 {
             command.args(&self.base_command_args[1..]);
         }
+        command.args(addional_args);
         command
     }
 
-    fn append_runtime_args(&self, command: &mut Command) {
+    fn append_runtime_args(&self, command: &mut Command, addional_args: &[String]) {
         if !self.runtime_command_args.is_empty() {
-            command.arg(self.runtime_command_args_separator.as_str());
+            if let Some(separator) = self.runtime_command_args_separator.as_ref() {
+                command.arg(separator.as_str());
+            }
             command.args(&self.runtime_command_args[..]);
         }
+        command.args(addional_args);
     }
 
-    fn run_tests_single(
+    fn run_tests_single<F: OutputFormatter + Clone + Sync + Send>(
         &self,
-        tests: &[String],
-        formatter: &mut F,
+        test_items: Vec<TestItem<F>>,
         receiver: CrossbeamReceiver<String>,
         verbose: bool,
-    ) -> Result<Vec<Output>, FztError> {
+    ) -> Result<Vec<TestOutput<F>>, FztError> {
         let mut output = vec![];
-        for test in tests {
-            let mut command = self.construct_command();
-            command.arg(test);
-            self.append_runtime_args(&mut command);
-
+        for mut item in test_items.into_iter() {
+            let mut command = self.construct_command(&item.additional_base_args.as_slice());
+            command.arg(item.test_name.clone());
+            self.append_runtime_args(&mut command, &item.additional_runtime_args.as_slice());
+            item.additional_command_envs
+                .iter()
+                .for_each(|(key, value)| {
+                    command.env(key, value);
+                });
             if verbose {
                 let program = command.get_program().to_str().unwrap();
                 let args: Vec<String> = command
@@ -122,38 +223,31 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
                     .map(|arg| arg.to_str().unwrap().to_string())
                     .collect();
                 println!("\n{} {}\n", program, args.as_slice().join(" "));
-                let captured =
-                    run_and_capture_print(command, &mut DefaultFormatter, Some(receiver.clone()))?;
-                output.push(Output {
-                    output: captured,
-                    test: test.clone(),
-                    covered: vec![],
-                });
-            } else {
-                let captured = run_and_capture_print(command, formatter, Some(receiver.clone()))?;
-                let covered = formatter.coverage();
-                formatter.reset_coverage();
-                output.push(Output {
-                    output: captured,
-                    test: test.clone(),
-                    covered,
-                });
             }
+            let captured =
+                run_and_capture_print(command, &mut item.formatter, Some(receiver.clone()))?;
+            output.push(TestOutput {
+                output: captured,
+                test: item.test_name,
+                formatter: item.formatter,
+            });
         }
         Ok(output)
     }
 
-    pub fn execute_single_batch(
+    pub fn execute_single_batch_sequential<F: OutputFormatter + Clone + Sync + Send>(
         &self,
         debug_mode: bool,
         receiver: Option<StdReceiver<String>>,
+        tests: Vec<String>,
+        formatter: &mut F,
         verbose: bool,
-    ) -> Result<Option<String>, FztError> {
-        let mut command = self.construct_command();
-        self.tests.iter().for_each(|test| {
-            command.arg(test);
+    ) -> Result<RuntimeOutput, FztError> {
+        let mut command = self.construct_command(&[]);
+        tests.iter().for_each(|tests| {
+            command.arg(tests);
         });
-        self.append_runtime_args(&mut command);
+        self.append_runtime_args(&mut command, &[]);
         if verbose {
             let program = command.get_program().to_str().unwrap();
             let args: Vec<String> = command
@@ -165,29 +259,32 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
 
         if debug_mode {
             command.status()?;
-            Ok(None)
+            Ok(RuntimeOutput::new_empty())
         } else {
-            let output = run_and_capture_print(command, &mut DefaultFormatter, receiver)?;
+            let output = run_and_capture_print(command, formatter, receiver)?;
             if output.stopped {
-                Ok(None)
+                Ok(RuntimeOutput::new_empty())
             } else {
-                Ok(Some(output.stdout))
+                Ok(RuntimeOutput {
+                    failed_tests: formatter.failed_tests(),
+                    output: Some(output.stdout),
+                    coverage: HashMap::new(),
+                })
             }
         }
     }
 
-    pub fn execute_per_item(
+    pub fn execute_per_item_parallel<F: OutputFormatter + Clone + Sync + Send + Default>(
         &self,
-        coverage: &mut Option<HashMap<String, Vec<String>>>,
         receiver: Option<StdReceiver<String>>,
+        test_items: Vec<TestItem<F>>,
         verbose: bool,
-    ) -> Result<Option<String>, FztError> {
-        let partitions = partition_tests(&self.tests, self.number_threads);
-        let mut formatters = vec![self.formatter.clone(); partitions.len()];
-        let mut outputs: Vec<Result<Vec<Output>, FztError>> =
-            (0..partitions.len()).map(|_| Ok(vec![])).collect();
+    ) -> Result<EngineOutput<F>, FztError> {
+        println!("\nRunning {} tests", test_items.len());
 
-        println!("\nRunning {} tests", self.tests.len());
+        let partitions = partition_tests(test_items, self.number_threads);
+        let mut local_outputs: Vec<Result<Vec<TestOutput<F>>, FztError>> =
+            (0..partitions.len()).map(|_| Ok(vec![])).collect();
 
         let (cross_tx, cross_rx) = unbounded();
         if let Some(rx) = receiver {
@@ -202,65 +299,20 @@ impl<F: OutputFormatter + Clone + Sync + Send> Engine<F> {
             });
         }
         std::thread::scope(|s| {
-            for ((formatter, output), partition) in formatters
-                .iter_mut()
-                .zip(outputs.iter_mut())
-                .zip(partitions.iter())
-            {
+            for (output, partition) in local_outputs.iter_mut().zip(partitions.into_iter()) {
                 s.spawn(|| {
-                    *output = self.run_tests_single(
-                        partition.as_slice(),
-                        formatter,
-                        cross_rx.clone(),
-                        verbose,
-                    );
+                    *output = self.run_tests_single(partition, cross_rx.clone(), verbose);
                 });
             }
         });
 
-        let mut final_formatter = self.formatter.clone();
-        let mut final_output = String::new();
+        let final_output: Vec<TestOutput<F>> = local_outputs
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect();
 
-        for (formatter, output_result) in formatters.into_iter().zip(outputs.into_iter()) {
-            let outputs = output_result?;
-            for output in outputs.iter() {
-                if output.output.status.is_some_and(|status| {
-                    !status.success()
-                        && status
-                            .code()
-                            .is_some_and(|code| code != self.test_failure_exit_code)
-                }) {
-                    return Err(FztError::RuntimeError(format!(
-                        "Tests {} failed with: status: {:?} | stdout: {:?} | stderr: {:?}",
-                        output.test,
-                        output.output.status,
-                        output.output.stdout,
-                        output.output.stderr
-                    )));
-                }
-            }
-            if outputs
-                .iter()
-                .any(|capture_output| capture_output.output.stopped)
-            {
-                return Ok(None);
-            }
-            final_formatter.add(formatter);
-            final_output.push_str("\n");
-            outputs.iter().for_each(|capture_output| {
-                if let Some(cov) = coverage {
-                    capture_output.covered.iter().for_each(|path| {
-                        cov.entry(path.to_string())
-                            .and_modify(|tests| tests.push(capture_output.test.clone()))
-                            .or_insert(vec![capture_output.test.clone()]);
-                    });
-                }
-                final_output.push_str(&capture_output.output.stdout.as_str());
-            });
-        }
-        if !verbose {
-            final_formatter.finish();
-        }
-        Ok(Some(final_output))
+        Ok(EngineOutput::new(final_output))
     }
 }

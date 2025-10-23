@@ -6,6 +6,7 @@ use std::{
 
 use crate::{
     errors::FztError,
+    runtime::FailedTest,
     tests::{
         Test, Tests,
         python::{
@@ -136,8 +137,8 @@ impl Tests for PytestTests {
         Ok(updated || files_filtered_out)
     }
 
-    fn update_failed(&mut self, runtime_output: &str) -> bool {
-        let failed_tests = parse_failed_tests(runtime_output);
+    fn update_failed(&mut self, failed_tests_output: &[FailedTest]) -> bool {
+        let failed_tests = parse_failed_tests(failed_tests_output);
         if self.failed_tests == failed_tests {
             false
         } else {

@@ -26,6 +26,22 @@ brew install bat
 brew install ripgrep
 ```
 
+If you want to use the tool for python please install:
+
+```bash
+pip install pytest-json-report
+```
+
+If you want to use the `--covered` feature please also install:
+
+```bash
+# For python
+pip install pytest-cov
+
+# For rust
+cargo install cargo-tarpaulin
+```
+
 Then build the executable:
 
 ```bash
@@ -51,6 +67,12 @@ If you want to parse java gradle teste do the following steps:
 cd parsers/java
 ./gradlew shadowJar
 cp app/build/libs/app-all.jar ~/.fzt/fzt-java-parser.jar
+```
+
+⚠️ If you encounter any issues after an update please run:
+
+```bash
+fzt --clear-cache
 ```
 
 ### Usage
@@ -110,6 +132,8 @@ fzt -m append -l
 # You can then also select them in a preferred mode
 # If -f is set the failed test stay unchanged
 # They only get refreshed if you run fzt without a debugger option and -f
+# -f option has its own history, so to run the last test you run with the -f
+# option, run -f -l
 fzt -f
 fzt -m directory -f
 fzt -m append -f
@@ -144,6 +168,65 @@ fzt -w --all
 fzt -c
 fzt --covered
 ```
+
+
+#### All commands
+
+```text
+Usage: FzT [OPTIONS] [COMMAND] [ARGS]... [-- RUNTIME_ARGS]...
+
+Commands:
+  python
+  java
+  rust
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+      --search-engine <SEARCH_ENGINE>  [possible values: FzF]
+      --clear-cache                    Clear test build directory cache
+      --help
+      --default                        Make this runner the default one in the project
+  -d, --debugger <DEBUGGER>            Debugger to use:
+
+                                               Python: [pdb, ipdb, IPython, pudb, web-pdb] (set breakpoints with `breakpoint()` in code)
+
+                                               Rust: []
+
+                                               Java: []
+
+                                               Open debugger selection menu if `s` or `select` is provided.
+
+  -l, --last                           Run recently used test command. If no '--mode' provided defaults to 'test', 
+                                       otherwise to the last command run in the corresponding mode.
+  -h, --history                        Parse test items from history. If no '--mode' provided defaults to 'test', 
+                                       otherwise to the tests from the history of the corresponding mode, can be selected.
+      --clear-history                  Clear history
+  -v, --verbose                        Prints out commands passed to the runtime
+  -p, --preview <PREVIEW>              Preview test function symbol or file. If 'mode' is set to directory, then 
+                                       'directory' is always used as preview. Preview is not used if '--history' is set,
+                                       or granularity is 'runtime'.Open selection menu if `s` or `select` is provided. [
+                                       possible values: file, test, directory, s, select]
+  -a, --all                            Run all tests in project
+  -m, --mode <MODE>                    Granularity of filtering. Can be 'test' for running a single test, 'runtime' for 
+                                       running a single test based on its runtime argument, 'file' for running all tests 
+                                       in a file, 'directory' for running all tests in a directory, 'append' for 
+                                       continuing appending to the last selection. Open selection menu if `s` or `select` 
+                                       is provided. [default: test] [possible values: directory, file, test, runtime, 
+                                       append, s, select]
+  -w, --watch                          Re-runs test selection when a file in your project changes
+  -q, --query <QUERY>                  Start the finder with the given query
+  -f, --failed                         Select from failed tests in the last run
+  -c, --covered                        Tests that cover changed files, since last run with this option. Can not be run 
+                                       with attached debugger. [EXPERIMENTAL] (slow performance) (only supports rust and 
+                                       python RustPython)
+  -V, --version                        Print version
+
+Runtime Arguments:
+  Arguments after -- are passed directly to the runtime
+  Example: fzt -v python RustPython PyTest -- --pdb
+```
+
+
 
 ## Supported languages
 
