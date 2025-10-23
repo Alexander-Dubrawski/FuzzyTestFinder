@@ -39,6 +39,7 @@ impl Runtime for NextestRuntime {
                     .bold()
                     .to_string()
             );
+            return Ok(RuntimeOutput::new_empty());
         }
         let envs = HashMap::from([("NEXTEST_EXPERIMENTAL_LIBTEST_JSON", "1")]);
         let mut engine = Engine::new(Some("--".to_string()), None);
