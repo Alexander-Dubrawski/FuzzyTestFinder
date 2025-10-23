@@ -11,7 +11,13 @@ use crate::{errors::FztError, runtime::FailedTest, utils::file_walking::collect_
 fn collect_tests_from_file(path: &Path) -> Result<HashSet<String>, FztError> {
     let source_code = std::fs::read_to_string(path)?;
     let tokens = lex(source_code.as_str(), Mode::Module);
-    let ast = parse_tokens(tokens, Mode::Module, "<embedded>")?;
+    let ast = parse_tokens(tokens, Mode::Module, "<embedded>").map_err(|e| {
+        FztError::PythonParser(format!(
+            "Failed to parse Python file {}: {}",
+            path.display(),
+            e
+        ))
+    })?;
     let mut tests = HashSet::new();
     match ast {
         rustpython_parser::ast::Mod::Module(mod_module) => {
