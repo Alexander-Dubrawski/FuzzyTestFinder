@@ -13,7 +13,7 @@ pub fn watch<SE: SearchEngine + Clone + Send>(config: RunnerConfig<SE>) -> Resul
     watcher.watch(Path::new(runner.root_path()), RecursiveMode::Recursive)?;
 
     let file_ext = match config.language {
-        crate::Language::Rust => "rs",
+        crate::Language::Rust { .. } => "rs",
         crate::Language::Python { .. } => "py",
         crate::Language::Java { .. } => "java",
     };

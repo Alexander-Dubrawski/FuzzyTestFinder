@@ -29,7 +29,8 @@ pub use runtime::Runtime;
 pub use runtime::RustDebugger;
 pub use runtime::java::gradle::GradleRuntime;
 pub use runtime::python::pytest::PytestRuntime;
-pub use runtime::rust::cargo::CargoRuntime;
+pub use runtime::rust::cargo::runtime::CargoRuntime;
+pub use runtime::rust::nextest::runtime::NextestRuntime;
 
 pub use search_engine::SearchEngine;
 pub use search_engine::fzf::FzfSearchEngine;

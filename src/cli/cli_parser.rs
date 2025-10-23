@@ -186,7 +186,10 @@ enum Commands {
         #[arg(default_value_t = String::from("gradle"), value_parser=["gradle"])]
         runtime: String,
     },
-    Rust,
+    Rust {
+        #[arg(default_value_t = String::from("cargo"), value_parser=["cargo", "cargo-nextest"])]
+        runtime: String,
+    },
 }
 
 fn parse_args(cmd: Command) -> (Cli, Vec<String>) {
@@ -298,7 +301,7 @@ pub fn parse_cli() -> Result<Config, FztError> {
             test_framework,
             runtime,
         },
-        Some(Commands::Rust) => Language::Rust,
+        Some(Commands::Rust { runtime }) => Language::Rust { runtime },
         None => get_default(project_hash()?.as_str())?,
     };
 
