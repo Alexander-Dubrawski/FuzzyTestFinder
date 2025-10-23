@@ -52,7 +52,6 @@ impl<F: OutputFormatter + Clone + Sync + Send + Default> EngineOutput<F> {
     }
 
     pub fn failed_tests(&self) -> Vec<FailedTest> {
-        // TODO: also include tests that filed with status
         self.test_outputs
             .iter()
             .flat_map(|test_output| test_output.formatter.failed_tests())

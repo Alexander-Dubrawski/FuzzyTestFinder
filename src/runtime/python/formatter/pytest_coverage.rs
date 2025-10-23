@@ -170,8 +170,7 @@ impl OutputFormatter for PytestCovFormatter {
     }
 
     fn finish(self) {
-        println!("\n");
-        println!("Result in ({:.2}s):", self.duration);
+        println!("\nResult in ({:.2}s):", self.duration);
         if self.failed > 0 {
             println!(
                 "{}",

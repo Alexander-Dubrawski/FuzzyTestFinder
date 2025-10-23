@@ -20,23 +20,23 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct CoverageRustPytonTests {
+pub struct CoverageRustPythonTests {
     pub path: String,
     pub tests: HashSet<PythonTest>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct RustPytonTests {
+pub struct RustPythonTests {
     pub root_folder: String,
     pub timestamp: u128,
     pub timestamp_coverage: u128,
     pub tests: HashMap<String, HashSet<String>>,
     pub failed_tests: HashMap<String, HashSet<String>>,
-    pub file_coverage: HashMap<String, CoverageRustPytonTests>,
+    pub file_coverage: HashMap<String, CoverageRustPythonTests>,
     pub uncovered_tests: HashSet<PythonTest>,
 }
 
-impl RustPytonTests {
+impl RustPythonTests {
     pub fn new(
         root_folder: String,
         timestamp: u128,
@@ -133,7 +133,7 @@ impl RustPytonTests {
     }
 }
 
-impl Tests for RustPytonTests {
+impl Tests for RustPythonTests {
     fn to_json(&self) -> Result<String, FztError> {
         serde_json::to_string(&self).map_err(FztError::from)
     }
@@ -209,7 +209,7 @@ impl Tests for RustPytonTests {
                             .collect::<Result<Vec<PythonTest>, FztError>>()?
                             .into_iter(),
                     );
-                    let cov_tests = CoverageRustPytonTests {
+                    let cov_tests = CoverageRustPythonTests {
                         path: relative_path.clone(),
                         tests,
                     };
@@ -243,7 +243,7 @@ mod tests {
         path.push("src/tests/python/test_data");
         let (_temp_dir, dir_path) = copy_dict(path.as_path()).unwrap();
         let test_path = dir_path.as_path().to_str().unwrap();
-        let mut rust_pyton_tests = RustPytonTests::new_empty(test_path.to_string());
+        let mut rust_pyton_tests = RustPythonTests::new_empty(test_path.to_string());
         let mut expected = vec![
             PythonTest::new(
                 "berlin/berlin_test.py".to_string(),
