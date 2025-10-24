@@ -76,3 +76,47 @@ impl OutputFormatter for NextestFormatter {
 
     fn print(&self) {}
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_nextest_formatter_error_line_parsing() {
+        let test_line = r#"
+ Nextest run ID a09c7739-fde2-489e-abb8-86cf0bee9aea with nextest profile: default
+    Starting 23 tests across 2 binaries
+        PASS [   1.513s] (23/23) FzT tests::java::java_test::tests::collect_tests
+{"type":"test","name":"Foo::Boo$tests::example_test::test_case_1","event":"failed","stdout":"panicked at"}
+        "#;
+        let expected = vec![FailedTest::new(
+            "tests::example_test::test_case_1",
+            "panicked at",
+        )];
+
+        let mut formatter = NextestFormatter::new();
+        for line in test_line.lines() {
+            formatter.line(line).unwrap();
+        }
+
+        let failed_tests = formatter.failed_tests();
+        assert_eq!(failed_tests, expected);
+    }
+
+    #[test]
+    fn test_nextest_formatter_no_error_line_parsing() {
+        let test_line = r#"
+ Nextest run ID a09c7739-fde2-489e-abb8-86cf0bee9aea with nextest profile: default
+    Starting 23 tests across 2 binaries
+        PASS [   1.513s] (23/23) FzT tests::java::java_test::tests::collect_tests
+{"type":"status"}
+        "#;
+
+        let mut formatter = NextestFormatter::new();
+        for line in test_line.lines() {
+            formatter.line(line).unwrap();
+        }
+        let failed_tests = formatter.failed_tests();
+        assert!(failed_tests.is_empty());
+    }
+}

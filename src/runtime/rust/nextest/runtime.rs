@@ -34,8 +34,9 @@ impl Runtime for NextestRuntime {
         if run_coverage {
             println!(
                 "{}",
-                &"--covered is not supported with nextest runtime use cargo instead."
-                    .red()
+                &"`--covered` is not supported with nextest runtime use cargo instead. \
+                `fzt --covered rust cargo`"
+                    .yellow()
                     .bold()
                     .to_string()
             );

@@ -82,12 +82,12 @@ fzt --clear-cache
 First you need to set the default language for the project. That way you only have to tell the tool once.
 
 ```bash
-fzt --default rust 
+fzt --default rust cargo
 # or
-fzt --default rust "nextest"
+fzt --default rust nextest
 ```
 
-⚠️ It is recommended using `cargo-nextest`, since it is much faster than using `cargo` as a runtime.
+⚠️ It is recommended using `nextest`, since it is much faster than using `cargo` as a runtime.
 
 Afterwards you can fuzzy find the tests. You can do that on multiple modes:
 
