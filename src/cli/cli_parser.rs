@@ -13,6 +13,7 @@ use crate::{
 use super::{
     Config,
     default::get_default,
+    dependency_check::check_dependencies,
     settings::{load_config, update_settings},
 };
 
@@ -100,6 +101,13 @@ struct Cli {
 
     #[arg(long, default_value_t = false, help = "Clear history")]
     clear_history: bool,
+
+    #[arg(
+        long,
+        default_value_t = false,
+        help = "Check if all dependencies are installed"
+    )]
+    check_dependencies: bool,
 
     #[arg(
         long,
@@ -256,6 +264,11 @@ fn configure_commands() -> Command {
 pub fn parse_cli() -> Result<Config, FztError> {
     let cmd = configure_commands();
     let (cli, runtime_args) = parse_args(cmd);
+
+    if cli.check_dependencies {
+        check_dependencies();
+        exit(0)
+    }
 
     if cli.settings {
         update_settings()?;

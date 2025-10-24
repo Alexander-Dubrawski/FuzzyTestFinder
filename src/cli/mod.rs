@@ -2,6 +2,7 @@ use crate::{runner::config::RunnerConfig, search_engine::fzf::FzfSearchEngine};
 
 pub mod cli_parser;
 mod default;
+mod dependency_check;
 mod settings;
 
 #[derive(Debug, Clone)]

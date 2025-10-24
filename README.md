@@ -77,6 +77,16 @@ cp app/build/libs/app-all.jar ~/.fzt/fzt-java-parser.jar
 fzt --clear-cache
 ```
 
+#### Dependencies check
+
+You can check if all dependencies are installed by running:
+
+```bash
+fzt --check-dependencies
+```
+
+It print tables for the needed dependencies for each language and the FuzzyTestFinder tool itself.
+
 ### Usage
 
 First you need to set the default language for the project. That way you only have to tell the tool once.
@@ -120,6 +130,11 @@ fzt -p directory
 fzt -p file
 # Select preview mode
 fzt -p s
+# Select the best preview for the selected mode
+fzt -p a
+
+# No preview
+fzt -p none 
 
 # Runs all tests
 fzt --all
@@ -175,6 +190,13 @@ fzt -c
 fzt --covered
 ```
 
+You can set default settings like preview and mode by running:
+
+```bash
+fzt --settings
+```
+
+That way you don't have to always set the cli flags.
 
 #### All commands
 
