@@ -27,14 +27,19 @@ impl OutputFormatter for NextestFormatter {
         if plain_line.starts_with("{\"type\":\"test\"") {
             let report: TestReport = serde_json::from_str(&plain_line)?;
             if report.event == "failed" {
-                let test_name: Vec<&str> = report.name.split("$").collect();
+                let test_name_parts: Vec<&str> = report.name.splitn(2, "$").collect();
                 let err_msg = if let Some(msg) = report.stdout {
                     msg
                 } else {
                     "No output captured.".to_string()
                 };
-                self.failed_tests
-                    .insert(FailedTest::new(test_name[1], err_msg.as_str()));
+                if test_name_parts.len() == 2 {
+                    self.failed_tests
+                        .insert(FailedTest::new(test_name_parts[1], err_msg.as_str()));
+                } else {
+                    self.failed_tests
+                        .insert(FailedTest::new(report.name.as_str(), err_msg.as_str()));
+                }
             }
         }
         if !plain_line.starts_with("{\"type\"") {
@@ -52,7 +57,11 @@ impl OutputFormatter for NextestFormatter {
         Ok(())
     }
 
-    fn add(&mut self, _other: &Self) {}
+    fn add(&mut self, other: &Self) {
+        for failed_test in &other.failed_tests {
+            self.failed_tests.insert(failed_test.clone());
+        }
+    }
 
     fn finish(self) {}
 

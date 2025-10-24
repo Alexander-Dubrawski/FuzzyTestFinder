@@ -32,5 +32,8 @@ pub fn get_default(project_id: &str) -> Result<Language, FztError> {
         RunnerName::RustCargoRunner => Language::Rust {
             runtime: meta_data.runtime,
         },
+        RunnerName::RustNextestRunner => Language::Rust {
+            runtime: meta_data.runtime,
+        },
     })
 }

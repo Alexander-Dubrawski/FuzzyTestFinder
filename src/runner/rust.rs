@@ -41,7 +41,7 @@ pub fn get_rust_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static>(
             NextestRuntime::default(),
             config,
             RustTests::new_empty(path_str.to_string()),
-            RunnerName::RustCargoRunner,
+            RunnerName::RustNextestRunner,
             cache_manager,
             path_str.to_string(),
         ))),

@@ -87,7 +87,7 @@ fzt --default rust cargo
 fzt --default rust nextest
 ```
 
-⚠️ It is recommended using `nextest`, since it is much faster than using `cargo` as a runtime.
+⚠️ It is recommended to use `nextest`, since it is much faster than using `cargo` as a runtime.
 
 Afterwards you can fuzzy find the tests. You can do that on multiple modes:
 
