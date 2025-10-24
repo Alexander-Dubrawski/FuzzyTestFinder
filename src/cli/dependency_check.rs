@@ -185,14 +185,14 @@ pub fn check_dependencies() {
         ),
         (
             "pytest-json-report",
-            "python3",
-            &["-c", "import pytest_json_report"],
+            "pip3",
+            &["show", "pytest-json-report"],
             "JSON reporting",
         ),
         (
             "pytest-cov",
-            "python3",
-            &["-c", "import pytest_cov"],
+            "pip3",
+            &["show", "pytest-cov"],
             "Coverage support",
         ),
     ];
