@@ -1,4 +1,4 @@
-use FzT::{
+use fzt::{
     cache::{helper::project_hash, manager::LocalCacheManager},
     cli::cli_parser::parse_cli,
     errors::FztError,
