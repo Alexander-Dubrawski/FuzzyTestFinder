@@ -7,6 +7,7 @@ use crate::{
         java::formatter::gradle_formatter::GradleFormatter,
     },
 };
+use colored::Colorize;
 
 #[derive(Default)]
 pub struct GradleRuntime {}
@@ -19,8 +20,18 @@ impl Runtime for GradleRuntime {
         runtime_ags: &[String],
         _debugger: &Option<Debugger>,
         receiver: Option<Receiver<String>>,
-        _run_coverage: bool,
+        run_coverage: bool,
     ) -> Result<RuntimeOutput, FztError> {
+        if run_coverage {
+            println!(
+                "{}",
+                &"--covered is not supported for java."
+                    .red()
+                    .bold()
+                    .to_string()
+            );
+            return Ok(RuntimeOutput::new_empty());
+        }
         let mut engine = Engine::new(None, None);
         // unbuffer merges stdout and stderr
         engine.base_args(&["unbuffer", "./gradlew", "-i"]);

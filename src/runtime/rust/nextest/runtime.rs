@@ -56,6 +56,6 @@ impl Runtime for NextestRuntime {
     }
 
     fn name(&self) -> String {
-        String::from("cargo")
+        String::from("nextest")
     }
 }
