@@ -1,2 +1,2 @@
 pub mod cargo;
-mod formatter;
+pub mod nextest;

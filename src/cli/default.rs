@@ -29,6 +29,11 @@ pub fn get_default(project_id: &str) -> Result<Language, FztError> {
             test_framework: "junit5".to_string(),
             runtime: meta_data.runtime,
         },
-        RunnerName::RustCargoRunner => Language::Rust,
+        RunnerName::RustCargoRunner => Language::Rust {
+            runtime: meta_data.runtime,
+        },
+        RunnerName::RustNextestRunner => Language::Rust {
+            runtime: meta_data.runtime,
+        },
     })
 }

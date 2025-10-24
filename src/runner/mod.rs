@@ -23,6 +23,7 @@ pub enum RunnerName {
     PytestRunner,
     JavaJunit5Runner,
     RustCargoRunner,
+    RustNextestRunner,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -43,7 +43,9 @@ pub enum Language {
         test_framework: String,
         runtime: String,
     },
-    Rust,
+    Rust {
+        runtime: String,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -132,10 +134,10 @@ impl<SE: SearchEngine> RunnerConfig<SE> {
                     cache_manager,
                 )
             }
-            Language::Rust => {
+            Language::Rust { runtime } => {
                 let cache_manager =
                     self.build_cache_manager(format!("{}-rust-cargo", project_hash).as_str());
-                get_rust_runner(self, cache_manager)
+                get_rust_runner(self, cache_manager, runtime.as_str())
             }
         }
     }
