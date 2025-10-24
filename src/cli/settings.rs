@@ -31,6 +31,7 @@ const DEFAULT_CONFIG: &str = r#"# ==========================
 
 pub fn update_settings() -> Result<(), FztError> {
     let mut settings_location = home_dir().expect("Could not find home directory");
+    settings_location.push(".fzt");
     settings_location.push("config");
 
     if !settings_location.exists() {
@@ -106,6 +107,7 @@ fn parse_config(config_path: PathBuf) -> Result<HashMap<String, String>, FztErro
 /// Load config from the default location
 pub fn load_config() -> Result<HashMap<String, String>, FztError> {
     let mut settings_location = home_dir().expect("Could not find home directory");
+    settings_location.push(".fzt");
     settings_location.push("config");
 
     if !settings_location.exists() {

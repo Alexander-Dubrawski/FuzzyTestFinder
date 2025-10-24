@@ -134,7 +134,7 @@ fzt -p s
 fzt -p a
 
 # No preview
-fzt -p none 
+fzt -p none
 
 # Runs all tests
 fzt --all
