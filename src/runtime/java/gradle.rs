@@ -48,7 +48,7 @@ impl Runtime for GradleRuntime {
         engine.base_arg("test");
         let formatted_tests = tests
             .into_iter()
-            .map(|test| vec![String::from("--tests"), test])
+            .map(|test| vec![String::from("--tests"), format!("\"{}\"", test)])
             .flatten()
             .collect::<Vec<String>>();
         engine.execute_single_batch_sequential(

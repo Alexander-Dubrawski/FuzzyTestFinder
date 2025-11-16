@@ -263,6 +263,7 @@ Currently supported languages:
 - Python (pytest)
 - Rust
 - Java (JUnit with Gradle)
+- Kotlin (JUnit with Gradle)
 
 ## License
 

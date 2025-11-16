@@ -87,9 +87,14 @@ fn extract_tests(
                             (None, None) => method.clone(),
                         }
                     };
+                    let clean_method_name = if method.starts_with('`') && method.ends_with('`') {
+                        method.trim_matches('`').to_string()
+                    } else {
+                        method
+                    };
                     found.insert(KotlinTest {
                         class_path,
-                        method_name: method,
+                        method_name: clean_method_name,
                     });
                 }
             }
