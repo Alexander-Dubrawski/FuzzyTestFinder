@@ -203,7 +203,7 @@ enum Commands {
     Java {
         #[arg(default_value_t = String::from("JUnit5"), value_parser=["JUnit5"])]
         test_framework: String,
-
+        // TODO: For kotlin use gradle insted of /gradlew. Maybe also support here to define
         #[arg(default_value_t = String::from("gradle"), value_parser=["gradle"])]
         runtime: String,
     },

@@ -47,7 +47,7 @@ cargo install cargo-tarpaulin
 Then build the executable:
 
 ```bash
-cargo build --release
+export CC=clang cargo build --release
 ```
 
 Create an alias for easier access:
