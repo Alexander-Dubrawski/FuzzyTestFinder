@@ -6,12 +6,12 @@ use crate::{
     runner::{RunnerName, general_runner::GeneralCacheRunner},
     runtime::{Debugger, java::gradle::GradleRuntime},
     search_engine::SearchEngine,
-    tests::java::java_test::JavaTests,
+    tests::kotlin::kotlin_test::KotlinTests,
 };
 
 use super::{Runner, config::RunnerConfig};
 
-pub fn get_java_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static>(
+pub fn get_kotlin_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static>(
     test_framework: &str,
     runtime: &str,
     config: RunnerConfig<SE>,
@@ -33,16 +33,16 @@ pub fn get_java_runner<SE: SearchEngine + 'static, CM: Cache + Clone + 'static>(
         ("junit5", "gradle") => Ok(Box::new(GeneralCacheRunner::new(
             GradleRuntime::new("gradle"),
             config,
-            JavaTests::new_empty(path_str.to_string()),
-            RunnerName::JavaJunit5Runner,
+            KotlinTests::new_empty(path_str.to_string()),
+            RunnerName::KotlinJunit5Runner,
             cache_manager,
             path_str.to_string(),
         ))),
         ("junit5", "gradlew") => Ok(Box::new(GeneralCacheRunner::new(
             GradleRuntime::new("./gradlew"),
             config,
-            JavaTests::new_empty(path_str.to_string()),
-            RunnerName::JavaJunit5Runner,
+            KotlinTests::new_empty(path_str.to_string()),
+            RunnerName::KotlinJunit5Runner,
             cache_manager,
             path_str.to_string(),
         ))),

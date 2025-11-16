@@ -126,7 +126,7 @@ impl Tests for KotlinTests {
 
     fn update_file_coverage(
         &mut self,
-        coverage: &HashMap<String, Vec<String>>,
+        _coverage: &HashMap<String, Vec<String>>,
     ) -> Result<bool, FztError> {
         unimplemented!()
     }

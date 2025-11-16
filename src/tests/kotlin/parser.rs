@@ -1,4 +1,7 @@
-use std::{collections::{HashMap, HashSet}, path::Path};
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+};
 use tree_sitter::{Node, Parser};
 use tree_sitter_kotlin::language as kotlin_language;
 

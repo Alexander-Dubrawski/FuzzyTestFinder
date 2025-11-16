@@ -9,8 +9,17 @@ use crate::{
 };
 use colored::Colorize;
 
-#[derive(Default)]
-pub struct GradleRuntime {}
+pub struct GradleRuntime {
+    gradle_command: String,
+}
+
+impl GradleRuntime {
+    pub fn new(gradle_command: &str) -> Self {
+        GradleRuntime {
+            gradle_command: gradle_command.to_string(),
+        }
+    }
+}
 
 impl Runtime for GradleRuntime {
     fn run_tests(
@@ -34,7 +43,7 @@ impl Runtime for GradleRuntime {
         }
         let mut engine = Engine::new(None, None);
         // unbuffer merges stdout and stderr
-        engine.base_args(&["unbuffer", "./gradlew", "-i"]);
+        engine.base_args(&["unbuffer", self.gradle_command.as_str(), "-i"]);
         engine.base_args_string(runtime_ags);
         engine.base_arg("test");
         let formatted_tests = tests

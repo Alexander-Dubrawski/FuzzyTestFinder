@@ -16,6 +16,7 @@ pub fn watch<SE: SearchEngine + Clone + Send>(config: RunnerConfig<SE>) -> Resul
         crate::Language::Rust { .. } => "rs",
         crate::Language::Python { .. } => "py",
         crate::Language::Java { .. } => "java",
+        crate::Language::Kotlin { .. } => "kt",
     };
 
     // Get first selection

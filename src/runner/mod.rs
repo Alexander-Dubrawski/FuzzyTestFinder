@@ -6,6 +6,7 @@ use crate::errors::FztError;
 pub mod config;
 pub mod general_runner;
 pub mod java;
+pub mod kotlin;
 pub mod python;
 pub mod rust;
 
@@ -24,6 +25,7 @@ pub enum RunnerName {
     JavaJunit5Runner,
     RustCargoRunner,
     RustNextestRunner,
+    KotlinJunit5Runner,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

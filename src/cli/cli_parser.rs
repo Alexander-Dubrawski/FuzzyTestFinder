@@ -203,12 +203,19 @@ enum Commands {
     Java {
         #[arg(default_value_t = String::from("JUnit5"), value_parser=["JUnit5"])]
         test_framework: String,
-        // TODO: For kotlin use gradle insted of /gradlew. Maybe also support here to define
-        #[arg(default_value_t = String::from("gradle"), value_parser=["gradle"])]
+
+        #[arg(default_value_t = String::from("gradlew"), value_parser=["gradle", "gradlew"])]
         runtime: String,
     },
     Rust {
         #[arg(default_value_t = String::from("cargo"), value_parser=["cargo", "nextest"])]
+        runtime: String,
+    },
+    Kotlin {
+        #[arg(default_value_t = String::from("JUnit5"), value_parser=["JUnit5"])]
+        test_framework: String,
+
+        #[arg(default_value_t = String::from("gradle"), value_parser=["gradle", "gradlew"])]
         runtime: String,
     },
 }
@@ -353,6 +360,13 @@ pub fn parse_cli() -> Result<Config, FztError> {
             test_framework,
             runtime,
         }) => Language::Java {
+            test_framework,
+            runtime,
+        },
+        Some(Commands::Kotlin {
+            test_framework,
+            runtime,
+        }) => Language::Kotlin {
             test_framework,
             runtime,
         },
