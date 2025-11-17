@@ -71,6 +71,7 @@ pub fn update_tests(
         only_check_for_change,
         "py",
         Some(Regex::new(r"^(test_.*\.py|.*_test\.py)$")?),
+        None,
         collect_tests_from_file,
     )
 }

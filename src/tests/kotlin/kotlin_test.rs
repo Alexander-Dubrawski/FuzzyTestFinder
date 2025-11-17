@@ -108,6 +108,8 @@ impl Tests for KotlinTests {
             false,
             "kt",
             None,
+            // TODO: Just for testing
+            Some("src/test/"),
             collect_tests_from_file,
         )?;
         self.failed_tests
