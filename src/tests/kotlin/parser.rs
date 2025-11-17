@@ -22,7 +22,7 @@ fn extract_tests(
     node: Node,
     src: &str,
     package: &Option<String>,
-    outer_class: Option<String>,
+    outer_classes: Vec<String>,
     file_stem: &str,
     found: &mut HashSet<KotlinTest>,
 ) {
@@ -38,15 +38,13 @@ fn extract_tests(
                         break;
                     }
                 }
-                // Check for nested functions and classes
-                extract_tests(
-                    child,
-                    src,
-                    package,
-                    class_name.or(outer_class.clone()),
-                    file_stem,
-                    found,
-                );
+
+                let mut new_outer_classes = outer_classes.clone();
+                if let Some(name) = class_name {
+                    new_outer_classes.push(name);
+                }
+
+                extract_tests(child, src, package, new_outer_classes, file_stem, found);
             }
             "function_declaration" => {
                 let mut is_test = false;
@@ -71,8 +69,10 @@ fn extract_tests(
                 }
                 if is_test {
                     let method = method_name.unwrap_or("<unknown>".to_string());
+
                     // Determine class_path for Gradle/junit runner
-                    let class_path = if outer_class.is_none() {
+                    let class_path = if outer_classes.is_empty() {
+                        // Top-level function
                         match package {
                             Some(pkg) if !pkg.is_empty() => {
                                 format!("{}.{}Kt", pkg, capitalize_first(file_stem))
@@ -80,18 +80,20 @@ fn extract_tests(
                             _ => format!("{}Kt", capitalize_first(file_stem)),
                         }
                     } else {
-                        match (package, &outer_class) {
-                            (Some(pkg), Some(cls)) => format!("{pkg}.{cls}"),
-                            (Some(pkg), None) => pkg.clone(),
-                            (None, Some(cls)) => cls.clone(),
-                            (None, None) => method.clone(),
+                        // Inside one or more classes - join with $
+                        let qualified_class = outer_classes.join("$");
+                        match package {
+                            Some(pkg) if !pkg.is_empty() => format!("{}.{}", pkg, qualified_class),
+                            _ => qualified_class,
                         }
                     };
+
                     let clean_method_name = if method.starts_with('`') && method.ends_with('`') {
                         method.trim_matches('`').to_string()
                     } else {
                         method
                     };
+
                     found.insert(KotlinTest {
                         class_path,
                         method_name: clean_method_name,
@@ -99,7 +101,7 @@ fn extract_tests(
                 }
             }
             _ => {
-                extract_tests(child, src, package, outer_class.clone(), file_stem, found);
+                extract_tests(child, src, package, outer_classes.clone(), file_stem, found);
             }
         }
     }
@@ -136,7 +138,14 @@ pub fn collect_tests_from_file(path: &Path) -> Result<HashSet<KotlinTest>, FztEr
         .and_then(|s| s.to_str())
         .unwrap_or("<unknown>");
     let mut found = HashSet::new();
-    extract_tests(root, &source_code, &package, None, file_stem, &mut found);
+    extract_tests(
+        root,
+        &source_code,
+        &package,
+        Vec::new(),
+        file_stem,
+        &mut found,
+    );
     Ok(found)
 }
 
@@ -175,14 +184,12 @@ pub fn parse_failed_tests(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::{self, File};
-    use std::io::Write;
+    use std::fs;
     use std::path::PathBuf;
 
     #[test]
     fn collects_kotlin_tests() {
-        // Make a temp file
-        let mut temp_path = PathBuf::from("Sample.kt");
+        let temp_path = PathBuf::from("Sample.kt");
         let code = r#"
         package com.example.demo
 
@@ -211,7 +218,6 @@ mod tests {
         let tests = collect_tests_from_file(&temp_path).unwrap();
         let tests_set: std::collections::HashSet<KotlinTest> = tests.into_iter().collect();
 
-        // Check for expected test names.
         let expected = vec![
             KotlinTest {
                 class_path: "com.example.demo.MyTestClass".to_string(),
@@ -228,7 +234,57 @@ mod tests {
             KotlinTest {
                 class_path: "com.example.demo.SampleKt".to_string(),
                 method_name: "topLevelTest".to_string(),
-            }, // top-level
+            },
+        ]
+        .into_iter()
+        .collect();
+
+        assert_eq!(tests_set, expected);
+
+        fs::remove_file(&temp_path).unwrap();
+    }
+
+    #[test]
+    fn collects_nested_inner_class_tests() {
+        let temp_path = PathBuf::from("InnerTest.kt");
+        let code = r#"
+        package com.example.demo
+
+        import org.junit.Test
+        import org.junit.jupiter.api.Nested
+
+        class OuterClass {
+            @Test
+            fun outerTest() { }
+
+            @Nested
+            inner class Breaker {
+                @Test
+                fun `should execute through breaker`() { }
+                
+                @Test
+                fun anotherInnerTest() { }
+            }
+        }
+        "#;
+        fs::write(&temp_path, code).unwrap();
+
+        let tests = collect_tests_from_file(&temp_path).unwrap();
+        let tests_set: std::collections::HashSet<KotlinTest> = tests.into_iter().collect();
+
+        let expected = vec![
+            KotlinTest {
+                class_path: "com.example.demo.OuterClass".to_string(),
+                method_name: "outerTest".to_string(),
+            },
+            KotlinTest {
+                class_path: "com.example.demo.OuterClass$Breaker".to_string(),
+                method_name: "should execute through breaker".to_string(),
+            },
+            KotlinTest {
+                class_path: "com.example.demo.OuterClass$Breaker".to_string(),
+                method_name: "anotherInnerTest".to_string(),
+            },
         ]
         .into_iter()
         .collect();
