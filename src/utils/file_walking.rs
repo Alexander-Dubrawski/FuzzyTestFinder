@@ -3,7 +3,7 @@ use std::{
     collections::{HashMap, HashSet},
     ffi::OsStr,
     hash::Hash,
-    path::Path,
+    path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
 use walkdir::{DirEntry, WalkDir};
@@ -44,6 +44,7 @@ pub fn collect_tests<T: Eq + Hash>(
     only_check_for_change: bool,
     file_extention: &str,
     regex_pattern: Option<Regex>,
+    test_path: Option<&str>,
     collect_tests_from_file: impl Fn(&Path) -> Result<HashSet<T>, FztError>,
 ) -> Result<bool, FztError> {
     let mut updated = false;
@@ -83,6 +84,12 @@ pub fn collect_tests<T: Eq + Hash>(
 
             let full_path = entry.path().as_os_str().to_str().expect("Is file type");
             let relative_path = get_relative_path(root_folder, &full_path)?;
+
+            if let Some(test_path) = test_path.as_ref() {
+                if !relative_path.starts_with(test_path) {
+                    continue;
+                }
+            }
 
             if let Ok(modified) = metadata.modified() {
                 if modified.duration_since(UNIX_EPOCH)?.as_millis() > *timestamp {

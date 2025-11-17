@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     cache::{helper::project_hash, manager::LocalCacheManager},
     errors::FztError,
+    runner::kotlin::get_kotlin_runner,
     runtime::Debugger,
     search_engine::SearchEngine,
 };
@@ -44,6 +45,10 @@ pub enum Language {
         runtime: String,
     },
     Rust {
+        runtime: String,
+    },
+    Kotlin {
+        test_framework: String,
         runtime: String,
     },
 }
@@ -138,6 +143,19 @@ impl<SE: SearchEngine> RunnerConfig<SE> {
                 let cache_manager =
                     self.build_cache_manager(format!("{}-rust-cargo", project_hash).as_str());
                 get_rust_runner(self, cache_manager, runtime.as_str())
+            }
+            Language::Kotlin {
+                test_framework,
+                runtime,
+            } => {
+                let cache_manager =
+                    self.build_cache_manager(format!("{}-kotlin-junit5", project_hash).as_str());
+                get_kotlin_runner(
+                    test_framework.as_str(),
+                    runtime.as_str(),
+                    self,
+                    cache_manager,
+                )
             }
         }
     }

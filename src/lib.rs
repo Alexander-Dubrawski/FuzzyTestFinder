@@ -19,6 +19,7 @@ pub use runner::config::Preview;
 pub use runner::config::RunnerConfig;
 pub use runner::config::RunnerMode;
 pub use runner::java::get_java_runner;
+pub use runner::kotlin::get_kotlin_runner;
 pub use runner::python::get_python_runner;
 pub use runner::rust::get_rust_runner;
 

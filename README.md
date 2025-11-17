@@ -47,7 +47,7 @@ cargo install cargo-tarpaulin
 Then build the executable:
 
 ```bash
-cargo build --release
+export CC=clang cargo build --release
 ```
 
 Create an alias for easier access:
@@ -263,6 +263,7 @@ Currently supported languages:
 - Python (pytest)
 - Rust
 - Java (JUnit with Gradle)
+- Kotlin (JUnit with Gradle)
 
 ## License
 

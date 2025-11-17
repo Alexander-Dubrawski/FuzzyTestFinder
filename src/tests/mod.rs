@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::{errors::FztError, runtime::FailedTest};
 
 pub mod java;
+pub mod kotlin;
 pub mod python;
 pub mod rust;
 pub mod test_provider;
